@@ -1,0 +1,213 @@
+/*
+ * JBoss, Home of Professional Open Source
+ * Copyright 2011, Red Hat, Inc. and/or its affiliates, and individual
+ * contributors as indicated by the @authors tag. All rights reserved.
+ * See the copyright.txt in the distribution for a full listing
+ * of individual contributors.
+ * 
+ * This copyrighted material is made available to anyone wishing to use,
+ * modify, copy, or redistribute it subject to the terms and conditions
+ * of the GNU General Public License, v. 2.0.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License,
+ * v. 2.0 along with this distribution; if not, write to the Free 
+ * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ */
+package org.mobicents.protocols.sctp;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.channels.SelectionKey;
+
+import javolution.util.FastList;
+import javolution.xml.XMLFormat;
+import javolution.xml.stream.XMLStreamException;
+
+import org.apache.log4j.Logger;
+
+import com.sun.nio.sctp.SctpServerChannel;
+
+/**
+ * @author amit bhayani
+ * 
+ */
+public class Server {
+
+	private static final Logger logger = Logger.getLogger(Server.class.getName());
+
+	private static final String NAME = "name";
+	private static final String HOST_ADDRESS = "hostAddress";
+	private static final String HOST_PORT = "hostPort";
+
+	private static final String ASSOCIATIONS = "associations";
+
+	private static final String STARTED = "started";
+
+	private String name;
+	private String hostAddress;
+	private int hostport;
+	private volatile boolean started = false;
+
+	// The channel on which we'll accept connections
+	private SctpServerChannel serverChannel;
+
+	private Management management = null;
+
+	private FastList<String> associations = new FastList<String>();
+
+	/**
+	 * 
+	 */
+	public Server() {
+		super();
+	}
+
+	/**
+	 * @param name
+	 * @param ip
+	 * @param port
+	 * @throws IOException
+	 */
+	public Server(String name, String hostAddress, int hostport) throws IOException {
+		super();
+		this.name = name;
+		this.hostAddress = hostAddress;
+		this.hostport = hostport;
+	}
+
+	public void start() throws IOException {
+		this.initSocket();
+		this.started = true;
+
+		if (logger.isInfoEnabled()) {
+			logger.info(String.format("Started Server=%s", this.name));
+		}
+	}
+
+	public void stop() throws Exception {
+		for (FastList.Node<String> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+			String assocName = n.getValue();
+			Association associationTemp = this.management.getAssociation(assocName);
+			if (associationTemp.isStarted()) {
+				throw new Exception(String.format("Stop all the associations first. Association=%s is still started"));
+			}
+		}
+
+		if (this.serverChannel != null) {
+			try {
+				this.serverChannel.close();
+			} catch (Exception e) {
+				logger.warn(String.format("Error while stopping the Server=%s", this.name), e);
+			}
+		}
+
+		this.started = false;
+
+		if (logger.isInfoEnabled()) {
+			logger.info(String.format("Stoped Server=%s", this.name));
+		}
+	}
+
+	private void initSocket() throws IOException {
+		// Create a new non-blocking server socket channel
+		this.serverChannel = SctpServerChannel.open();
+		this.serverChannel.configureBlocking(false);
+
+		// Bind the server socket to the specified address and port
+		InetSocketAddress isa = new InetSocketAddress(this.hostAddress, this.hostport);
+		this.serverChannel.bind(isa);
+
+		if (logger.isInfoEnabled()) {
+			logger.info(String.format("SctpServerChannel bound to=%s ", serverChannel.getAllLocalAddresses()));
+		}
+
+		// Register the server socket channel, indicating an interest in
+		// accepting new connections
+		// this.serverChannel.register(socketSelector, SelectionKey.OP_ACCEPT);
+
+		FastList<ChangeRequest> pendingChanges = this.management.getPendingChanges();
+		synchronized (pendingChanges) {
+
+			// Indicate we want the interest ops set changed
+			pendingChanges.add(new ChangeRequest(this.serverChannel, null, ChangeRequest.REGISTER, SelectionKey.OP_ACCEPT));
+		}
+
+		this.management.getSocketSelector().wakeup();
+	}
+
+	/**
+	 * @return the name
+	 */
+	public String getName() {
+		return name;
+	}
+
+	/**
+	 * @return the hostAddress
+	 */
+	public String getHostAddress() {
+		return hostAddress;
+	}
+
+	/**
+	 * @return the hostport
+	 */
+	public int getHostport() {
+		return hostport;
+	}
+
+	/**
+	 * @return the started
+	 */
+	public boolean isStarted() {
+		return started;
+	}
+
+	/**
+	 * @param management
+	 *            the management to set
+	 */
+	public void setManagement(Management management) {
+		this.management = management;
+	}
+
+	/**
+	 * @return the associations
+	 */
+	public FastList<String> getAssociations() {
+		return associations;
+	}
+
+	/**
+	 * XML Serialization/Deserialization
+	 */
+	protected static final XMLFormat<Server> SERVER_XML = new XMLFormat<Server>(Server.class) {
+
+		@Override
+		public void read(javolution.xml.XMLFormat.InputElement xml, Server server) throws XMLStreamException {
+			server.name = xml.getAttribute(NAME, "");
+			server.started = xml.getAttribute(STARTED, false);
+			server.hostAddress = xml.getAttribute(HOST_ADDRESS, "");
+			server.hostport = xml.getAttribute(HOST_PORT, 0);
+
+			server.associations = xml.get(ASSOCIATIONS);
+		}
+
+		@Override
+		public void write(Server server, javolution.xml.XMLFormat.OutputElement xml) throws XMLStreamException {
+			xml.setAttribute(NAME, server.name);
+			xml.setAttribute(STARTED, server.started);
+			xml.setAttribute(HOST_ADDRESS, server.hostAddress);
+			xml.setAttribute(HOST_PORT, server.hostport);
+
+			xml.add(server.associations, ASSOCIATIONS);
+		}
+	};
+
+}

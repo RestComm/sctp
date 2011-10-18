@@ -1,0 +1,173 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.mobicents</groupId>
+		<artifactId>mobicents-parent</artifactId>
+		<version>2.19</version>
+	</parent>
+
+	<groupId>org.mobicents.protocols.sctp</groupId>
+	<artifactId>sctp-parent</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+	<name>Mobicents :: SCTP :: Parent :: ${pom.artifactId}</name>
+	<packaging>pom</packaging>
+
+
+	<properties>
+		<log4j.version>1.2.8</log4j.version>
+
+		<!-- OTHER MOBICENTS COMPONENTS VERSIONS -->
+		<mobicents.tools.mavenplugin.eclipse.version>
+			1.0.0.BETA2
+		</mobicents.tools.mavenplugin.eclipse.version>
+		<javolution.version>5.5.1</javolution.version>
+	</properties>
+
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>log4j</groupId>
+				<artifactId>log4j</artifactId>
+				<version>${log4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>${junit.version}</version>
+				<scope>provided</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+
+	<modules>
+		<module>sctp-impl</module>
+	</modules>
+
+
+	<scm>
+		<connection>
+			scm:svn:https://mobicents.googlecode.com/svn/trunk/protocols/sctp
+		</connection>
+		<developerConnection>
+			scm:svn:https://mobicents.googlecode.com/svn/trunk/protocols/sctp
+		</developerConnection>
+		<url>
+			http://mobicents.googlecode.com/svn/trunk/protocols/sctp
+		</url>
+	</scm>
+
+	<profiles>
+		<profile>
+			<id>maven-release</id>
+			<modules>
+				<module>docs</module>
+			</modules>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-release-plugin</artifactId>
+						<version>2.0-beta-9</version>
+						<configuration>
+							<autoVersionSubmodules>
+								true
+							</autoVersionSubmodules>
+							<remoteTagging>true</remoteTagging>
+							<tagBase>
+								https://mobicents.googlecode.com/svn/tags/protocols/sctp
+							</tagBase>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>release</id>
+			<modules>
+				<module>docs</module>
+				<module>release</module>
+			</modules>
+			<!-- Add more if required -->
+		</profile>
+	</profiles>
+
+	<build>
+		<finalName>${pom.artifactId}-${pom.version}</finalName>
+		<plugins>
+			<plugin>
+				<artifactId>maven-eclipse-plugin</artifactId>
+				<groupId>org.mobicents.tools</groupId>
+				<version>
+					${mobicents.tools.mavenplugin.eclipse.version}
+				</version>
+				<inherited>false</inherited>
+				<executions />
+				<configuration>
+					<classpathExcludes>
+						<exclude>xml-apis:xml-apis</exclude>
+						<exclude>jtidy:jtidy</exclude>
+					</classpathExcludes>
+					<resolveTransitiveDependencies>
+						true
+					</resolveTransitiveDependencies>
+					<eclipseProjectName>
+						mobicents-sctp
+					</eclipseProjectName>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.5</source>
+					<target>1.5</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemProperties>
+						<property>
+							<name>file.name</name>
+							<value>target/log4j.log</value>
+						</property>
+					</systemProperties>
+					<includes>
+						<include>**/*Test.java</include>
+					</includes>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<repositories>
+		<repository>
+			<id>maven</id>
+			<name>Maven Repository</name>
+			<url>http://repo1.maven.org/maven2</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>jboss-public-repository-group</id>
+			<name>JBoss Public Maven Repository Group</name>
+			<url>https://repository.jboss.org/nexus/content/groups/public/</url>
+			<layout>default</layout>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
+</project>
