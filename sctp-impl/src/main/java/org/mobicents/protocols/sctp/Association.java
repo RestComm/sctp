@@ -159,18 +159,24 @@ public class Association {
 		}
 	}
 
+	/**
+	 * Stops this Association. If the underlying SctpChannel is open, marks the
+	 * chanel for close
+	 */
 	public void stop() {
 		this.started = false;
 
-		FastList<ChangeRequest> pendingChanges = this.management.getPendingChanges();
-		synchronized (pendingChanges) {
-			// Indicate we want the interest ops set changed
-			pendingChanges.add(new ChangeRequest(socketChannel, this, ChangeRequest.CLOSE, -1));
-		}
+		if (this.socketChannel.isOpen()) {
+			FastList<ChangeRequest> pendingChanges = this.management.getPendingChanges();
+			synchronized (pendingChanges) {
+				// Indicate we want the interest ops set changed
+				pendingChanges.add(new ChangeRequest(socketChannel, this, ChangeRequest.CLOSE, -1));
+			}
 
-		// Finally, wake up our selecting thread so it can make the required
-		// changes
-		this.management.getSocketSelector().wakeup();
+			// Finally, wake up our selecting thread so it can make the required
+			// changes
+			this.management.getSocketSelector().wakeup();
+		}
 	}
 
 	/**

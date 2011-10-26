@@ -114,6 +114,9 @@ public class SctpTransferTest {
 		Thread.sleep(1000 * 40);
 
 		this.management.stopAssociation(CLIENT_ASSOCIATION_NAME);
+		
+		Thread.sleep(1000);
+		
 		this.management.stopAssociation(SERVER_ASSOCIATION_NAME);
 		this.management.stopServer(SERVER_NAME);
 

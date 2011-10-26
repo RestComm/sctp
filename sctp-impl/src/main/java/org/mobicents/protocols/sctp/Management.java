@@ -550,7 +550,7 @@ public class Management {
 		if (association.getType() == AssociationType.SERVER) {
 			for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
 				Server serverTemp = n.getValue();
-				if (serverTemp.equals(association.getServerName())) {
+				if (serverTemp.getName().equals(association.getServerName())) {
 					serverTemp.getAssociations().remove(assocName);
 					break;
 				}
