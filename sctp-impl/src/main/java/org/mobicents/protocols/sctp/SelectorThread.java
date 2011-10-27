@@ -153,6 +153,13 @@ public class SelectorThread implements Runnable {
 				logger.error("Error while selecting the ready keys", e);
 			}
 		}
+
+		try {
+			this.selector.close();
+		} catch (IOException e) {
+			logger.error(String.format("Error while closing Selector for SCTP Management=%s", this.management.getName()));
+		}
+
 		if (logger.isInfoEnabled()) {
 			logger.info(String.format("SelectorThread for Management=%s stopped.", this.management.getName()));
 		}

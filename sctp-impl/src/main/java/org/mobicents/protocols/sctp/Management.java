@@ -30,6 +30,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javolution.text.TextBuilder;
 import javolution.util.FastList;
@@ -53,11 +54,8 @@ public class Management {
 	private static final String USER_DIR_KEY = "user.dir";
 	private static final String PERSIST_FILE_NAME = "sctp.xml";
 
-	private static final String SERVERS = "servers";
-	private static final String SERVER = "server";
-	private static final String ASSOCIATIONS = "associations";
-	private static final String ASSOCIATION = "association";
-	private static final String NAME = "name";
+	private static final String SERVERS = "Servers";
+	private static final String ASSOCIATIONS = "Associations";
 
 	private final TextBuilder persistFile = TextBuilder.newInstance();
 
@@ -86,7 +84,7 @@ public class Management {
 	private boolean singleThread = false;
 
 	private int workerThreadCount = 0;
-	
+
 	private int connectDelay = 30000;
 
 	private ExecutorService[] executorServices = null;
@@ -94,9 +92,10 @@ public class Management {
 	public Management(String name) throws IOException {
 		this.name = name;
 		binding.setClassAttribute(CLASS_ATTRIBUTE);
-		binding.setAlias(Server.class, SERVER);
-		binding.setAlias(Association.class, ASSOCIATION);
-		binding.setAlias(String.class, NAME);
+		binding.setAlias(Server.class, Server.class.getSimpleName());
+		binding.setAlias(Association.class, Association.class.getSimpleName());
+		binding.setAlias(String.class, String.class.getSimpleName());
+		binding.setAlias(FastList.class, FastList.class.getSimpleName());
 		this.socketSelector = SelectorProvider.provider().openSelector();
 	}
 
@@ -123,7 +122,8 @@ public class Management {
 	}
 
 	/**
-	 * @param connectDelay the connectDelay to set
+	 * @param connectDelay
+	 *            the connectDelay to set
 	 */
 	public void setConnectDelay(int connectDelay) {
 		this.connectDelay = connectDelay;
@@ -194,14 +194,34 @@ public class Management {
 		(new Thread(this.selectorThread)).start();
 
 		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Started SCTP Management=%s WorkerThreads=%d", this.name, this.workerThreads));
+			logger.info(String.format("Started SCTP Management=%s WorkerThreads=%d SingleThread=%s", this.name, (this.singleThread ? 0 : this.workerThreads),
+					this.singleThread));
 		}
 	}
 
 	public void stop() throws IOException {
+
+		// We store the original state first
 		this.store();
 
-		// TODO : Stop all the Association and Servers?
+		// Stop all associations
+		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+			Association associationTemp = n.getValue();
+			if (associationTemp.isStarted()) {
+				associationTemp.stop();
+			}
+		}
+
+		for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+			Server serverTemp = n.getValue();
+			if (serverTemp.isStarted()) {
+				try {
+					serverTemp.stop();
+				} catch (Exception e) {
+					logger.error(String.format("Exception while stopping the Server=%s", serverTemp.getName()), e);
+				}
+			}
+		}
 
 		if (this.executorServices != null) {
 			for (int i = 0; i < this.executorServices.length; i++) {
@@ -210,6 +230,23 @@ public class Management {
 		}
 
 		this.selectorThread.setStarted(false);
+		this.socketSelector.wakeup(); // Wakeup selector so SelectorThread dies
+
+		// Graceful shutdown for each of Executors
+		if (this.executorServices != null) {
+			for (int i = 0; i < this.executorServices.length; i++) {
+				if (!this.executorServices[i].isTerminated()) {
+					if (logger.isInfoEnabled()) {
+						logger.info("Waiting for worker thread to die gracefully ....");
+					}
+					try {
+						this.executorServices[i].awaitTermination(5000, TimeUnit.MILLISECONDS);
+					} catch (InterruptedException e) {
+						// Do we care?
+					}
+				}
+			}
+		}
 	}
 
 	public void load() throws FileNotFoundException {
@@ -544,7 +581,7 @@ public class Management {
 		if (association.isStarted()) {
 			throw new Exception(String.format("Association name=%s is started. Stop before removing", assocName));
 		}
-		
+
 		this.associations.remove(assocName);
 
 		if (association.getType() == AssociationType.SERVER) {

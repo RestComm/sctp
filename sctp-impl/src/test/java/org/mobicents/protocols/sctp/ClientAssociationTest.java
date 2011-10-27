@@ -21,6 +21,7 @@
  */
 package org.mobicents.protocols.sctp;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
@@ -35,7 +36,8 @@ import org.junit.Test;
  * @author amit bhayani
  * 
  */
-public class SctpTransferTest {
+public class ClientAssociationTest {
+
 	private static final String SERVER_NAME = "testserver";
 	private static final String SERVER_HOST = "127.0.0.1";
 	private static final int SERVER_PORT = 2345;
@@ -77,18 +79,17 @@ public class SctpTransferTest {
 	@Before
 	public void setUp() throws Exception {
 		this.management = new Management("server-management");
+		this.management.setConnectDelay(10000);// Try connecting every 10 secs
 		this.management.setSingleThread(true);
 		this.management.start();
 
 		this.server = this.management.createServer(SERVER_NAME, SERVER_HOST, SERVER_PORT);
 		this.serverAssociation = this.management.createServerAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_NAME, SERVER_ASSOCIATION_NAME);
 		this.clientAssociation = this.management.createAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_HOST, SERVER_PORT, CLIENT_ASSOCIATION_NAME);
-
 	}
 
 	@After
 	public void tearDown() throws Exception {
-
 		this.management.removeAssociation(CLIENT_ASSOCIATION_NAME);
 		this.management.removeAssociation(SERVER_ASSOCIATION_NAME);
 		this.management.removeServer(SERVER_NAME);
@@ -97,14 +98,13 @@ public class SctpTransferTest {
 	}
 
 	/**
-	 * Simple test that creates Client and Server Association, exchanges data
-	 * and brings down association. Finally removes the Associations and Server
+	 * In this test client association is started without server being started.
+	 * Client keeps attempting to connect to server, till server comes up
+	 * 
+	 * @throws Exception
 	 */
 	@Test
-	@SuppressWarnings("static-access")
-	public void testDataTransfer() throws Exception {
-
-		this.management.startServer(SERVER_NAME);
+	public void testConnectAttempts() throws Exception {
 
 		this.serverAssociation.setAssociationListener(new ServerAssociationListener());
 		this.management.startAssociation(SERVER_ASSOCIATION_NAME);
@@ -112,7 +112,17 @@ public class SctpTransferTest {
 		this.clientAssociation.setAssociationListener(new ClientAssociationListenerImpl());
 		this.management.startAssociation(CLIENT_ASSOCIATION_NAME);
 
+		Thread.sleep(1000 * 20);
+
+		assertFalse(clientAssocUp);
+		assertFalse(serverAssocUp);
+
+		// Lets start the serever now
+		this.management.startServer(SERVER_NAME);
 		Thread.sleep(1000 * 40);
+
+		assertTrue(clientAssocUp);
+		assertTrue(serverAssocUp);
 
 		this.management.stopAssociation(CLIENT_ASSOCIATION_NAME);
 
@@ -125,9 +135,6 @@ public class SctpTransferTest {
 
 		assertTrue(Arrays.equals(SERVER_MESSAGE, clientMessage));
 		assertTrue(Arrays.equals(CLIENT_MESSAGE, serverMessage));
-
-		assertTrue(clientAssocUp);
-		assertTrue(serverAssocUp);
 
 		assertTrue(clientAssocDown);
 		assertTrue(serverAssocDown);
@@ -297,5 +304,4 @@ public class SctpTransferTest {
 		}
 
 	}
-
 }

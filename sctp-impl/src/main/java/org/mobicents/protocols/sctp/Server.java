@@ -45,7 +45,7 @@ public class Server {
 	private static final String HOST_ADDRESS = "hostAddress";
 	private static final String HOST_PORT = "hostPort";
 
-	private static final String ASSOCIATIONS = "associations";
+	private static final String ASSOCIATIONS = "Associations";
 
 	private static final String STARTED = "started";
 
