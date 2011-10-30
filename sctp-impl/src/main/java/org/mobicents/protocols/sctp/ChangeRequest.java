@@ -27,7 +27,7 @@ import java.nio.channels.spi.AbstractSelectableChannel;
  * @author amit bhayani
  * 
  */
-public class ChangeRequest {
+public final class ChangeRequest {
 	public static final int REGISTER = 1;
 	public static final int CHANGEOPS = 2;
 	public static final int CONNECT = 3;
@@ -36,18 +36,18 @@ public class ChangeRequest {
 	private int type;
 	private int ops;
 	private AbstractSelectableChannel socketChannel;
-	private Association association;
+	private AssociationImpl association;
 
 	private long executionTime;
 
-	public ChangeRequest(AbstractSelectableChannel socketChannel, Association association, int type, int ops) {
+	protected ChangeRequest(AbstractSelectableChannel socketChannel, AssociationImpl association, int type, int ops) {
 		this.type = type;
 		this.ops = ops;
 		this.socketChannel = socketChannel;
 		this.association = association;
 	}
 
-	public ChangeRequest(Association association, int type, long executionTime) {
+	protected ChangeRequest(AssociationImpl association, int type, long executionTime) {
 		this(null, association, type, -1);
 		this.executionTime = executionTime;
 	}
@@ -55,35 +55,35 @@ public class ChangeRequest {
 	/**
 	 * @return the type
 	 */
-	public int getType() {
+	protected int getType() {
 		return type;
 	}
 
 	/**
 	 * @return the ops
 	 */
-	public int getOps() {
+	protected int getOps() {
 		return ops;
 	}
 
 	/**
 	 * @return the socketChannel
 	 */
-	public AbstractSelectableChannel getSocketChannel() {
+	protected AbstractSelectableChannel getSocketChannel() {
 		return socketChannel;
 	}
 
 	/**
 	 * @return the association
 	 */
-	public Association getAssociation() {
+	protected AssociationImpl getAssociation() {
 		return association;
 	}
 
 	/**
 	 * @return the executionTime
 	 */
-	public long getExecutionTime() {
+	protected long getExecutionTime() {
 		return executionTime;
 	}
 }

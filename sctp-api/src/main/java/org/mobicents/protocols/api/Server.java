@@ -19,22 +19,51 @@
  * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-package org.mobicents.protocols.sctp;
+package org.mobicents.protocols.api;
+
+import java.util.List;
 
 /**
+ * A wrapper over actual server side Socket
+ * 
  * @author amit bhayani
  * 
  */
-public interface AssociationListener {
+public interface Server {
 
-	public void onCommunicationUp(Association association);
+	/**
+	 * Get name of this Server. Should be unique in a management instance
+	 * 
+	 * @return
+	 */
+	public String getName();
 
-	public void onCommunicationShutdown(Association association);
+	/**
+	 * The host address that this server socket is bound to
+	 * 
+	 * @return
+	 */
+	public String getHostAddress();
 
-	public void onCommunicationLost(Association association);
+	/**
+	 * The host port that this server socket is bound to
+	 * 
+	 * @return
+	 */
+	public int getHostport();
 
-	public void onCommunicationRestart(Association association);
+	/**
+	 * If the server is started
+	 * 
+	 * @return
+	 */
+	public boolean isStarted();
 
-	public void onPayload(Association association, PayloadData payloadData);
+	/**
+	 * {@link Association} configured for this Server
+	 * 
+	 * @return
+	 */
+	public List<String> getAssociations();
 
 }

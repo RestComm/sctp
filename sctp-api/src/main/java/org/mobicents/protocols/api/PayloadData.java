@@ -19,11 +19,13 @@
  * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-package org.mobicents.protocols.sctp;
+package org.mobicents.protocols.api;
 
 import java.util.Arrays;
 
 /**
+ * The actual pay load data received or to be sent from/to underlying socket
+ * 
  * @author amit bhayani
  * 
  */

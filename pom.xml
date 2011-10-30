@@ -44,6 +44,7 @@
 
 
 	<modules>
+		<module>sctp-api</module>
 		<module>sctp-impl</module>
 	</modules>
 

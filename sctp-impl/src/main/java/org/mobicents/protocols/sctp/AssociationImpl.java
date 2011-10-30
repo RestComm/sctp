@@ -34,6 +34,9 @@ import javolution.xml.XMLFormat;
 import javolution.xml.stream.XMLStreamException;
 
 import org.apache.log4j.Logger;
+import org.mobicents.protocols.api.Association;
+import org.mobicents.protocols.api.AssociationListener;
+import org.mobicents.protocols.api.PayloadData;
 
 import com.sun.nio.sctp.MessageInfo;
 import com.sun.nio.sctp.SctpChannel;
@@ -42,9 +45,9 @@ import com.sun.nio.sctp.SctpChannel;
  * @author amit bhayani
  * 
  */
-public class Association {
+public class AssociationImpl implements Association {
 
-	private static final Logger logger = Logger.getLogger(Association.class.getName());
+	private static final Logger logger = Logger.getLogger(AssociationImpl.class.getName());
 
 	private static final String NAME = "name";
 	private static final String SERVER_NAME = "serverName";
@@ -55,8 +58,6 @@ public class Association {
 	private static final String PEER_PORT = "peerPort";
 
 	private static final String ASSOCIATION_TYPE = "assoctype";
-
-	private static final String STARTED = "started";
 
 	private String hostAddress;
 	private int hostPort;
@@ -83,7 +84,7 @@ public class Association {
 
 	private ConcurrentLinkedQueue<PayloadData> txQueue = new ConcurrentLinkedQueue<PayloadData>();
 
-	private Management management;
+	private ManagementImpl management;
 
 	// The buffer into which we'll read data when it's available
 	private ByteBuffer rxBuffer = ByteBuffer.allocateDirect(8192);
@@ -91,7 +92,7 @@ public class Association {
 
 	private volatile MessageInfo msgInfo;
 
-	public Association() {
+	public AssociationImpl() {
 		super();
 		// clean transmission buffer
 		txBuffer.clear();
@@ -114,7 +115,7 @@ public class Association {
 	 * @param assocName
 	 * @throws IOException
 	 */
-	public Association(String hostAddress, int hostport, String peerAddress, int peerPort, String assocName) throws IOException {
+	public AssociationImpl(String hostAddress, int hostport, String peerAddress, int peerPort, String assocName) throws IOException {
 		this();
 		this.hostAddress = hostAddress;
 		this.hostPort = hostport;
@@ -132,7 +133,7 @@ public class Association {
 	 * @param serverName
 	 * @param assocName
 	 */
-	public Association(String peerAddress, int peerPort, String serverName, String assocName) {
+	public AssociationImpl(String peerAddress, int peerPort, String serverName, String assocName) {
 		this();
 		this.peerAddress = peerAddress;
 		this.peerPort = peerPort;
@@ -143,7 +144,7 @@ public class Association {
 
 	}
 
-	public void start() throws Exception {
+	protected void start() throws Exception {
 		if (this.associationListener == null) {
 			throw new NullPointerException(String.format("AssociationListener is null for Associatoion=%s", this.name));
 		}
@@ -163,7 +164,7 @@ public class Association {
 	 * Stops this Association. If the underlying SctpChannel is open, marks the
 	 * chanel for close
 	 */
-	public void stop() {
+	protected void stop() throws Exception {
 		this.started = false;
 
 		if (this.socketChannel.isOpen()) {
@@ -251,17 +252,10 @@ public class Association {
 	}
 
 	/**
-	 * @return the associationHandler
-	 */
-	public AssociationHandler getAssociationHandler() {
-		return associationHandler;
-	}
-
-	/**
 	 * @param socketChannel
 	 *            the socketChannel to set
 	 */
-	public void setSocketChannel(SctpChannel socketChannel) {
+	protected void setSocketChannel(SctpChannel socketChannel) {
 		this.socketChannel = socketChannel;
 	}
 
@@ -269,7 +263,7 @@ public class Association {
 	 * @param management
 	 *            the management to set
 	 */
-	public void setManagement(Management management) {
+	protected void setManagement(ManagementImpl management) {
 		this.management = management;
 	}
 
@@ -298,7 +292,7 @@ public class Association {
 		this.management.getSocketSelector().wakeup();
 	}
 
-	public void read() throws IOException {
+	protected void read() throws IOException {
 
 		rxBuffer.clear();
 		MessageInfo messageInfo = this.socketChannel.receive(rxBuffer, this, this.associationHandler);
@@ -424,6 +418,14 @@ public class Association {
 
 	protected void initiateConnection() throws IOException {
 
+		if (this.socketChannel != null) {
+			try {
+				this.socketChannel.close();
+			} catch (Exception e) {
+				logger.error(String.format("Exception while trying to close existing sctp socket and initiate new socket for Association=%s", this.name), e);
+			}
+		}
+
 		// Create a non-blocking socket channel
 		this.socketChannel = SctpChannel.open();
 		this.socketChannel.configureBlocking(false);
@@ -449,7 +451,7 @@ public class Association {
 
 	}
 
-	public void createSLSTable(int minimumBoundStream) {
+	protected void createSLSTable(int minimumBoundStream) {
 
 		// Stream 0 is for management messages, we start from 1
 		int stream = 1;
@@ -461,7 +463,7 @@ public class Association {
 		}
 	}
 
-	public void createworkerThreadTable(int maximumBooundStream) {
+	protected void createworkerThreadTable(int maximumBooundStream) {
 		this.workerThreadTable = new int[maximumBooundStream];
 		this.management.populateWorkerThread(this.workerThreadTable);
 	}
@@ -480,13 +482,12 @@ public class Association {
 	/**
 	 * XML Serialization/Deserialization
 	 */
-	protected static final XMLFormat<Association> ASSOCIATION_XML = new XMLFormat<Association>(Association.class) {
+	protected static final XMLFormat<AssociationImpl> ASSOCIATION_XML = new XMLFormat<AssociationImpl>(AssociationImpl.class) {
 
 		@Override
-		public void read(javolution.xml.XMLFormat.InputElement xml, Association association) throws XMLStreamException {
+		public void read(javolution.xml.XMLFormat.InputElement xml, AssociationImpl association) throws XMLStreamException {
 			association.name = xml.getAttribute(NAME, "");
 			association.type = AssociationType.getAssociationType(xml.getAttribute(ASSOCIATION_TYPE, ""));
-			association.started = xml.getAttribute(STARTED, false);
 			association.hostAddress = xml.getAttribute(HOST_ADDRESS, "");
 			association.hostPort = xml.getAttribute(HOST_PORT, 0);
 
@@ -498,10 +499,9 @@ public class Association {
 		}
 
 		@Override
-		public void write(Association association, javolution.xml.XMLFormat.OutputElement xml) throws XMLStreamException {
+		public void write(AssociationImpl association, javolution.xml.XMLFormat.OutputElement xml) throws XMLStreamException {
 			xml.setAttribute(NAME, association.name);
 			xml.setAttribute(ASSOCIATION_TYPE, association.type.getType());
-			xml.setAttribute(STARTED, association.started);
 			xml.setAttribute(HOST_ADDRESS, association.hostAddress);
 			xml.setAttribute(HOST_PORT, association.hostPort);
 

@@ -26,15 +26,16 @@ import org.apache.log4j.Logger;
 import com.sun.nio.sctp.AbstractNotificationHandler;
 import com.sun.nio.sctp.AssociationChangeNotification;
 import com.sun.nio.sctp.HandlerResult;
+import com.sun.nio.sctp.SendFailedNotification;
 import com.sun.nio.sctp.ShutdownNotification;
 
 /**
- * // TODO Override all methods?
+ * // TODO Override all methods? // TODO Add Association name for logging
  * 
  * @author amit bhayani
  * 
  */
-class AssociationHandler extends AbstractNotificationHandler<Association> {
+class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 
 	private static final Logger logger = Logger.getLogger(AssociationHandler.class);
 
@@ -46,7 +47,7 @@ class AssociationHandler extends AbstractNotificationHandler<Association> {
 	}
 
 	@Override
-	public HandlerResult handleNotification(AssociationChangeNotification not, Association asscoitaion) {
+	public HandlerResult handleNotification(AssociationChangeNotification not, AssociationImpl asscoitaion) {
 		switch (not.event()) {
 		case COMM_UP:
 			int outbound = not.association().maxOutboundStreams();
@@ -64,27 +65,39 @@ class AssociationHandler extends AbstractNotificationHandler<Association> {
 
 			// TODO assign Thread's ?
 			asscoitaion.getAssociationListener().onCommunicationUp(asscoitaion);
-			break;
+			return HandlerResult.CONTINUE;
 
 		case CANT_START:
-			// TODO
-			break;
+			logger.error(String.format("Can't start for Association=%s", asscoitaion.getName()));
+			return HandlerResult.CONTINUE;
 		case COMM_LOST:
-			// TODO
-			break;
+			logger.warn(String.format("Communication lost for Association=%s", asscoitaion.getName()));
+
+			if (asscoitaion.getType() == AssociationType.CLIENT) {
+				// If Associtaion is of Client type, reinitiate the connection
+				// prosedure
+				asscoitaion.scheduleConnect();
+			}
+
+			asscoitaion.getAssociationListener().onCommunicationLost(asscoitaion);
+			return HandlerResult.RETURN;
 		case RESTART:
-			// TODO
-			break;
+			logger.warn(String.format("Restart for Association=%s", asscoitaion.getName()));
+			asscoitaion.getAssociationListener().onCommunicationRestart(asscoitaion);
+			return HandlerResult.CONTINUE;
 		case SHUTDOWN:
-			// TODO
-			break;
+			if (logger.isInfoEnabled()) {
+				logger.info(String.format("Shutdown for Association=%s", asscoitaion.getName()));
+			}
+			asscoitaion.getAssociationListener().onCommunicationShutdown(asscoitaion);
+			return HandlerResult.RETURN;
 		}
 
 		return HandlerResult.CONTINUE;
 	}
 
 	@Override
-	public HandlerResult handleNotification(ShutdownNotification not, Association asscoitaion) {
+	public HandlerResult handleNotification(ShutdownNotification not, AssociationImpl asscoitaion) {
 		if (logger.isInfoEnabled()) {
 			logger.info(String.format("Association=%s SHUTDOWN", asscoitaion.getName()));
 		}
@@ -93,6 +106,12 @@ class AssociationHandler extends AbstractNotificationHandler<Association> {
 
 		asscoitaion.getAssociationListener().onCommunicationShutdown(asscoitaion);
 
+		return HandlerResult.RETURN;
+	}
+
+	@Override
+	public HandlerResult handleNotification(SendFailedNotification notification, AssociationImpl asscoitaion) {
+		logger.error(String.format("Association=%s SendFailedNotification", asscoitaion.getName()));
 		return HandlerResult.RETURN;
 	}
 }

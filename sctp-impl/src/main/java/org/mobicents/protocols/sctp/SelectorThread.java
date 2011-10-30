@@ -34,6 +34,7 @@ import javolution.util.FastList;
 import javolution.util.FastMap;
 
 import org.apache.log4j.Logger;
+import org.mobicents.protocols.api.Association;
 
 import com.sun.nio.sctp.SctpChannel;
 import com.sun.nio.sctp.SctpServerChannel;
@@ -48,7 +49,7 @@ public class SelectorThread implements Runnable {
 
 	private Selector selector;
 
-	private Management management = null;
+	private ManagementImpl management = null;
 
 	private volatile boolean started = true;
 
@@ -56,24 +57,17 @@ public class SelectorThread implements Runnable {
 	 * @param selector
 	 * @param management
 	 */
-	public SelectorThread(Selector selector, Management management) {
+	protected SelectorThread(Selector selector, ManagementImpl management) {
 		super();
 		this.selector = selector;
 		this.management = management;
 	}
 
 	/**
-	 * @return the started
-	 */
-	public boolean isStarted() {
-		return started;
-	}
-
-	/**
 	 * @param started
 	 *            the started to set
 	 */
-	public void setStarted(boolean started) {
+	protected void setStarted(boolean started) {
 		this.started = started;
 	}
 
@@ -187,7 +181,7 @@ public class SelectorThread implements Runnable {
 			// Iterate through all the servers and corresponding associate to
 			// check if incoming connection request matches with any provisioned
 			// ip:port
-			FastMap<String, Association> associations = this.management.getAssociations();
+			FastMap<String, Association> associations = this.management.associations;
 
 			for (FastMap.Entry<String, Association> n = associations.head(), end = associations.tail(); (n = n.getNext()) != end && !provisioned;) {
 				Association association = n.getValue();
@@ -202,7 +196,7 @@ public class SelectorThread implements Runnable {
 						break;
 					}
 
-					association.setSocketChannel(socketChannel);
+					((AssociationImpl)association).setSocketChannel(socketChannel);
 
 					// Accept the connection and make it non-blocking
 					socketChannel.configureBlocking(false);
@@ -232,18 +226,18 @@ public class SelectorThread implements Runnable {
 	}
 
 	private void read(SelectionKey key) throws IOException {
-		Association association = (Association) key.attachment();
+		AssociationImpl association = (AssociationImpl) key.attachment();
 		association.read();
 	}
 
 	private void write(SelectionKey key) throws IOException {
-		Association association = (Association) key.attachment();
+		AssociationImpl association = (AssociationImpl) key.attachment();
 		association.write(key);
 	}
 
 	private void finishConnection(SelectionKey key) throws IOException {
 
-		Association association = (Association) key.attachment();
+		AssociationImpl association = (AssociationImpl) key.attachment();
 		try {
 			SctpChannel socketChannel = (SctpChannel) key.channel();
 

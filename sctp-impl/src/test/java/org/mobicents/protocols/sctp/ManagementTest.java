@@ -23,13 +23,15 @@ package org.mobicents.protocols.sctp;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import javolution.util.FastList;
+
+import java.util.List;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mobicents.protocols.api.Server;
 
 /**
  * @author amit bhayani
@@ -67,22 +69,22 @@ public class ManagementTest {
 	 */
 	@Test
 	public void testServer() throws Exception {
-		Management management = new Management("management-test-one");
+		ManagementImpl management = new ManagementImpl("management-test-one");
 		management.setSingleThread(true);
 		management.start();
 
-		Server server = management.createServer(SERVER_NAME, SERVER_HOST, SERVER_PORT);
+		Server server = management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT);
 		management.startServer(SERVER_NAME);
 
 		assertTrue(server.isStarted());
 
 		management.stop();
 
-		management = new Management("management-test-two");
+		management = new ManagementImpl("management-test-two");
 		// start again
 		management.start();
 
-		FastList<Server> servers = management.getServers();
+		List<Server> servers = management.getServers();
 		assertEquals(1, servers.size());
 
 		server = servers.get(0);

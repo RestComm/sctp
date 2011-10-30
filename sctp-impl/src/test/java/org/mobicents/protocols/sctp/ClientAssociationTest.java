@@ -31,6 +31,9 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mobicents.protocols.api.Association;
+import org.mobicents.protocols.api.AssociationListener;
+import org.mobicents.protocols.api.PayloadData;
 
 /**
  * @author amit bhayani
@@ -51,13 +54,13 @@ public class ClientAssociationTest {
 	private final byte[] CLIENT_MESSAGE = "Client says Hi".getBytes();
 	private final byte[] SERVER_MESSAGE = "Server says Hi".getBytes();
 
-	private Management management = null;
+	private ManagementImpl management = null;
 
 	// private Management managementClient = null;
-	private Server server = null;
+	private ServerImpl server = null;
 
-	private Association serverAssociation = null;
-	private Association clientAssociation = null;
+	private AssociationImpl serverAssociation = null;
+	private AssociationImpl clientAssociation = null;
 
 	private volatile boolean clientAssocUp = false;
 	private volatile boolean serverAssocUp = false;
@@ -78,14 +81,14 @@ public class ClientAssociationTest {
 
 	@Before
 	public void setUp() throws Exception {
-		this.management = new Management("server-management");
+		this.management = new ManagementImpl("server-management");
 		this.management.setConnectDelay(10000);// Try connecting every 10 secs
 		this.management.setSingleThread(true);
 		this.management.start();
 
-		this.server = this.management.createServer(SERVER_NAME, SERVER_HOST, SERVER_PORT);
-		this.serverAssociation = this.management.createServerAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_NAME, SERVER_ASSOCIATION_NAME);
-		this.clientAssociation = this.management.createAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_HOST, SERVER_PORT, CLIENT_ASSOCIATION_NAME);
+		this.server = this.management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT);
+		this.serverAssociation = this.management.addServerAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_NAME, SERVER_ASSOCIATION_NAME);
+		this.clientAssociation = this.management.addAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_HOST, SERVER_PORT, CLIENT_ASSOCIATION_NAME);
 	}
 
 	@After

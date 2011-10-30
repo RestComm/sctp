@@ -24,12 +24,15 @@ package org.mobicents.protocols.sctp;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
+import java.util.List;
 
 import javolution.util.FastList;
 import javolution.xml.XMLFormat;
 import javolution.xml.stream.XMLStreamException;
 
 import org.apache.log4j.Logger;
+import org.mobicents.protocols.api.Association;
+import org.mobicents.protocols.api.Server;
 
 import com.sun.nio.sctp.SctpServerChannel;
 
@@ -37,9 +40,9 @@ import com.sun.nio.sctp.SctpServerChannel;
  * @author amit bhayani
  * 
  */
-public class Server {
+public class ServerImpl implements Server {
 
-	private static final Logger logger = Logger.getLogger(Server.class.getName());
+	private static final Logger logger = Logger.getLogger(ServerImpl.class.getName());
 
 	private static final String NAME = "name";
 	private static final String HOST_ADDRESS = "hostAddress";
@@ -57,14 +60,14 @@ public class Server {
 	// The channel on which we'll accept connections
 	private SctpServerChannel serverChannel;
 
-	private Management management = null;
+	private ManagementImpl management = null;
 
-	private FastList<String> associations = new FastList<String>();
+	protected FastList<String> associations = new FastList<String>();
 
 	/**
 	 * 
 	 */
-	public Server() {
+	public ServerImpl() {
 		super();
 	}
 
@@ -74,14 +77,14 @@ public class Server {
 	 * @param port
 	 * @throws IOException
 	 */
-	public Server(String name, String hostAddress, int hostport) throws IOException {
+	public ServerImpl(String name, String hostAddress, int hostport) throws IOException {
 		super();
 		this.name = name;
 		this.hostAddress = hostAddress;
 		this.hostport = hostport;
 	}
 
-	public void start() throws IOException {
+	protected void start() throws Exception {
 		this.initSocket();
 		this.started = true;
 
@@ -90,7 +93,7 @@ public class Server {
 		}
 	}
 
-	public void stop() throws Exception {
+	protected void stop() throws Exception {
 		for (FastList.Node<String> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
 			String assocName = n.getValue();
 			Association associationTemp = this.management.getAssociation(assocName);
@@ -173,24 +176,24 @@ public class Server {
 	 * @param management
 	 *            the management to set
 	 */
-	public void setManagement(Management management) {
+	public void setManagement(ManagementImpl management) {
 		this.management = management;
 	}
 
 	/**
 	 * @return the associations
 	 */
-	public FastList<String> getAssociations() {
-		return associations;
+	public List<String> getAssociations() {
+		return associations.unmodifiable();
 	}
 
 	/**
 	 * XML Serialization/Deserialization
 	 */
-	protected static final XMLFormat<Server> SERVER_XML = new XMLFormat<Server>(Server.class) {
+	protected static final XMLFormat<ServerImpl> SERVER_XML = new XMLFormat<ServerImpl>(ServerImpl.class) {
 
 		@Override
-		public void read(javolution.xml.XMLFormat.InputElement xml, Server server) throws XMLStreamException {
+		public void read(javolution.xml.XMLFormat.InputElement xml, ServerImpl server) throws XMLStreamException {
 			server.name = xml.getAttribute(NAME, "");
 			server.started = xml.getAttribute(STARTED, false);
 			server.hostAddress = xml.getAttribute(HOST_ADDRESS, "");
@@ -200,7 +203,7 @@ public class Server {
 		}
 
 		@Override
-		public void write(Server server, javolution.xml.XMLFormat.OutputElement xml) throws XMLStreamException {
+		public void write(ServerImpl server, javolution.xml.XMLFormat.OutputElement xml) throws XMLStreamException {
 			xml.setAttribute(NAME, server.name);
 			xml.setAttribute(STARTED, server.started);
 			xml.setAttribute(HOST_ADDRESS, server.hostAddress);

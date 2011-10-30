@@ -21,28 +21,30 @@
  */
 package org.mobicents.protocols.sctp;
 
+import org.mobicents.protocols.api.AssociationListener;
+import org.mobicents.protocols.api.PayloadData;
+
 /**
  * @author amit bhayani
  * 
  */
 public class Worker implements Runnable {
 
-	private Association association;
+	private AssociationImpl association;
 	private AssociationListener associationListener = null;
 	private PayloadData payloadData = null;
-	
+
 	/**
 	 * @param association
 	 * @param associationListener
 	 * @param payloadData
 	 */
-	public Worker(Association association, AssociationListener associationListener, PayloadData payloadData) {
+	protected Worker(AssociationImpl association, AssociationListener associationListener, PayloadData payloadData) {
 		super();
 		this.association = association;
 		this.associationListener = associationListener;
 		this.payloadData = payloadData;
 	}
-
 
 	/*
 	 * (non-Javadoc)

@@ -28,6 +28,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.spi.SelectorProvider;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -41,14 +43,17 @@ import javolution.xml.XMLObjectWriter;
 import javolution.xml.stream.XMLStreamException;
 
 import org.apache.log4j.Logger;
+import org.mobicents.protocols.api.Association;
+import org.mobicents.protocols.api.Management;
+import org.mobicents.protocols.api.Server;
 
 /**
  * @author amit bhayani
  * 
  */
-public class Management {
+public class ManagementImpl implements Management {
 
-	private static final Logger logger = Logger.getLogger(Management.class);
+	private static final Logger logger = Logger.getLogger(ManagementImpl.class);
 
 	private static final String SCTP_PERSIST_DIR_KEY = "sctp.persist.dir";
 	private static final String USER_DIR_KEY = "user.dir";
@@ -68,7 +73,7 @@ public class Management {
 	protected String persistDir = null;
 
 	private FastList<Server> servers = new FastList<Server>();
-	private FastMap<String, Association> associations = new FastMap<String, Association>();
+	protected FastMap<String, Association> associations = new FastMap<String, Association>();
 
 	private FastList<ChangeRequest> pendingChanges = new FastList<ChangeRequest>();
 
@@ -88,14 +93,16 @@ public class Management {
 	private int connectDelay = 30000;
 
 	private ExecutorService[] executorServices = null;
+	
+	private volatile boolean started = false;
 
-	public Management(String name) throws IOException {
+	public ManagementImpl(String name) throws IOException {
 		this.name = name;
 		binding.setClassAttribute(CLASS_ATTRIBUTE);
-		binding.setAlias(Server.class, Server.class.getSimpleName());
-		binding.setAlias(Association.class, Association.class.getSimpleName());
+		binding.setAlias(ServerImpl.class, Server.class.getSimpleName());
+		binding.setAlias(AssociationImpl.class, Association.class.getSimpleName());
 		binding.setAlias(String.class, String.class.getSimpleName());
-		binding.setAlias(FastList.class, FastList.class.getSimpleName());
+		binding.setAlias(FastList.class, List.class.getSimpleName());
 		this.socketSelector = SelectorProvider.provider().openSelector();
 	}
 
@@ -163,7 +170,7 @@ public class Management {
 		this.singleThread = singleThread;
 	}
 
-	public void start() throws IOException {
+	public void start() throws Exception {
 		this.persistFile.clear();
 
 		if (persistDir != null) {
@@ -192,14 +199,16 @@ public class Management {
 		this.selectorThread.setStarted(true);
 
 		(new Thread(this.selectorThread)).start();
-
+		
+		this.started = true;
+		
 		if (logger.isInfoEnabled()) {
 			logger.info(String.format("Started SCTP Management=%s WorkerThreads=%d SingleThread=%s", this.name, (this.singleThread ? 0 : this.workerThreads),
 					this.singleThread));
 		}
 	}
 
-	public void stop() throws IOException {
+	public void stop() throws Exception {
 
 		// We store the original state first
 		this.store();
@@ -208,7 +217,7 @@ public class Management {
 		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
 			Association associationTemp = n.getValue();
 			if (associationTemp.isStarted()) {
-				associationTemp.stop();
+				((AssociationImpl) associationTemp).stop();
 			}
 		}
 
@@ -216,7 +225,7 @@ public class Management {
 			Server serverTemp = n.getValue();
 			if (serverTemp.isStarted()) {
 				try {
-					serverTemp.stop();
+					((ServerImpl) serverTemp).stop();
 				} catch (Exception e) {
 					logger.error(String.format("Exception while stopping the Server=%s", serverTemp.getName()), e);
 				}
@@ -247,6 +256,8 @@ public class Management {
 				}
 			}
 		}
+		
+		this.started = false;
 	}
 
 	public void load() throws FileNotFoundException {
@@ -258,11 +269,11 @@ public class Management {
 
 			for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
 				Server serverTemp = n.getValue();
-				serverTemp.setManagement(this);
+				((ServerImpl) serverTemp).setManagement(this);
 				if (serverTemp.isStarted()) {
 					try {
-						serverTemp.start();
-					} catch (IOException e) {
+						((ServerImpl) serverTemp).start();
+					} catch (Exception e) {
 						logger.error(String.format("Error while initiating Server=%s", serverTemp.getName()), e);
 					}
 				}
@@ -270,7 +281,7 @@ public class Management {
 
 			this.associations = reader.read(ASSOCIATIONS, FastMap.class);
 			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
-				Association associationTemp = n.getValue();
+				AssociationImpl associationTemp = (AssociationImpl) n.getValue();
 				associationTemp.setManagement(this);
 			}
 
@@ -296,7 +307,11 @@ public class Management {
 		}
 	}
 
-	public Server createServer(String serverName, String hostAddress, int port) throws Exception {
+	public ServerImpl addServer(String serverName, String hostAddress, int port) throws Exception {
+		if (!this.started) {
+			throw new Exception(String.format("Management=%s not started", this.name));
+		}
+		
 		if (serverName == null) {
 			throw new Exception("Server name cannot be null");
 		}
@@ -321,7 +336,7 @@ public class Management {
 			}
 		}
 
-		Server server = new Server(serverName, hostAddress, port);
+		ServerImpl server = new ServerImpl(serverName, hostAddress, port);
 		server.setManagement(this);
 
 		this.servers.add(server);
@@ -335,6 +350,10 @@ public class Management {
 	}
 
 	public void removeServer(String serverName) throws Exception {
+		if(!this.started){
+			throw new Exception(String.format("Management=%s not started", this.name));
+		}
+		
 		if (serverName == null) {
 			throw new Exception("Server name cannot be null");
 		}
@@ -361,6 +380,10 @@ public class Management {
 	}
 
 	public void startServer(String serverName) throws Exception {
+		if(!this.started){
+			throw new Exception(String.format("Management=%s not started", this.name));
+		}
+		
 		if (name == null) {
 			throw new Exception("Server name cannot be null");
 		}
@@ -372,7 +395,7 @@ public class Management {
 				if (serverTemp.isStarted()) {
 					throw new Exception(String.format("Server=%s is already started", serverName));
 				}
-				serverTemp.start();
+				((ServerImpl) serverTemp).start();
 				this.store();
 				return;
 			}
@@ -382,6 +405,10 @@ public class Management {
 	}
 
 	public void stopServer(String serverName) throws Exception {
+		if(!this.started){
+			throw new Exception(String.format("Management=%s not started", this.name));
+		}
+		
 		if (serverName == null) {
 			throw new Exception("Server name cannot be null");
 		}
@@ -390,7 +417,7 @@ public class Management {
 			Server serverTemp = n.getValue();
 
 			if (serverName.equals(serverTemp.getName())) {
-				serverTemp.stop();
+				((ServerImpl) serverTemp).stop();
 				this.store();
 				return;
 			}
@@ -399,8 +426,12 @@ public class Management {
 		throw new Exception(String.format("No Server found with name=%s", serverName));
 	}
 
-	public Association createServerAssociation(String peerAddress, int peerPort, String serverName, String assocName) throws Exception {
-
+	public AssociationImpl addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName) throws Exception {
+		
+		if(!this.started){
+			throw new Exception(String.format("Management=%s not started", this.name));
+		}
+		
 		if (peerAddress == null) {
 			throw new Exception("Peer address cannot be null");
 		}
@@ -443,10 +474,10 @@ public class Management {
 			}
 		}
 
-		Association association = new Association(peerAddress, peerPort, serverName, assocName);
+		AssociationImpl association = new AssociationImpl(peerAddress, peerPort, serverName, assocName);
 		association.setManagement(this);
 		this.associations.put(assocName, association);
-		server.getAssociations().add(assocName);
+		((ServerImpl)server).associations.add(assocName);
 
 		this.store();
 
@@ -457,8 +488,11 @@ public class Management {
 		return association;
 	}
 
-	public Association createAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName) throws Exception {
-
+	public AssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName) throws Exception {
+		if(!this.started){
+			throw new Exception(String.format("Management=%s not started", this.name));
+		}
+		
 		if (hostAddress == null) {
 			throw new Exception("Host address cannot be null");
 		}
@@ -498,7 +532,7 @@ public class Management {
 
 		}
 
-		Association association = new Association(hostAddress, hostPort, peerAddress, peerPort, assocName);
+		AssociationImpl association = new AssociationImpl(hostAddress, hostPort, peerAddress, peerPort, assocName);
 		association.setManagement(this);
 		associations.put(assocName, association);
 
@@ -526,11 +560,14 @@ public class Management {
 	/**
 	 * @return the associations
 	 */
-	public FastMap<String, Association> getAssociations() {
-		return associations;
+	public Map<String, Association> getAssociations() {
+		return associations.unmodifiable();
 	}
 
 	public void startAssociation(String assocName) throws Exception {
+		if(!this.started){
+			throw new Exception(String.format("Management=%s not started", this.name));
+		}
 
 		if (assocName == null) {
 			throw new Exception("Association name cannot be null");
@@ -546,11 +583,14 @@ public class Management {
 			throw new Exception(String.format("Association=%s is already started", assocName));
 		}
 
-		associationTemp.start();
+		((AssociationImpl) associationTemp).start();
 		this.store();
 	}
 
 	public void stopAssociation(String assocName) throws Exception {
+		if(!this.started){
+			throw new Exception(String.format("Management=%s not started", this.name));
+		}
 
 		if (assocName == null) {
 			throw new Exception("Association name cannot be null");
@@ -562,12 +602,15 @@ public class Management {
 			throw new Exception(String.format("No Association found for name=%s", assocName));
 		}
 
-		association.stop();
+		((AssociationImpl) association).stop();
 		this.store();
 	}
 
 	public void removeAssociation(String assocName) throws Exception {
-
+		if(!this.started){
+			throw new Exception(String.format("Management=%s not started", this.name));
+		}
+		
 		if (assocName == null) {
 			throw new Exception("Association name cannot be null");
 		}
@@ -584,11 +627,11 @@ public class Management {
 
 		this.associations.remove(assocName);
 
-		if (association.getType() == AssociationType.SERVER) {
+		if (((AssociationImpl) association).getType() == AssociationType.SERVER) {
 			for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
 				Server serverTemp = n.getValue();
 				if (serverTemp.getName().equals(association.getServerName())) {
-					serverTemp.getAssociations().remove(assocName);
+					((ServerImpl) serverTemp).associations.remove(assocName);
 					break;
 				}
 			}
@@ -600,25 +643,25 @@ public class Management {
 	/**
 	 * @return the servers
 	 */
-	public FastList<Server> getServers() {
-		return servers;
+	public List<Server> getServers() {
+		return servers.unmodifiable();
 	}
 
 	/**
 	 * @return the pendingChanges
 	 */
-	public FastList<ChangeRequest> getPendingChanges() {
+	protected FastList<ChangeRequest> getPendingChanges() {
 		return pendingChanges;
 	}
 
 	/**
 	 * @return the socketSelector
 	 */
-	public Selector getSocketSelector() {
+	protected Selector getSocketSelector() {
 		return socketSelector;
 	}
 
-	public void populateWorkerThread(int workerThreadTable[]) {
+	protected void populateWorkerThread(int workerThreadTable[]) {
 		for (int count = 0; count < workerThreadTable.length; count++) {
 			if (this.workerThreadCount == this.workerThreads) {
 				this.workerThreadCount = 0;
@@ -629,7 +672,7 @@ public class Management {
 		}
 	}
 
-	public ExecutorService getExecutorService(int index) {
+	protected ExecutorService getExecutorService(int index) {
 		return this.executorServices[index];
 	}
 
