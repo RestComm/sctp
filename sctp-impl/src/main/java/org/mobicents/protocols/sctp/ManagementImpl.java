@@ -59,12 +59,12 @@ public class ManagementImpl implements Management {
 	private static final String USER_DIR_KEY = "user.dir";
 	private static final String PERSIST_FILE_NAME = "sctp.xml";
 
-	private static final String SERVERS = "Servers";
-	private static final String ASSOCIATIONS = "Associations";
+	private static final String SERVERS = "servers";
+	private static final String ASSOCIATIONS = "associations";
 
 	private final TextBuilder persistFile = TextBuilder.newInstance();
 
-	protected static final XMLBinding binding = new XMLBinding();
+	protected static final SctpXMLBinding binding = new SctpXMLBinding();
 	protected static final String TAB_INDENT = "\t";
 	private static final String CLASS_ATTRIBUTE = "type";
 
@@ -73,7 +73,7 @@ public class ManagementImpl implements Management {
 	protected String persistDir = null;
 
 	private FastList<Server> servers = new FastList<Server>();
-	protected FastMap<String, Association> associations = new FastMap<String, Association>();
+	protected AssociationMap<String, Association> associations = new AssociationMap<String, Association>();
 
 	private FastList<ChangeRequest> pendingChanges = new FastList<ChangeRequest>();
 
@@ -99,10 +99,9 @@ public class ManagementImpl implements Management {
 	public ManagementImpl(String name) throws IOException {
 		this.name = name;
 		binding.setClassAttribute(CLASS_ATTRIBUTE);
-		binding.setAlias(ServerImpl.class, Server.class.getSimpleName());
-		binding.setAlias(AssociationImpl.class, Association.class.getSimpleName());
-		binding.setAlias(String.class, String.class.getSimpleName());
-		binding.setAlias(FastList.class, List.class.getSimpleName());
+		binding.setAlias(ServerImpl.class, "server");
+		binding.setAlias(AssociationImpl.class, "association");
+		binding.setAlias(String.class, "string");
 		this.socketSelector = SelectorProvider.provider().openSelector();
 	}
 
@@ -279,7 +278,7 @@ public class ManagementImpl implements Management {
 				}
 			}
 
-			this.associations = reader.read(ASSOCIATIONS, FastMap.class);
+			this.associations = reader.read(ASSOCIATIONS, AssociationMap.class);
 			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
 				AssociationImpl associationTemp = (AssociationImpl) n.getValue();
 				associationTemp.setManagement(this);
@@ -299,7 +298,7 @@ public class ManagementImpl implements Management {
 			// writer.setReferenceResolver(new XMLReferenceResolver());
 			writer.setIndentation(TAB_INDENT);
 			writer.write(this.servers, SERVERS, FastList.class);
-			writer.write(this.associations, ASSOCIATIONS, FastMap.class);
+			writer.write(this.associations, ASSOCIATIONS, AssociationMap.class);
 
 			writer.close();
 		} catch (Exception e) {

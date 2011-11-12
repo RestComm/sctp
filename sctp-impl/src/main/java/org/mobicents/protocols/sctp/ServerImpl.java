@@ -48,7 +48,7 @@ public class ServerImpl implements Server {
 	private static final String HOST_ADDRESS = "hostAddress";
 	private static final String HOST_PORT = "hostPort";
 
-	private static final String ASSOCIATIONS = "Associations";
+	private static final String ASSOCIATIONS = "associations";
 
 	private static final String STARTED = "started";
 
@@ -199,7 +199,7 @@ public class ServerImpl implements Server {
 			server.hostAddress = xml.getAttribute(HOST_ADDRESS, "");
 			server.hostport = xml.getAttribute(HOST_PORT, 0);
 
-			server.associations = xml.get(ASSOCIATIONS);
+			server.associations = xml.get(ASSOCIATIONS, FastList.class);
 		}
 
 		@Override
@@ -209,7 +209,7 @@ public class ServerImpl implements Server {
 			xml.setAttribute(HOST_ADDRESS, server.hostAddress);
 			xml.setAttribute(HOST_PORT, server.hostport);
 
-			xml.add(server.associations, ASSOCIATIONS);
+			xml.add(server.associations, ASSOCIATIONS, FastList.class);
 		}
 	};
 
