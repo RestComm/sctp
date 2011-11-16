@@ -167,7 +167,7 @@ public class AssociationImpl implements Association {
 	protected void stop() throws Exception {
 		this.started = false;
 
-		if (this.socketChannel.isOpen()) {
+		if (this.socketChannel != null && this.socketChannel.isOpen()) {
 			FastList<ChangeRequest> pendingChanges = this.management.getPendingChanges();
 			synchronized (pendingChanges) {
 				// Indicate we want the interest ops set changed
@@ -417,6 +417,11 @@ public class AssociationImpl implements Association {
 	}
 
 	protected void initiateConnection() throws IOException {
+
+		// If Association is stopped, don't try to initiate connect
+		if (!this.started) {
+			return;
+		}
 
 		if (this.socketChannel != null) {
 			try {
