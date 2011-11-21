@@ -89,10 +89,14 @@ public class ManagementImpl implements Management {
 
 	private int workerThreadCount = 0;
 
+	// Maximum IO Errors tolerated by Socket. After this the Socket will be
+	// closed and attempt will be made to open again
+	private int maxIOErrors = 3;
+
 	private int connectDelay = 30000;
 
 	private ExecutorService[] executorServices = null;
-	
+
 	private volatile boolean started = false;
 
 	public ManagementImpl(String name) throws IOException {
@@ -154,6 +158,24 @@ public class ManagementImpl implements Management {
 	}
 
 	/**
+	 * @return the maxIOErrors
+	 */
+	public int getMaxIOErrors() {
+		return maxIOErrors;
+	}
+
+	/**
+	 * @param maxIOErrors
+	 *            the maxIOErrors to set
+	 */
+	public void setMaxIOErrors(int maxIOErrors) {
+		if (maxIOErrors < 1) {
+			maxIOErrors = 1;
+		}
+		this.maxIOErrors = maxIOErrors;
+	}
+
+	/**
 	 * @return the singleThread
 	 */
 	public boolean isSingleThread() {
@@ -197,9 +219,9 @@ public class ManagementImpl implements Management {
 		this.selectorThread.setStarted(true);
 
 		(new Thread(this.selectorThread)).start();
-		
+
 		this.started = true;
-		
+
 		if (logger.isInfoEnabled()) {
 			logger.info(String.format("Started SCTP Management=%s WorkerThreads=%d SingleThread=%s", this.name, (this.singleThread ? 0 : this.workerThreads),
 					this.singleThread));
@@ -254,7 +276,7 @@ public class ManagementImpl implements Management {
 				}
 			}
 		}
-		
+
 		this.started = false;
 	}
 
@@ -309,7 +331,7 @@ public class ManagementImpl implements Management {
 		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
-		
+
 		if (serverName == null) {
 			throw new Exception("Server name cannot be null");
 		}
@@ -348,10 +370,10 @@ public class ManagementImpl implements Management {
 	}
 
 	public void removeServer(String serverName) throws Exception {
-		if(!this.started){
+		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
-		
+
 		if (serverName == null) {
 			throw new Exception("Server name cannot be null");
 		}
@@ -378,10 +400,10 @@ public class ManagementImpl implements Management {
 	}
 
 	public void startServer(String serverName) throws Exception {
-		if(!this.started){
+		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
-		
+
 		if (name == null) {
 			throw new Exception("Server name cannot be null");
 		}
@@ -403,10 +425,10 @@ public class ManagementImpl implements Management {
 	}
 
 	public void stopServer(String serverName) throws Exception {
-		if(!this.started){
+		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
-		
+
 		if (serverName == null) {
 			throw new Exception("Server name cannot be null");
 		}
@@ -425,11 +447,11 @@ public class ManagementImpl implements Management {
 	}
 
 	public AssociationImpl addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName) throws Exception {
-		
-		if(!this.started){
+
+		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
-		
+
 		if (peerAddress == null) {
 			throw new Exception("Peer address cannot be null");
 		}
@@ -475,7 +497,7 @@ public class ManagementImpl implements Management {
 		AssociationImpl association = new AssociationImpl(peerAddress, peerPort, serverName, assocName);
 		association.setManagement(this);
 		this.associations.put(assocName, association);
-		((ServerImpl)server).associations.add(assocName);
+		((ServerImpl) server).associations.add(assocName);
 
 		this.store();
 
@@ -487,10 +509,10 @@ public class ManagementImpl implements Management {
 	}
 
 	public AssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName) throws Exception {
-		if(!this.started){
+		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
-		
+
 		if (hostAddress == null) {
 			throw new Exception("Host address cannot be null");
 		}
@@ -563,7 +585,7 @@ public class ManagementImpl implements Management {
 	}
 
 	public void startAssociation(String assocName) throws Exception {
-		if(!this.started){
+		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
 
@@ -586,7 +608,7 @@ public class ManagementImpl implements Management {
 	}
 
 	public void stopAssociation(String assocName) throws Exception {
-		if(!this.started){
+		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
 
@@ -605,10 +627,10 @@ public class ManagementImpl implements Management {
 	}
 
 	public void removeAssociation(String assocName) throws Exception {
-		if(!this.started){
+		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
-		
+
 		if (assocName == null) {
 			throw new Exception("Association name cannot be null");
 		}

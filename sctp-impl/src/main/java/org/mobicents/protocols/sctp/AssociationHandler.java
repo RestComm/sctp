@@ -72,7 +72,10 @@ class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 			return HandlerResult.CONTINUE;
 		case COMM_LOST:
 			logger.warn(String.format("Communication lost for Association=%s", asscoitaion.getName()));
-
+			
+			//Close the Socket
+			asscoitaion.close();
+			
 			if (asscoitaion.getType() == AssociationType.CLIENT) {
 				// If Associtaion is of Client type, reinitiate the connection
 				// prosedure

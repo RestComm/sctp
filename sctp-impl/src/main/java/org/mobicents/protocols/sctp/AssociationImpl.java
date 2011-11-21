@@ -92,6 +92,13 @@ public class AssociationImpl implements Association {
 
 	private volatile MessageInfo msgInfo;
 
+	/**
+	 * Count of number of IO Errors occured. If this exceeds the maxIOErrors set
+	 * in Management, socket will be closed and request to reopen the cosket
+	 * will be initiated
+	 */
+	private volatile int ioErrors = 0;
+
 	public AssociationImpl() {
 		super();
 		// clean transmission buffer
@@ -292,121 +299,166 @@ public class AssociationImpl implements Association {
 		this.management.getSocketSelector().wakeup();
 	}
 
-	protected void read() throws IOException {
+	protected void read() {
 
-		rxBuffer.clear();
-		MessageInfo messageInfo = this.socketChannel.receive(rxBuffer, this, this.associationHandler);
+		try {
+			rxBuffer.clear();
+			MessageInfo messageInfo = this.socketChannel.receive(rxBuffer, this, this.associationHandler);
 
-		if (messageInfo == null) {
-			System.err.println(this.name + " messageInfo is null");
-			return;
-		}
-
-		int len = messageInfo.bytes();
-		if (len == -1) {
-			// TODO close the channel?
-			System.err.println("messageInfo.bytes() == -1");
-			this.socketChannel.close();
-			return;
-		}
-
-		rxBuffer.flip();
-		byte[] data = new byte[len];
-		rxBuffer.get(data);
-		rxBuffer.clear();
-
-		PayloadData payload = new PayloadData(len, data, messageInfo.isComplete(), messageInfo.isUnordered(), messageInfo.payloadProtocolID(),
-				messageInfo.streamNumber());
-
-		System.out.println(payload);
-
-		if (this.management.isSingleThread()) {
-			// If single thread model the listener should be called in the
-			// selector thread itself
-			try {
-				this.associationListener.onPayload(this, payload);
-			} catch (Exception e) {
-				logger.error(String.format("Error while calling Listener. %s", payload), e);
-			}
-		} else {
-			Worker worker = new Worker(this, this.associationListener, payload);
-
-			System.out.println("payload.getStreamNumber()=" + payload.getStreamNumber() + " this.workerThreadTable[payload.getStreamNumber()]"
-					+ this.workerThreadTable[payload.getStreamNumber()]);
-
-			ExecutorService executorService = this.management.getExecutorService(this.workerThreadTable[payload.getStreamNumber()]);
-			try {
-				executorService.execute(worker);
-			} catch (RejectedExecutionException e) {
-				logger.error(String.format("Rejected %s as Executors is shutdown", payload), e);
-			} catch (NullPointerException e) {
-				logger.error(String.format("NullPointerException while submitting %s", payload), e);
-			} catch (Exception e) {
-				logger.error(String.format("Exception while submitting %s", payload), e);
-			}
-		}
-	}
-
-	protected void write(SelectionKey key) throws IOException {
-
-		if (txBuffer.hasRemaining()) {
-			// All data wasn't sent in last doWrite. Try to send it now
-			this.socketChannel.send(txBuffer, msgInfo);
-		}
-
-		// TODO Do we need to synchronize ConcurrentLinkedQueue?
-		// synchronized (this.txQueue) {
-		if (!txQueue.isEmpty() && !txBuffer.hasRemaining()) {
-			while (!txQueue.isEmpty()) {
-				// Lets read all the messages in txQueue and send
-
-				txBuffer.clear();
-				PayloadData payloadData = txQueue.poll();
-
-				// load ByteBuffer
-				txBuffer.put(payloadData.getData());
-
-				int seqControl = payloadData.getStreamNumber();
-				// we use max 32 streams
-				seqControl = seqControl & 0x1F;
-
-				msgInfo = MessageInfo.createOutgoing(null, this.slsTable[seqControl]);
-				msgInfo.payloadProtocolID(payloadData.getPayloadProtocolId());
-				msgInfo.complete(payloadData.isComplete());
-				msgInfo.unordered(payloadData.isUnordered());
-
-				txBuffer.flip();
-
-				int sent = this.socketChannel.send(txBuffer, msgInfo);
-
-				if (txBuffer.hasRemaining()) {
-					// Couldn't send all data. Lets return now and try to send
-					// this message in next cycle
-					return;
+			if (messageInfo == null) {
+				if (logger.isDebugEnabled()) {
+					logger.debug(String.format(" messageInfo is null for Association=%s", this.name));
 				}
+				return;
+			}
 
-			}// end of while
-		}
-		// }
+			int len = messageInfo.bytes();
+			if (len == -1) {
+				logger.error(String.format("Rx -1 while trying to read from underlying socket for Association=%s ", this.name));
+				this.close();
+				this.scheduleConnect();
+				return;
+			}
 
-		if (txQueue.isEmpty()) {
-			// We wrote away all data, so we're no longer interested
-			// in writing on this socket. Switch back to waiting for
-			// data.
-			key.interestOps(SelectionKey.OP_READ);
+			rxBuffer.flip();
+			byte[] data = new byte[len];
+			rxBuffer.get(data);
+			rxBuffer.clear();
+
+			PayloadData payload = new PayloadData(len, data, messageInfo.isComplete(), messageInfo.isUnordered(), messageInfo.payloadProtocolID(),
+					messageInfo.streamNumber());
+			
+			if(logger.isDebugEnabled()){
+				logger.debug(String.format("Rx : %s", payload));
+			}
+
+			// System.out.println(payload);
+
+			if (this.management.isSingleThread()) {
+				// If single thread model the listener should be called in the
+				// selector thread itself
+				try {
+					this.associationListener.onPayload(this, payload);
+				} catch (Exception e) {
+					logger.error(String.format("Error while calling Listener for Association=%s.Payload=%s", this.name, payload), e);
+				}
+			} else {
+				Worker worker = new Worker(this, this.associationListener, payload);
+
+				System.out.println("payload.getStreamNumber()=" + payload.getStreamNumber() + " this.workerThreadTable[payload.getStreamNumber()]"
+						+ this.workerThreadTable[payload.getStreamNumber()]);
+
+				ExecutorService executorService = this.management.getExecutorService(this.workerThreadTable[payload.getStreamNumber()]);
+				try {
+					executorService.execute(worker);
+				} catch (RejectedExecutionException e) {
+					logger.error(String.format("Rejected %s as Executors is shutdown", payload), e);
+				} catch (NullPointerException e) {
+					logger.error(String.format("NullPointerException while submitting %s", payload), e);
+				} catch (Exception e) {
+					logger.error(String.format("Exception while submitting %s", payload), e);
+				}
+			}
+		} catch (IOException e) {
+			this.ioErrors++;
+			logger.error(
+					String.format("IOException while trying to read from underlying socket for Association=%s IOError count=%d", this.name, this.ioErrors), e);
+
+			if (this.ioErrors > this.management.getMaxIOErrors()) {
+				// Close this socket
+				this.close();
+
+				// retry to connect after delay
+				this.scheduleConnect();
+			}
 		}
 	}
 
-	protected void close() throws IOException {
+	protected void write(SelectionKey key) {
+
+		try {
+
+			if (txBuffer.hasRemaining()) {
+				// All data wasn't sent in last doWrite. Try to send it now
+				this.socketChannel.send(txBuffer, msgInfo);
+			}
+
+			// TODO Do we need to synchronize ConcurrentLinkedQueue?
+			// synchronized (this.txQueue) {
+			if (!txQueue.isEmpty() && !txBuffer.hasRemaining()) {
+				while (!txQueue.isEmpty()) {
+					// Lets read all the messages in txQueue and send
+
+					txBuffer.clear();
+					PayloadData payloadData = txQueue.poll();
+					
+					if(logger.isDebugEnabled()){
+						logger.debug(String.format("Tx : %s", payloadData));
+					}
+
+					// load ByteBuffer
+					txBuffer.put(payloadData.getData());
+
+					int seqControl = payloadData.getStreamNumber();
+					// we use max 32 streams
+					seqControl = seqControl & 0x1F;
+
+					msgInfo = MessageInfo.createOutgoing(null, this.slsTable[seqControl]);
+					msgInfo.payloadProtocolID(payloadData.getPayloadProtocolId());
+					msgInfo.complete(payloadData.isComplete());
+					msgInfo.unordered(payloadData.isUnordered());
+
+					txBuffer.flip();
+
+					int sent = this.socketChannel.send(txBuffer, msgInfo);
+
+					if (txBuffer.hasRemaining()) {
+						// Couldn't send all data. Lets return now and try to
+						// send
+						// this message in next cycle
+						return;
+					}
+
+				}// end of while
+			}
+			// }
+
+			if (txQueue.isEmpty()) {
+				// We wrote away all data, so we're no longer interested
+				// in writing on this socket. Switch back to waiting for
+				// data.
+				key.interestOps(SelectionKey.OP_READ);
+			}
+
+		} catch (IOException e) {
+			this.ioErrors++;
+			logger.error(String.format("IOException while trying to write to underlying socket for Association=%s IOError count=%d", this.name, this.ioErrors),
+					e);
+
+			if (this.ioErrors > this.management.getMaxIOErrors()) {
+				// Close this socket
+				this.close();
+
+				// retry to connect after delay
+				this.scheduleConnect();
+			}
+		}// try-catch
+	}
+
+	protected void close() {
 		if (this.socketChannel != null) {
 			try {
 				this.socketChannel.close();
-			} catch (IOException e) {
-				logger.error("Error while closing the SctpScoket", e);
+			} catch (Exception e) {
+				logger.error(String.format("Exception while closing the SctpScoket for Association=%s", this.name), e);
 			}
 		}
 
-		this.associationListener.onCommunicationShutdown(this);
+		try {
+			this.associationListener.onCommunicationShutdown(this);
+		} catch (Exception e) {
+			logger.error(String.format("Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", this.name), e);
+		}
 	}
 
 	protected void scheduleConnect() {
@@ -440,6 +492,9 @@ public class AssociationImpl implements Association {
 
 		// Kick off connection establishment
 		this.socketChannel.connect(new InetSocketAddress(this.peerAddress, this.peerPort), 32, 32);
+
+		// reset the ioErrors
+		this.ioErrors = 0;
 
 		// Queue a channel registration since the caller is not the
 		// selecting thread. As part of the registration we'll register
