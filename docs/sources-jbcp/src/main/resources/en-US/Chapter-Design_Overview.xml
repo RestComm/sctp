@@ -1,0 +1,22 @@
+<?xml version='1.0'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [<!ENTITY % BOOK_ENTITIES SYSTEM "SS7_Stack_User_Guide.ent">%BOOK_ENTITIES;]>
+
+<chapter id="design_overview">
+
+	<title>Design Overview</title>
+	<important>
+		<para>
+    &THIS.PLATFORM; &THIS.APPLICATION; is subject to changes as it is under active development.
+		</para>
+	</important>
+	<para>
+  &THIS.PLATFORM; &THIS.APPLICATION; has been designed as a simple library that enables the user to encode and decode streams according to ASN rules. It provides the user with the tools to process primitives and build more complex objects as defined in ASN. 
+	</para>
+	<note>
+		<para>&THIS.PLATFORM; &THIS.APPLICATION; does not provide an <literal>ASN compiler</literal>. Its sole purpose is to avoid costly processing and allow the user to implement the desired functionality in the optimal way.
+		</para>
+	</note>
+	
+	
+</chapter>
+

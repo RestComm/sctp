@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [<!ENTITY % BOOK_ENTITIES SYSTEM "SS7_Stack_User_Guide.ent">%BOOK_ENTITIES;]>
+
+<chapter id="introduction">
+
+	<title>Introduction
+		to &THIS.PLATFORM; &THIS.APPLICATION;
+	</title>
+	<para>
+		In computer networking, the Stream Control Transmission Protocol
+		<ulink url="http://en.wikipedia.org/wiki/SCTP">(SCTP)</ulink>
+		is a Transport Layer protocol, serving in a similar role to the
+		popular protocols Transmission Control Protocol (TCP) and User
+		Datagram Protocol (UDP). It provides some of the same service features
+		of both: it is message-oriented like UDP and ensures reliable,
+		in-sequence transport of messages with congestion control like TCP.
+	</para>
+	<para>
+		The protocol was defined by the IETF Signaling Transport (SIGTRAN)
+		working group in 2000 and is maintained by the IETF Transport Area
+		(TSVWG) working group.
+		<ulink url="http://tools.ietf.org/html/rfc4960">RFC 4960</ulink>
+		defines the protocol.
+		<ulink url="http://tools.ietf.org/html/rfc3286">RFC 3286</ulink>
+		provides an introduction.
+	</para>
+
+	<para>
+		&THIS.PLATFORM; &THIS.APPLICATION;
+		is providing the convenient API's over Java SCTP, hence can be used
+		only with version JDK 1.7 or above.
+	</para>
+	<para>
+		In addition to exposing the SCTP protocol, &THIS.PLATFORM; &THIS.APPLICATION;
+		contains number of features which other wise the application depending on
+		SCTP will have to take care of. For example &THIS.PLATFORM; &THIS.APPLICATION;
+		provides
+	</para>
+
+	<itemizedlist>
+		<listitem>
+			<para>Management interface to manage the underlying SCTP Associations</para>
+		</listitem>
+		<listitem>
+			<para>Persistence mechanism capable of initiating the SCTP
+				Association if the system is restarted after crash or gracefull
+				shutdown</para>
+		</listitem>
+		<listitem>
+			<para>Configuration to make the module behave as single thread or multi-threaded depending on requirement's of application</para>
+		</listitem>
+	</itemizedlist>
+	
+	
+	<para>
+		Below diagram shows various layers involved 
+	</para>
+	<figure>
+		<title>Layers involved</title>
+		<mediaobject id="sctp_generic">
+			<imageobject>
+				<imagedata align="center"
+					fileref="images/SCTPGeneric.jpg" format="JPG" />
+			</imageobject>
+		</mediaobject>
+	</figure>
+</chapter>
