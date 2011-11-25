@@ -32,6 +32,19 @@ import java.util.Map;
  * <p>
  * Management should persist the state of {@link Server} and {@link Association}
  * </p>
+ * <p>
+ * Management when {@link #start() started} looks for file <tt>XXX_sctp.xml</tt> containing serialized state of underlying
+ * {@link Association} and {@link Server}. Set the directory path by calling {@link #setPersistDir(String)} to direct Management to look at specified
+ * directory for underlying serialized file.
+ * </p>
+ * <p>
+ * If directory path is not set, Management searches for system property
+ * <tt>sctp.persist.dir</tt> to get the path for directory
+ * </p>
+ * <p>
+ * Even if <tt>sctp.persist.dir</tt> system property is not set,
+ * Management will look at System set property <tt>user.dir</tt>
+ * </p>
  * 
  * @author amit bhayani
  * 
@@ -44,6 +57,18 @@ public interface Management {
 	 * @return
 	 */
 	public String getName();
+	
+	/**
+	 * Get persist dir
+	 * @return
+	 */
+	public String getPersistDir();
+	
+	/**
+	 * Directory where the XXX.xml will be searched
+	 * @param persistDir
+	 */
+	public void setPersistDir(String persistDir);
 
 	/**
 	 * Start the management. No management operation can be executed unless

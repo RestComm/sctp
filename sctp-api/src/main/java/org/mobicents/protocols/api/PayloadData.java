@@ -39,11 +39,17 @@ public class PayloadData {
 
 	/**
 	 * @param dataLength
+	 *            Length of byte[] data
 	 * @param data
+	 *            the payload data
 	 * @param complete
+	 *            if this data represents complete protocol data
 	 * @param unordered
+	 *            set to true if we don't care for oder
 	 * @param payloadProtocolId
+	 *            protocol ID of the data carried
 	 * @param streamNumber
+	 *            the SCTP stream number
 	 */
 	public PayloadData(int dataLength, byte[] data, boolean complete, boolean unordered, int payloadProtocolId, int streamNumber) {
 		super();
