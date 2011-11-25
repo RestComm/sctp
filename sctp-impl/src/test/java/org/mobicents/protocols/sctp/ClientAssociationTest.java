@@ -81,7 +81,7 @@ public class ClientAssociationTest {
 
 	@Before
 	public void setUp() throws Exception {
-		this.management = new ManagementImpl("server-management");
+		this.management = new ManagementImpl("ClientAssociationTest");
 		this.management.setConnectDelay(10000);// Try connecting every 10 secs
 		this.management.setSingleThread(true);
 		this.management.start();

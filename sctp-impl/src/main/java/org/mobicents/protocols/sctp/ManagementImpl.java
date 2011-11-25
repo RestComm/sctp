@@ -194,9 +194,10 @@ public class ManagementImpl implements Management {
 		this.persistFile.clear();
 
 		if (persistDir != null) {
-			this.persistFile.append(persistDir).append(File.separator).append(PERSIST_FILE_NAME);
+			this.persistFile.append(persistDir).append(File.separator).append(this.name).append("_").append(PERSIST_FILE_NAME);
 		} else {
-			persistFile.append(System.getProperty(SCTP_PERSIST_DIR_KEY, System.getProperty(USER_DIR_KEY))).append(File.separator).append(PERSIST_FILE_NAME);
+			persistFile.append(System.getProperty(SCTP_PERSIST_DIR_KEY, System.getProperty(USER_DIR_KEY))).append(File.separator).append(this.name).append("_")
+					.append(PERSIST_FILE_NAME);
 		}
 
 		logger.info(String.format("SCTP configuration file path %s", persistFile.toString()));

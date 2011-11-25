@@ -69,7 +69,7 @@ public class ManagementTest {
 	 */
 	@Test
 	public void testServer() throws Exception {
-		ManagementImpl management = new ManagementImpl("management-test-one");
+		ManagementImpl management = new ManagementImpl("ManagementTest");
 		management.setSingleThread(true);
 		management.start();
 
@@ -80,7 +80,7 @@ public class ManagementTest {
 
 		management.stop();
 
-		management = new ManagementImpl("management-test-two");
+		management = new ManagementImpl("ManagementTest");
 		// start again
 		management.start();
 
