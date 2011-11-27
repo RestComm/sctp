@@ -4,77 +4,68 @@
 
 <chapter id="introduction">
 
-	<title>Introduction to &THIS.PLATFORM; &THIS.APPLICATION;</title>
+	<title>Introduction
+		to &THIS.PLATFORM; &THIS.APPLICATION;
+	</title>
 	<para>
-  Abstract Syntax Notation One (ASN.1) is the standard for describing data structures in telecommunication and computer networking world. ASN.1 provides a set of formal rules for describing the structure of objects. The specification describes abstract objects that are independent of machine-specific encoding techniques.
+		In computer networking, the Stream Control Transmission Protocol
+		<ulink url="http://en.wikipedia.org/wiki/SCTP">(SCTP)</ulink>
+		is a Transport Layer protocol, serving in a similar role to the
+		popular protocols Transmission Control Protocol (TCP) and User
+		Datagram Protocol (UDP). It provides some of the same service features
+		of both: it is message-oriented like UDP and ensures reliable,
+		in-sequence transport of messages with congestion control like TCP.
 	</para>
 	<para>
-  ASN defined data can be encoded using one of these encoding rules:
+		The protocol was defined by the IETF Signaling Transport (SIGTRAN)
+		working group in 2000 and is maintained by the IETF Transport Area
+		(TSVWG) working group.
+		<ulink url="http://tools.ietf.org/html/rfc4960">RFC 4960</ulink>
+		defines the protocol.
+		<ulink url="http://tools.ietf.org/html/rfc3286">RFC 3286</ulink>
+		provides an introduction.
 	</para>
+
+	<para>
+		&THIS.PLATFORM; &THIS.APPLICATION;
+		is providing the convenient API's over Java SCTP, hence can be used
+		only with version JDK 1.7 or above.
+	</para>
+	<para>
+		In addition to exposing the SCTP protocol, &THIS.PLATFORM; &THIS.APPLICATION;
+		contains number of features which other wise the application depending on
+		SCTP will have to take care of. For example &THIS.PLATFORM; &THIS.APPLICATION;
+		provides
+	</para>
+
 	<itemizedlist>
 		<listitem>
-			<para>Basic Encoding Rules (BER)</para>
+			<para>Management interface to manage the underlying SCTP Associations</para>
 		</listitem>
 		<listitem>
-			<para>Canonical Encoding Rules (CER)</para>
+			<para>Persistence mechanism capable of initiating the SCTP
+				Association if the system is restarted after crash or gracefull
+				shutdown</para>
 		</listitem>
 		<listitem>
-			<para>Distinguished Encoding Rules (DER)</para>
-		</listitem>
+			<para>Tries re-initiate  the connection if for some reason the connection is lost between the peers</para>
+		</listitem>		
 		<listitem>
-			<para>XML Encoding Rules (XER)</para>
-		</listitem>
-		<listitem>
-			<para>Packed Encoding Rules (PER)</para>
-		</listitem>
-		<listitem>
-			<para>Generic String Encoding Rules (GSER)</para>
+			<para>Configuration to make the module behave as single thread or multi-threaded depending on requirement's of application</para>
 		</listitem>
 	</itemizedlist>
+	
+	
 	<para>
-  ASN.1, together with specific ASN.1 encoding rules, facilitates the exchange of structured data between application programs over networks by describing data structures in a way that is independent of machine architecture and implementation language.
+		Below diagram shows various layers involved 
 	</para>
-	<para>
-  ASN encoded data looks logically as follows:
-	</para>
-  <figure>
-    <title>ASN encoding logical overview</title>
-    <mediaobject id="asn_encoding">
-      <imageobject>
-        <imagedata width="300px" align="center"
-          fileref="images/asn-general-encoding.png" format="PNG" />
-      </imageobject>
-    </mediaobject>
-  </figure>
-	<para>Encoded data structure contains three elements:</para>
-  <variablelist>
-    <varlistentry>
-      <term>Tag</term>
-      <listitem>
-        <para>
-        Unique value, which identifies the type of data.
-        </para>
-        <para>
-        Tag carries some additional info (such as the complexity and context indicators). The actual Tag value is unique for a single ASN definition (aside from some basic tag values which are defined in the ASN specification).
-        </para>
-      </listitem>
-    </varlistentry>
-    <varlistentry>
-      <term>Length</term>
-      <listitem>
-        <para>
-        Indicates the length of the current data structure.
-        </para>
-      </listitem>
-    </varlistentry>
-    <varlistentry>
-      <term>Payload</term>
-      <listitem>
-        <para>
-        Depending on the definition, this can be a simple value (like an integer), or it can carry another ASN encoded data structure.
-        </para>
-      </listitem>
-    </varlistentry>
-  </variablelist>
-
+	<figure>
+		<title>Layers involved</title>
+		<mediaobject id="sctp_generic">
+			<imageobject>
+				<imagedata align="center"
+					fileref="images/SCTPGeneric.jpg" format="JPG" />
+			</imageobject>
+		</mediaobject>
+	</figure>
 </chapter>

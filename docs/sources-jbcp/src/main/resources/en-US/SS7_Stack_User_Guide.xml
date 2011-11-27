@@ -20,8 +20,13 @@
 		href="Chapter-Design_Overview.xml" />
 	<xi:include
 		xmlns:xi="http://www.w3.org/2001/XInclude"
-		href="Chapter-Protocol.xml" />
-
+		href="Chapter-Management.xml" />
+	<xi:include
+		xmlns:xi="http://www.w3.org/2001/XInclude"
+		href="Chapter-Association.xml" />		
+	<xi:include
+		xmlns:xi="http://www.w3.org/2001/XInclude"
+		href="Chapter-Example.xml" />
 			
 	<xi:include
 		href="Revision_History.xml"

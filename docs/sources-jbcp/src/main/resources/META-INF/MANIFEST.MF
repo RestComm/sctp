@@ -3,19 +3,20 @@ Archiver-Version: Plexus Archiver
 Created-By: Apache Maven Bundle Plugin
 Built-By: abhayani
 Build-Jdk: 1.7.0
-Implementation-Title: org.mobicents.protocols.asn.docs:mobicents-asn-d
- ocs-sources
-Implementation-Version: 1.0.0.CR1
+Implementation-Title: org.mobicents.protocols.sctp.docs:mobicents-sctp
+ -docs-sources
+Implementation-Version: 1.0.0-SNAPSHOT
 Tool: Bnd-1.15.0
-Bundle-Name: Mobicents :: ASN :: Docs :: Sources :: mobicents-asn-docs
- -sources
+Bundle-Name: Mobicents :: SCTP :: Docs :: Sources :: mobicents-sctp-do
+ cs-sources
 Implementation-URL: http://www.mobicents.org
+SVN-Revision: 21099
 Implementation-Vendor-Id: JBoss, a Red Hat division
-Bundle-Version: 1.0.0.CR1
-Bnd-LastModified: 1316881091167
+Bundle-Version: 1.0.0.SNAPSHOT
+Bnd-LastModified: 1322390047042
 Bundle-ManifestVersion: 2
 Bundle-License: http://www.gnu.org/licenses/lgpl-2.1.html
 Bundle-Description: Mobicents :: Parent pom for 2.x releases
-Bundle-SymbolicName: org.mobicents.protocols.asn.docs.mobicents-asn-do
- cs-sources
+Bundle-SymbolicName: org.mobicents.protocols.sctp.docs.mobicents-sctp-
+ docs-sources
 

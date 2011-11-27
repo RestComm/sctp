@@ -6,10 +6,10 @@
 	<parent>
 		<groupId>org.mobicents</groupId>
 		<artifactId>mobicents-parent</artifactId>
-		<version>2.20-SNAPSHOT</version>
+		<version>2.20</version>
 	</parent>
 	
-	<artifactId>asn-release</artifactId>
+	<artifactId>sctp-release</artifactId>
 	<name>Mobicents :: Release :: ${pom.artifactId}</name>
 	<profiles>
 		<profile>
@@ -29,9 +29,12 @@
 								<configuration>
 									<tasks>
 										<copy overwrite="true" todir="${basedir}/${release.name}">
-											<fileset dir="${basedir}/../asn-impl/target">
+											<fileset dir="${basedir}/../sctp-impl/target">
 												<include name="**.jar" />
 											</fileset>
+											<fileset dir="${basedir}/../sctp-api/target">
+												<include name="**.jar" />
+											</fileset>											
 										</copy>
 										
 									</tasks>

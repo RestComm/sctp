@@ -4,19 +4,27 @@
 <chapter id="design_overview">
 
 	<title>Design Overview</title>
-	<important>
 		<para>
-    &THIS.PLATFORM; &THIS.APPLICATION; is subject to changes as it is under active development.
-		</para>
-	</important>
-	<para>
-  &THIS.PLATFORM; &THIS.APPLICATION; has been designed as a simple library that enables the user to encode and decode streams according to ASN rules. It provides the user with the tools to process primitives and build more complex objects as defined in ASN. 
+		The internal structure of &THIS.PLATFORM; &THIS.APPLICATION; looks like
 	</para>
-	<note>
-		<para>&THIS.PLATFORM; &THIS.APPLICATION; does not provide an <literal>ASN compiler</literal>. Its sole purpose is to avoid costly processing and allow the user to implement the desired functionality in the optimal way.
-		</para>
-	</note>
 	
+		<figure>
+		<title>Architecture</title>
+		<mediaobject id="sctp_architecture">
+			<imageobject>
+				<imagedata align="center"
+					fileref="images/SCTPInternalArchitecture.jpg" format="JPG" />
+			</imageobject>
+		</mediaobject>
+	</figure>
 	
+	<para>
+		The prime responsibility of &THIS.PLATFORM; &THIS.APPLICATION; is abstract Application from underlying SCTP sockets and expose same API (<code>Association.java</code>) irrespective if the underlying SCTP is acting as 
+		server side waiting for client to connect or client side initiating connection. 
+	</para>
+	
+	<para>
+		The management (<code>Management.java</code>) controls the associations and servers. The Application can execute commands to create/delete associations/servers. 
+	</para>
 </chapter>
 
