@@ -26,11 +26,12 @@
 			</textobject>
 		</inlinemediaobject>
 	</corpauthor>
-	 -->
+	 
 	<copyright>
 		<year>&YEAR;</year>
 		<holder>Red Hat, Inc.</holder>
 	</copyright>
+	-->
 	<!-- FIXME this include is throwing compile errors
 	<xi:include
 		href="Common_Content/Legal_Notice.xml"
