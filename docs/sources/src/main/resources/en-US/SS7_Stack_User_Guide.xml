@@ -21,6 +21,9 @@
 	<xi:include
 		xmlns:xi="http://www.w3.org/2001/XInclude"
 		href="Chapter-Management.xml" />
+	<xi:include
+		xmlns:xi="http://www.w3.org/2001/XInclude"
+		href="Chapter-Association.xml" />		
 
 			
 	<xi:include

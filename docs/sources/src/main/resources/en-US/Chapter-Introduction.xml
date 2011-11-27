@@ -48,6 +48,9 @@
 				shutdown</para>
 		</listitem>
 		<listitem>
+			<para>Tries re-initiate  the connection if for some reason the connection is lost between the peers</para>
+		</listitem>		
+		<listitem>
 			<para>Configuration to make the module behave as single thread or multi-threaded depending on requirement's of application</para>
 		</listitem>
 	</itemizedlist>
