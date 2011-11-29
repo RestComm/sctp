@@ -5,15 +5,15 @@ Built-By: abhayani
 Build-Jdk: 1.7.0
 Implementation-Title: org.mobicents.protocols.sctp.docs:mobicents-sctp
  -docs-sources
-Implementation-Version: 1.0.0-SNAPSHOT
+Implementation-Version: 1.0.0.BETA1
 Tool: Bnd-1.15.0
 Bundle-Name: Mobicents :: SCTP :: Docs :: Sources :: mobicents-sctp-do
  cs-sources
 Implementation-URL: http://www.mobicents.org
 SVN-Revision: 21099
 Implementation-Vendor-Id: JBoss, a Red Hat division
-Bundle-Version: 1.0.0.SNAPSHOT
-Bnd-LastModified: 1322390047042
+Bundle-Version: 1.0.0.BETA1
+Bnd-LastModified: 1322392810681
 Bundle-ManifestVersion: 2
 Bundle-License: http://www.gnu.org/licenses/lgpl-2.1.html
 Bundle-Description: Mobicents :: Parent pom for 2.x releases
