@@ -513,9 +513,10 @@ public class AssociationImpl implements Association {
 
 	protected void createSLSTable(int minimumBoundStream) {
 
+		slsTable[0] = 0;
 		// Stream 0 is for management messages, we start from 1
 		int stream = 1;
-		for (int i = 0; i < MAX_SLS; i++) {
+		for (int i = 1; i < MAX_SLS; i++) {
 			if (stream > minimumBoundStream) {
 				stream = 1;
 			}
