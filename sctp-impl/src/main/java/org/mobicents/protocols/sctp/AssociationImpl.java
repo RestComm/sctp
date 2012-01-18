@@ -462,9 +462,13 @@ public class AssociationImpl implements Association {
 	}
 
 	protected void scheduleConnect() {
-		FastList<ChangeRequest> pendingChanges = this.management.getPendingChanges();
-		synchronized (pendingChanges) {
-			pendingChanges.add(new ChangeRequest(this, ChangeRequest.CONNECT, System.currentTimeMillis() + this.management.getConnectDelay()));
+		if (this.getType() == AssociationType.CLIENT) {
+			// If Associtaion is of Client type, reinitiate the connection
+			// procedure
+			FastList<ChangeRequest> pendingChanges = this.management.getPendingChanges();
+			synchronized (pendingChanges) {
+				pendingChanges.add(new ChangeRequest(this, ChangeRequest.CONNECT, System.currentTimeMillis() + this.management.getConnectDelay()));
+			}
 		}
 	}
 

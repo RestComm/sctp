@@ -76,11 +76,7 @@ class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 			//Close the Socket
 			asscoitaion.close();
 			
-			if (asscoitaion.getType() == AssociationType.CLIENT) {
-				// If Associtaion is of Client type, reinitiate the connection
-				// prosedure
-				asscoitaion.scheduleConnect();
-			}
+			asscoitaion.scheduleConnect();
 
 			asscoitaion.getAssociationListener().onCommunicationLost(asscoitaion);
 			return HandlerResult.RETURN;
