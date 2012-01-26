@@ -490,7 +490,7 @@ public class ManagementImpl implements Management {
 			Association associationTemp = n.getValue();
 
 			if (peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
-				throw new Exception(String.format("Already has association=%s with same peer address=% and port=%d", associationTemp.getName(), peerAddress,
+				throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d", associationTemp.getName(), peerAddress,
 						peerPort));
 			}
 		}
@@ -542,12 +542,12 @@ public class ManagementImpl implements Management {
 			}
 
 			if (peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
-				throw new Exception(String.format("Already has association=%s with same peer address=% and port=%d", associationTemp.getName(), peerAddress,
+				throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d", associationTemp.getName(), peerAddress,
 						peerPort));
 			}
 
 			if (hostAddress.equals(associationTemp.getHostAddress()) && associationTemp.getHostPort() == hostPort) {
-				throw new Exception(String.format("Already has association=%s with same host address=% and port=%d", associationTemp.getName(), hostAddress,
+				throw new Exception(String.format("Already has association=%s with same host address=%s and port=%d", associationTemp.getName(), hostAddress,
 						hostPort));
 			}
 
