@@ -23,7 +23,7 @@
 			1.0.0.BETA2
 		</mobicents.tools.mavenplugin.eclipse.version>
 		<javolution.version>5.5.1</javolution.version>
-		<utils.version>1.0.0-SNAPSHOT</utils.version>
+		<commons.version>1.0.0-SNAPSHOT</commons.version>
 	</properties>
 
 
@@ -32,7 +32,7 @@
 			<dependency>
 				<groupId>org.mobicents.commons</groupId>
 				<artifactId>commons</artifactId>
-				<version>${utils.version}</version>
+				<version>${commons.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>log4j</groupId>
