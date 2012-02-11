@@ -19,20 +19,20 @@
  * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
+
 package org.mobicents.protocols.sctp;
 
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationListener;
+import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.PayloadData;
+import org.testng.annotations.*;
+
+import com.sun.nio.sctp.SctpChannel;
 
 /**
  * @author amit bhayani
@@ -41,13 +41,13 @@ import org.mobicents.protocols.api.PayloadData;
 public class SctpTransferTest {
 	private static final String SERVER_NAME = "testserver";
 	private static final String SERVER_HOST = "127.0.0.1";
-	private static final int SERVER_PORT = 2345;
+	private static final int SERVER_PORT = 2347;
 
-	private static final String SERVER_ASSOCIATION_NAME = "serverAsscoiation";
-	private static final String CLIENT_ASSOCIATION_NAME = "clientAsscoiation";
+	private static final String SERVER_ASSOCIATION_NAME = "serverAssociation";
+	private static final String CLIENT_ASSOCIATION_NAME = "clientAssociation";
 
 	private static final String CLIENT_HOST = "127.0.0.1";
-	private static final int CLIENT_PORT = 2346;
+	private static final int CLIENT_PORT = 2348;
 
 	private final byte[] CLIENT_MESSAGE = "Client says Hi".getBytes();
 	private final byte[] SERVER_MESSAGE = "Server says Hi".getBytes();
@@ -77,19 +77,27 @@ public class SctpTransferTest {
 	public static void tearDownClass() throws Exception {
 	}
 
-	@Before
-	public void setUp() throws Exception {
+	public void setUp(IpChannelType ipChannelType) throws Exception {
+		this.clientAssocUp = false;
+		this.serverAssocUp = false;
+
+		this.clientAssocDown = false;
+		this.serverAssocDown = false;
+
+		this.clientMessage = null;
+		this.serverMessage = null;
+
 		this.management = new ManagementImpl("server-management");
+		this.management.setConnectDelay(10000);// Try connecting every 10 secs
 		this.management.setSingleThread(true);
 		this.management.start();
+		this.management.removeAllResourses();
 
-		this.server = this.management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT);
-		this.serverAssociation = this.management.addServerAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_NAME, SERVER_ASSOCIATION_NAME);
-		this.clientAssociation = this.management.addAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_HOST, SERVER_PORT, CLIENT_ASSOCIATION_NAME);
-
+		this.server = this.management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType);
+		this.serverAssociation = this.management.addServerAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_NAME, SERVER_ASSOCIATION_NAME, ipChannelType);
+		this.clientAssociation = this.management.addAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_HOST, SERVER_PORT, CLIENT_ASSOCIATION_NAME, ipChannelType);
 	}
 
-	@After
 	public void tearDown() throws Exception {
 
 		this.management.removeAssociation(CLIENT_ASSOCIATION_NAME);
@@ -103,9 +111,30 @@ public class SctpTransferTest {
 	 * Simple test that creates Client and Server Association, exchanges data
 	 * and brings down association. Finally removes the Associations and Server
 	 */
-	@Test
-	@SuppressWarnings("static-access")
-	public void testDataTransfer() throws Exception {
+	@Test(groups = { "functional", "sctp" })
+	public void testDataTransferSctp() throws Exception {
+
+		if (SctpTransferTest.checkSctpEnabled())
+			this.testDataTransferByProtocol(IpChannelType.Sctp);
+	}
+
+	/**
+	 * Simple test that creates Client and Server Association, exchanges data
+	 * and brings down association. Finally removes the Associations and Server
+	 */
+	@Test(groups = { "functional", "tcp" })
+	public void testDataTransferTcp() throws Exception {
+
+//		BasicConfigurator.configure();
+//		Logger logger = Logger.getLogger(ServerImpl.class.getName());
+//		logger.setLevel(Level.ALL);
+
+		this.testDataTransferByProtocol(IpChannelType.Tcp);
+	}
+
+	private void testDataTransferByProtocol(IpChannelType ipChannelType) throws Exception {
+		
+		this.setUp(ipChannelType);
 
 		this.management.startServer(SERVER_NAME);
 
@@ -115,7 +144,12 @@ public class SctpTransferTest {
 		this.clientAssociation.setAssociationListener(new ClientAssociationListenerImpl());
 		this.management.startAssociation(CLIENT_ASSOCIATION_NAME);
 
-		Thread.sleep(1000 * 40);
+		for (int i1 = 0; i1 < 40; i1++) {
+			if (serverAssocUp)
+				break;
+			Thread.sleep(1000 * 5); // was: 40
+		}
+		Thread.sleep(1000 * 1); // was: 40
 
 		this.management.stopAssociation(CLIENT_ASSOCIATION_NAME);
 
@@ -136,6 +170,21 @@ public class SctpTransferTest {
 		assertTrue(serverAssocDown);
 
 		Runtime runtime = Runtime.getRuntime();
+		
+		this.tearDown();
+	}
+
+	/**
+	 * @return true if sctp is supported by this OS and false in not
+	 */
+	public static boolean checkSctpEnabled() {
+		try {
+			SctpChannel socketChannel = SctpChannel.open();
+			socketChannel.close();
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
 	private class ClientAssociationListenerImpl implements AssociationListener {

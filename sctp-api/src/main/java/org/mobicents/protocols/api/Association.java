@@ -40,6 +40,13 @@ package org.mobicents.protocols.api;
 public interface Association {
 
 	/**
+	 * Return the Association channel type TCP or SCTP 
+	 * 
+	 * @return
+	 */
+	public IpChannelType getIpChannelType();
+	
+	/**
 	 * Each association has unique name
 	 * 
 	 * @return name of association

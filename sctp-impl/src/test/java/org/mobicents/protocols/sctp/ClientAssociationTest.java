@@ -26,14 +26,14 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationListener;
+import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.PayloadData;
+import org.testng.annotations.*;
 
 /**
  * @author amit bhayani
@@ -79,19 +79,27 @@ public class ClientAssociationTest {
 	public static void tearDownClass() throws Exception {
 	}
 
-	@Before
-	public void setUp() throws Exception {
+	public void setUp(IpChannelType ipChannelType) throws Exception {
+		this.clientAssocUp = false;
+		this.serverAssocUp = false;
+
+		this.clientAssocDown = false;
+		this.serverAssocDown = false;
+
+		this.clientMessage = null;
+		this.serverMessage = null;
+
 		this.management = new ManagementImpl("ClientAssociationTest");
 		this.management.setConnectDelay(10000);// Try connecting every 10 secs
 		this.management.setSingleThread(true);
 		this.management.start();
+		this.management.removeAllResourses();
 
-		this.server = this.management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT);
-		this.serverAssociation = this.management.addServerAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_NAME, SERVER_ASSOCIATION_NAME);
-		this.clientAssociation = this.management.addAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_HOST, SERVER_PORT, CLIENT_ASSOCIATION_NAME);
+		this.server = this.management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType);
+		this.serverAssociation = this.management.addServerAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_NAME, SERVER_ASSOCIATION_NAME, ipChannelType);
+		this.clientAssociation = this.management.addAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_HOST, SERVER_PORT, CLIENT_ASSOCIATION_NAME, ipChannelType);
 	}
 
-	@After
 	public void tearDown() throws Exception {
 		this.management.removeAssociation(CLIENT_ASSOCIATION_NAME);
 		this.management.removeAssociation(SERVER_ASSOCIATION_NAME);
@@ -106,8 +114,32 @@ public class ClientAssociationTest {
 	 * 
 	 * @throws Exception
 	 */
-	@Test
-	public void testConnectAttempts() throws Exception {
+	@Test(groups = { "functional", "sctp" })
+	public void testConnectAttemptsSctp() throws Exception {
+		
+		if (SctpTransferTest.checkSctpEnabled())
+			this.testConnectAttemptsByProtoclol(IpChannelType.Sctp);
+	}
+
+	/**
+	 * In this test client association is started without server being started.
+	 * Client keeps attempting to connect to server, till server comes up
+	 * 
+	 * @throws Exception
+	 */
+	@Test(groups = { "functional", "tcp" })
+	public void testConnectAttemptsTcp() throws Exception {
+
+		this.testConnectAttemptsByProtoclol(IpChannelType.Tcp);
+	}
+
+	private void testConnectAttemptsByProtoclol(IpChannelType ipChannelType) throws Exception {
+
+//		BasicConfigurator.configure();
+//		Logger logger = Logger.getLogger(ServerImpl.class.getName());
+//		logger.setLevel(Level.ALL);
+		
+		this.setUp(ipChannelType);
 
 		this.serverAssociation.setAssociationListener(new ServerAssociationListener());
 		this.management.startAssociation(SERVER_ASSOCIATION_NAME);
@@ -120,7 +152,7 @@ public class ClientAssociationTest {
 		assertFalse(clientAssocUp);
 		assertFalse(serverAssocUp);
 
-		// Lets start the serever now
+		// Lets start the server now
 		this.management.startServer(SERVER_NAME);
 		Thread.sleep(1000 * 40);
 
@@ -143,6 +175,8 @@ public class ClientAssociationTest {
 		assertTrue(serverAssocDown);
 
 		Runtime runtime = Runtime.getRuntime();
+		
+		this.tearDown();
 	}
 
 	private class ClientAssociationListenerImpl implements AssociationListener {

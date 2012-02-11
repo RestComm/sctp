@@ -19,14 +19,20 @@
  * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
+
 package org.mobicents.protocols.sctp;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.nio.channels.spi.AbstractSelectableChannel;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -35,7 +41,10 @@ import javolution.util.FastMap;
 
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
+import org.mobicents.protocols.api.IpChannelType;
 
+import com.sun.nio.sctp.AssociationChangeNotification;
+import com.sun.nio.sctp.AssociationChangeNotification.AssocChangeEvent;
 import com.sun.nio.sctp.SctpChannel;
 import com.sun.nio.sctp.SctpServerChannel;
 
@@ -45,13 +54,13 @@ import com.sun.nio.sctp.SctpServerChannel;
  */
 public class SelectorThread implements Runnable {
 
-	private static final Logger logger = Logger.getLogger(SelectorThread.class);
+	protected static final Logger logger = Logger.getLogger(SelectorThread.class);
 
-	private Selector selector;
+	protected Selector selector;
 
-	private ManagementImpl management = null;
+	protected ManagementImpl management = null;
 
-	private volatile boolean started = true;
+	protected volatile boolean started = true;
 
 	/**
 	 * @param selector
@@ -159,7 +168,15 @@ public class SelectorThread implements Runnable {
 		}
 	}
 
-	private void accept(SelectionKey key) throws IOException {
+	private void accept(SelectionKey key) throws IOException{
+		if (key.channel() instanceof ServerSocketChannel)
+			this.acceptTcp(key);
+		else
+			this.acceptSctp(key);
+	}
+
+	private void acceptSctp(SelectionKey key) throws IOException {
+
 		// For an accept to be pending the channel must be a server socket
 		// channel.
 		SctpServerChannel serverSocketChannel = (SctpServerChannel) key.channel();
@@ -168,6 +185,27 @@ public class SelectorThread implements Runnable {
 		SctpChannel socketChannel = serverSocketChannel.accept();
 
 		Set<SocketAddress> socAddresses = socketChannel.getRemoteAddresses();
+
+		this.doAccept(socketChannel, socAddresses);
+	}
+
+	private void acceptTcp(SelectionKey key) throws IOException {
+		
+		// For an accept to be pending the channel must be a server socket
+		// channel.
+		ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
+
+		// Accept the connection and make it non-blocking
+		SocketChannel socketChannel = serverSocketChannel.accept();
+
+		SocketAddress sockAdd = socketChannel.getRemoteAddress();
+		Set<SocketAddress> socAddresses = new HashSet<SocketAddress>();
+		socAddresses.add(sockAdd);
+
+		this.doAccept(socketChannel, socAddresses);
+	}
+
+	private void doAccept(AbstractSelectableChannel socketChannel, Set<SocketAddress> socAddresses) throws IOException, ClosedChannelException {
 
 		boolean provisioned = false;
 		int port = 0;
@@ -184,7 +222,7 @@ public class SelectorThread implements Runnable {
 			FastMap<String, Association> associations = this.management.associations;
 
 			for (FastMap.Entry<String, Association> n = associations.head(), end = associations.tail(); (n = n.getNext()) != end && !provisioned;) {
-				Association association = n.getValue();
+				AssociationImpl association = (AssociationImpl)n.getValue();
 				// compare port and ip of remote with provisioned
 				if ((port == association.getPeerPort()) && (inetAddress.getHostAddress().equals(association.getPeerAddress()))) {
 					provisioned = true;
@@ -196,7 +234,7 @@ public class SelectorThread implements Runnable {
 						break;
 					}
 
-					((AssociationImpl)association).setSocketChannel(socketChannel);
+					((AssociationImpl) association).setSocketChannel(socketChannel);
 
 					// Accept the connection and make it non-blocking
 					socketChannel.configureBlocking(false);
@@ -209,6 +247,12 @@ public class SelectorThread implements Runnable {
 
 					if (logger.isInfoEnabled()) {
 						logger.info(String.format("Connected %s", association));
+					}
+
+					if (association.getIpChannelType() == IpChannelType.Tcp) {
+						AssocChangeEvent ace = AssocChangeEvent.COMM_UP;
+						AssociationChangeNotification2 acn = new AssociationChangeNotification2(ace);
+						association.associationHandler.handleNotification(acn, association);
 					}
 
 					break;
@@ -225,17 +269,15 @@ public class SelectorThread implements Runnable {
 		}
 	}
 
-	private void read(SelectionKey key) throws IOException {
+	private void finishConnection(SelectionKey key) throws IOException{
 		AssociationImpl association = (AssociationImpl) key.attachment();
-		association.read();
+		if (association.getIpChannelType() == IpChannelType.Sctp)
+			this.finishConnectionSctp(key);
+		else
+			this.finishConnectionTcp(key);
 	}
 
-	private void write(SelectionKey key) throws IOException {
-		AssociationImpl association = (AssociationImpl) key.attachment();
-		association.write(key);
-	}
-
-	private void finishConnection(SelectionKey key) throws IOException {
+	private void finishConnectionSctp(SelectionKey key) throws IOException {
 
 		AssociationImpl association = (AssociationImpl) key.attachment();
 		try {
@@ -261,4 +303,65 @@ public class SelectorThread implements Runnable {
 		}
 	}
 
+	private void finishConnectionTcp(SelectionKey key) throws IOException {
+
+		AssociationImpl association = (AssociationImpl) key.attachment();
+
+		try {
+			SocketChannel socketChannel = (SocketChannel) key.channel();
+			if (socketChannel.isConnectionPending()) {
+
+				// TODO Loop? Or may be sleep for while?
+				while (socketChannel.isConnectionPending()) {
+					socketChannel.finishConnect();
+				}
+			}
+
+			if (logger.isInfoEnabled()) {
+				logger.info(String.format("Asscoiation=%s connected to=%s", association.getName(), socketChannel.getRemoteAddress()));
+			}
+
+			// Register an interest in writing on this channel
+			key.interestOps(SelectionKey.OP_READ);
+
+			AssocChangeEvent ace = AssocChangeEvent.COMM_UP;
+			AssociationChangeNotification2 acn = new AssociationChangeNotification2(ace);
+			association.associationHandler.handleNotification(acn, association);
+
+		} catch (Exception e) {
+			logger.error(String.format("Exception while finishing connection for Association=%s", association.getName()), e);
+
+			association.scheduleConnect();
+		}
+	}
+
+	private void read(SelectionKey key) throws IOException {
+		AssociationImpl association = (AssociationImpl) key.attachment();
+		association.read();
+	}
+
+	private void write(SelectionKey key) throws IOException {
+		AssociationImpl association = (AssociationImpl) key.attachment();
+		association.write(key);
+	}
+
+	class AssociationChangeNotification2 extends AssociationChangeNotification {
+		
+		private AssocChangeEvent assocChangeEvent;
+
+		public AssociationChangeNotification2(AssocChangeEvent assocChangeEvent) {
+			this.assocChangeEvent = assocChangeEvent;
+		}
+
+		@Override
+		public com.sun.nio.sctp.Association association() {
+			return null;
+		}
+
+		@Override
+		public AssocChangeEvent event() {
+			return this.assocChangeEvent;
+		}
+	}
 }
+

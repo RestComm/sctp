@@ -47,48 +47,69 @@ class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 	}
 
 	@Override
-	public HandlerResult handleNotification(AssociationChangeNotification not, AssociationImpl asscoitaion) {
+	public HandlerResult handleNotification(AssociationChangeNotification not, AssociationImpl associtaion) {
 		switch (not.event()) {
 		case COMM_UP:
-			int outbound = not.association().maxOutboundStreams();
-			int inbound = not.association().maxInboundStreams();
+			int outbound = 1;
+			int inbound = 1;
+			if (not.association() != null) {
+				outbound = not.association().maxOutboundStreams();
+				inbound = not.association().maxInboundStreams();
+			}
 
 			if (logger.isInfoEnabled()) {
 				logger.info(String.format("New association setup for Association=%s with %d outbound streams, and %d inbound streams.\n",
-						asscoitaion.getName(), outbound, inbound));
+						associtaion.getName(), outbound, inbound));
 			}
 
 			// Recreate SLS table. Minimum of two is correct?
-			asscoitaion.createSLSTable(Math.min(inbound, outbound) - 1);
+			associtaion.createSLSTable(Math.min(inbound, outbound) - 1);
 
-			asscoitaion.createworkerThreadTable(Math.max(inbound, outbound));
+			associtaion.createworkerThreadTable(Math.max(inbound, outbound));
 
 			// TODO assign Thread's ?
-			asscoitaion.getAssociationListener().onCommunicationUp(asscoitaion);
+			try {
+				associtaion.getAssociationListener().onCommunicationUp(associtaion);
+			} catch (Exception e) {
+				logger.error(String.format("Exception while calling onCommunicationUp on AssociationListener for Association=%s", associtaion.getName()), e);
+			}
 			return HandlerResult.CONTINUE;
 
 		case CANT_START:
-			logger.error(String.format("Can't start for Association=%s", asscoitaion.getName()));
+			logger.error(String.format("Can't start for Association=%s", associtaion.getName()));
 			return HandlerResult.CONTINUE;
 		case COMM_LOST:
-			logger.warn(String.format("Communication lost for Association=%s", asscoitaion.getName()));
-			
-			//Close the Socket
-			asscoitaion.close();
-			
-			asscoitaion.scheduleConnect();
+			logger.warn(String.format("Communication lost for Association=%s", associtaion.getName()));
 
-			asscoitaion.getAssociationListener().onCommunicationLost(asscoitaion);
+			// Close the Socket
+			associtaion.close();
+
+			associtaion.scheduleConnect();
+			try {
+				associtaion.getAssociationListener().onCommunicationLost(associtaion);
+			} catch (Exception e) {
+				logger.error(String.format("Exception while calling onCommunicationLost on AssociationListener for Association=%s", associtaion.getName()), e);
+			}
 			return HandlerResult.RETURN;
 		case RESTART:
-			logger.warn(String.format("Restart for Association=%s", asscoitaion.getName()));
-			asscoitaion.getAssociationListener().onCommunicationRestart(asscoitaion);
+			logger.warn(String.format("Restart for Association=%s", associtaion.getName()));
+			try {
+				associtaion.getAssociationListener().onCommunicationRestart(associtaion);
+			} catch (Exception e) {
+				logger.error(String.format("Exception while calling onCommunicationRestart on AssociationListener for Association=%s", associtaion.getName()),
+						e);
+			}
 			return HandlerResult.CONTINUE;
 		case SHUTDOWN:
 			if (logger.isInfoEnabled()) {
-				logger.info(String.format("Shutdown for Association=%s", asscoitaion.getName()));
+				logger.info(String.format("Shutdown for Association=%s", associtaion.getName()));
 			}
-			asscoitaion.getAssociationListener().onCommunicationShutdown(asscoitaion);
+			try {
+				associtaion.getAssociationListener().onCommunicationShutdown(associtaion);
+			} catch (Exception e) {
+				logger.error(String.format("Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", associtaion.getName()),
+						e);
+			}
 			return HandlerResult.RETURN;
 		}
 
@@ -96,21 +117,25 @@ class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 	}
 
 	@Override
-	public HandlerResult handleNotification(ShutdownNotification not, AssociationImpl asscoitaion) {
+	public HandlerResult handleNotification(ShutdownNotification not, AssociationImpl associtaion) {
 		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Association=%s SHUTDOWN", asscoitaion.getName()));
+			logger.info(String.format("Association=%s SHUTDOWN", associtaion.getName()));
 		}
 
 		// TODO assign Thread's ?
 
-		asscoitaion.getAssociationListener().onCommunicationShutdown(asscoitaion);
+		try {
+			associtaion.getAssociationListener().onCommunicationShutdown(associtaion);
+		} catch (Exception e) {
+			logger.error(String.format("Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", associtaion.getName()), e);
+		}
 
 		return HandlerResult.RETURN;
 	}
 
 	@Override
-	public HandlerResult handleNotification(SendFailedNotification notification, AssociationImpl asscoitaion) {
-		logger.error(String.format("Association=%s SendFailedNotification", asscoitaion.getName()));
+	public HandlerResult handleNotification(SendFailedNotification notification, AssociationImpl associtaion) {
+		logger.error(String.format("Association=%s SendFailedNotification", associtaion.getName()));
 		return HandlerResult.RETURN;
 	}
 }

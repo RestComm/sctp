@@ -32,6 +32,13 @@ import java.util.List;
 public interface Server {
 
 	/**
+	 * Get the Server channel type - TCP or SCTP
+	 * 
+	 * @return
+	 */
+	public IpChannelType getIpChannelType();
+	
+	/**
 	 * Get name of this Server. Should be unique in a management instance
 	 * 
 	 * @return

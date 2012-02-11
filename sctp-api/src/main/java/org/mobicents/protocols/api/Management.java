@@ -89,7 +89,34 @@ public interface Management {
 	public void stop() throws Exception;
 
 	/**
+	 * This method stops and removes all registered servers and associations
+	 * Management should be started
+	 * Use this method only for test purposes or after total crashes 
+	 * 
+	 * @throws Exception
+	 */
+	public void removeAllResourses() throws Exception;
+
+	/**
 	 * Add new {@link Server}.
+	 * 
+	 * @param serverName
+	 *            name of the Server. Should be unique name
+	 * @param hostAddress
+	 *            IP address that this server will bind to
+	 * @param port
+	 *            port that this server will bind to
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
+	 * @return new Server instance
+	 * @throws Exception
+	 *             Exception if management not started or server name already
+	 *             taken or some other server already has same ip:port
+	 */
+	public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType) throws Exception;
+
+	/**
+	 * Add new {@link Server}. IP channel type is SCTP.
 	 * 
 	 * @param serverName
 	 *            name of the Server. Should be unique name
@@ -103,7 +130,7 @@ public interface Management {
 	 *             taken or some other server already has same ip:port
 	 */
 	public Server addServer(String serverName, String hostAddress, int port) throws Exception;
-
+	
 	/**
 	 * Remove existing {@link Server}
 	 * 
@@ -163,7 +190,27 @@ public interface Management {
 	public Association addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName) throws Exception;
 
 	/**
-	 * Add Association
+	 * Add server Association. IP channel type is SCTP.
+	 * 
+	 * @param peerAddress
+	 *            the peer IP address that this association will accept
+	 *            connection from
+	 * @param peerPort
+	 *            the peer port that this association will accept connection
+	 *            from
+	 * @param serverName
+	 *            the Server that this association belongs to
+	 * @param assocName
+	 *            unique name of Association
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
+	 * @return
+	 * @throws Exception
+	 */
+	public Association addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName, IpChannelType ipChannelType) throws Exception;
+
+	/**
+	 * Add Association. IP channel type is SCTP.
 	 * 
 	 * @param hostAddress
 	 * @param hostPort
@@ -174,6 +221,21 @@ public interface Management {
 	 * @throws Exception
 	 */
 	public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName) throws Exception;
+
+	/**
+	 * Add Association
+	 * 
+	 * @param hostAddress
+	 * @param hostPort
+	 * @param peerAddress
+	 * @param peerPort
+	 * @param assocName
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
+	 * @return
+	 * @throws Exception
+	 */
+	public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType) throws Exception;
 
 	/**
 	 * Remove existing Association. Association should be stopped before

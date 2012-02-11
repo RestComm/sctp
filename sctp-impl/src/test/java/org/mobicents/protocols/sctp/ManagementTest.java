@@ -22,17 +22,13 @@
 package org.mobicents.protocols.sctp;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.mobicents.protocols.api.Association;
+import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.Server;
+import org.testng.annotations.*;
 
 /**
  * @author amit bhayani
@@ -42,7 +38,7 @@ public class ManagementTest {
 
 	private static final String SERVER_NAME = "testserver";
 	private static final String SERVER_HOST = "127.0.0.1";
-	private static final int SERVER_PORT = 2345;
+	private static final int SERVER_PORT = 2349;
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
@@ -52,12 +48,10 @@ public class ManagementTest {
 	public static void tearDownClass() throws Exception {
 	}
 
-	@Before
 	public void setUp() throws Exception {
 
 	}
 
-	@After
 	public void tearDown() throws Exception {
 
 	}
@@ -68,13 +62,32 @@ public class ManagementTest {
 	 * 
 	 * @throws Exception
 	 */
-	@Test
-	public void testServer() throws Exception {
+	@Test(groups = { "functional", "sctp" })
+	public void testServerSctp() throws Exception {
+		
+		if (SctpTransferTest.checkSctpEnabled())
+			this.testServerByProtocol(IpChannelType.Sctp);
+	}
+
+	/**
+	 * Test the creation of Server. Stop management and start, and Server should
+	 * be started automatically
+	 * 
+	 * @throws Exception
+	 */
+	@Test(groups = { "functional", "tcp" })
+	public void testServerTcp() throws Exception {
+
+		this.testServerByProtocol(IpChannelType.Tcp);
+	}
+
+	private void testServerByProtocol(IpChannelType ipChannelType) throws Exception {
 		ManagementImpl management = new ManagementImpl("ManagementTest");
 		management.setSingleThread(true);
 		management.start();
+		management.removeAllResourses();
 
-		Server server = management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT);
+		Server server = management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType);
 		management.startServer(SERVER_NAME);
 
 		assertTrue(server.isStarted());
@@ -102,19 +115,32 @@ public class ManagementTest {
 
 	}
 
-	@Test
-	public void testAssociation() throws Exception {
+	@Test(groups = { "functional", "sctp" })
+	public void testAssociationSctp() throws Exception {
+		
+		if (SctpTransferTest.checkSctpEnabled())
+			this.testAssociationByProtocol(IpChannelType.Sctp);
+	}
+
+	@Test(groups = { "functional", "tcp" })
+	public void testAssociationTcp() throws Exception {
+
+		this.testAssociationByProtocol(IpChannelType.Tcp);
+	}
+
+	private void testAssociationByProtocol(IpChannelType ipChannelType) throws Exception {
 		ManagementImpl management = new ManagementImpl("ManagementTest");
 		management.setSingleThread(true);
 		management.start();
+		management.removeAllResourses();
 
 		// Add association
-		Association clientAss1 = management.addAssociation("localhost", 2905, "localhost", 2906, "ClientAssoc1");
+		Association clientAss1 = management.addAssociation("localhost", 2905, "localhost", 2906, "ClientAssoc1", ipChannelType);
 		assertNotNull(clientAss1);
 
 		// Try to add assoc with same name
 		try {
-			clientAss1 = management.addAssociation("localhost", 2907, "localhost", 2908, "ClientAssoc1");
+			clientAss1 = management.addAssociation("localhost", 2907, "localhost", 2908, "ClientAssoc1", ipChannelType);
 			fail("Expected Exception");
 		} catch (Exception e) {
 			assertEquals("Already has association=ClientAssoc1", e.getMessage());
@@ -122,7 +148,7 @@ public class ManagementTest {
 
 		// Try to add assoc with same peer add and port
 		try {
-			clientAss1 = management.addAssociation("localhost", 2907, "localhost", 2906, "ClientAssoc2");
+			clientAss1 = management.addAssociation("localhost", 2907, "localhost", 2906, "ClientAssoc2", ipChannelType);
 			fail("Expected Exception");
 		} catch (Exception e) {
 			assertEquals("Already has association=ClientAssoc1 with same peer address=localhost and port=2906", e.getMessage());
@@ -130,7 +156,7 @@ public class ManagementTest {
 
 		// Try to add assoc with same host add and port
 		try {
-			clientAss1 = management.addAssociation("localhost", 2905, "localhost", 2908, "ClientAssoc2");
+			clientAss1 = management.addAssociation("localhost", 2905, "localhost", 2908, "ClientAssoc2", ipChannelType);
 			fail("Expected Exception");
 		} catch (Exception e) {
 			assertEquals("Already has association=ClientAssoc1 with same host address=localhost and port=2905", e.getMessage());

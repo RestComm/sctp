@@ -19,6 +19,7 @@
  * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
+
 package org.mobicents.protocols.sctp;
 
 import java.io.File;
@@ -28,6 +29,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.spi.SelectorProvider;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -43,6 +45,7 @@ import javolution.xml.stream.XMLStreamException;
 
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
+import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.Management;
 import org.mobicents.protocols.api.Server;
 
@@ -215,7 +218,6 @@ public class ManagementImpl implements Management {
 				this.executorServices[i] = Executors.newSingleThreadExecutor();
 			}
 		}
-
 		this.selectorThread = new SelectorThread(this.socketSelector, this);
 		this.selectorThread.setStarted(true);
 
@@ -281,6 +283,7 @@ public class ManagementImpl implements Management {
 		this.started = false;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void load() throws FileNotFoundException {
 		XMLObjectReader reader = null;
 		try {
@@ -328,7 +331,50 @@ public class ManagementImpl implements Management {
 		}
 	}
 
+	public void removeAllResourses() throws Exception {
+
+		if (!this.started) {
+			throw new Exception(String.format("Management=%s not started", this.name));
+		}
+
+		if (this.associations.size() == 0 && this.servers.size() == 0)
+			// no resources allocated - nothing to do
+			return;
+		
+		if (logger.isInfoEnabled()) {
+			logger.info(String.format("Removing allocated resources: Servers=%d, Associations=%d", this.servers.size(), this.associations.size()));
+		}
+
+		// Remove all associations
+		ArrayList<String> lst = new ArrayList<String>();
+		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+			lst.add(n.getKey());
+		}
+		for (String n : lst) {
+			this.stopAssociation(n);
+			this.removeAssociation(n);
+		}
+
+		// Remove all servers
+		lst.clear();
+		for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+			lst.add(n.getValue().getName());
+		}
+		for (String n : lst) {
+			this.stopServer(n);
+			this.removeServer(n);
+		}
+
+		// We store the cleared state
+		this.store();
+	}
+
 	public ServerImpl addServer(String serverName, String hostAddress, int port) throws Exception {
+		return addServer(serverName, hostAddress, port, IpChannelType.Sctp);
+	}
+
+	public ServerImpl addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType) throws Exception {
+
 		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
@@ -357,7 +403,7 @@ public class ManagementImpl implements Management {
 			}
 		}
 
-		ServerImpl server = new ServerImpl(serverName, hostAddress, port);
+		ServerImpl server = new ServerImpl(serverName, hostAddress, port, ipChannelType);
 		server.setManagement(this);
 
 		this.servers.add(server);
@@ -371,6 +417,7 @@ public class ManagementImpl implements Management {
 	}
 
 	public void removeServer(String serverName) throws Exception {
+
 		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
@@ -401,6 +448,7 @@ public class ManagementImpl implements Management {
 	}
 
 	public void startServer(String serverName) throws Exception {
+
 		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
@@ -426,6 +474,7 @@ public class ManagementImpl implements Management {
 	}
 
 	public void stopServer(String serverName) throws Exception {
+
 		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
@@ -448,6 +497,11 @@ public class ManagementImpl implements Management {
 	}
 
 	public AssociationImpl addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName) throws Exception {
+		return addServerAssociation(peerAddress, peerPort, serverName, assocName, IpChannelType.Sctp);
+	}
+
+	public AssociationImpl addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName, IpChannelType ipChannelType)
+			throws Exception {
 
 		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
@@ -494,8 +548,11 @@ public class ManagementImpl implements Management {
 						peerPort));
 			}
 		}
+		
+		if (server.getIpChannelType() != ipChannelType)
+			throw new Exception(String.format("Server and Accociation has different IP channel type"));
 
-		AssociationImpl association = new AssociationImpl(peerAddress, peerPort, serverName, assocName);
+		AssociationImpl association = new AssociationImpl(peerAddress, peerPort, serverName, assocName, ipChannelType);
 		association.setManagement(this);
 		this.associations.put(assocName, association);
 		((ServerImpl) server).associations.add(assocName);
@@ -510,6 +567,12 @@ public class ManagementImpl implements Management {
 	}
 
 	public AssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName) throws Exception {
+		return addAssociation(hostAddress, hostPort, peerAddress, peerPort, assocName, IpChannelType.Sctp);
+	}
+
+	public AssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType)
+			throws Exception {
+
 		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
@@ -553,7 +616,7 @@ public class ManagementImpl implements Management {
 
 		}
 
-		AssociationImpl association = new AssociationImpl(hostAddress, hostPort, peerAddress, peerPort, assocName);
+		AssociationImpl association = new AssociationImpl(hostAddress, hostPort, peerAddress, peerPort, assocName, ipChannelType);
 		association.setManagement(this);
 		associations.put(assocName, association);
 
@@ -696,5 +759,5 @@ public class ManagementImpl implements Management {
 	protected ExecutorService getExecutorService(int index) {
 		return this.executorServices[index];
 	}
-
 }
+
