@@ -128,7 +128,7 @@ public class ServerImpl implements Server {
 
 	private void initSocket() throws IOException {
 
-		if (this.ipChannelType == IpChannelType.Sctp)
+		if (this.ipChannelType == IpChannelType.SCTP)
 			doInitSocketSctp();
 		else
 			doInitSocketTcp();
@@ -180,7 +180,7 @@ public class ServerImpl implements Server {
 	}
 
 	protected AbstractSelectableChannel getIpChannel() {
-		if (this.ipChannelType == IpChannelType.Sctp)
+		if (this.ipChannelType == IpChannelType.SCTP)
 			return this.serverChannelSctp;
 		else
 			return this.serverChannelTcp;
@@ -255,7 +255,7 @@ public class ServerImpl implements Server {
 			server.started = xml.getAttribute(STARTED, false);
 			server.hostAddress = xml.getAttribute(HOST_ADDRESS, "");
 			server.hostport = xml.getAttribute(HOST_PORT, 0);
-			server.ipChannelType = IpChannelType.getInstance(xml.getAttribute(IPCHANNEL_TYPE, IpChannelType.Sctp.getCode()));
+			server.ipChannelType = IpChannelType.getInstance(xml.getAttribute(IPCHANNEL_TYPE, IpChannelType.SCTP.getCode()));
 			if (server.ipChannelType == null)
 				throw new XMLStreamException("Bad value for server.ipChannelType");
 

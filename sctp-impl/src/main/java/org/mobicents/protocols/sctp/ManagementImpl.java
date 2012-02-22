@@ -45,6 +45,7 @@ import javolution.xml.stream.XMLStreamException;
 
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
+import org.mobicents.protocols.api.AssociationType;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.Management;
 import org.mobicents.protocols.api.Server;
@@ -370,7 +371,7 @@ public class ManagementImpl implements Management {
 	}
 
 	public ServerImpl addServer(String serverName, String hostAddress, int port) throws Exception {
-		return addServer(serverName, hostAddress, port, IpChannelType.Sctp);
+		return addServer(serverName, hostAddress, port, IpChannelType.SCTP);
 	}
 
 	public ServerImpl addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType) throws Exception {
@@ -497,7 +498,7 @@ public class ManagementImpl implements Management {
 	}
 
 	public AssociationImpl addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName) throws Exception {
-		return addServerAssociation(peerAddress, peerPort, serverName, assocName, IpChannelType.Sctp);
+		return addServerAssociation(peerAddress, peerPort, serverName, assocName, IpChannelType.SCTP);
 	}
 
 	public AssociationImpl addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName, IpChannelType ipChannelType)
@@ -560,14 +561,14 @@ public class ManagementImpl implements Management {
 		this.store();
 
 		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Added Associoation=%s of type=%s", association.getName(), association.getType()));
+			logger.info(String.format("Added Associoation=%s of type=%s", association.getName(), association.getAssociationType()));
 		}
 
 		return association;
 	}
 
 	public AssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName) throws Exception {
-		return addAssociation(hostAddress, hostPort, peerAddress, peerPort, assocName, IpChannelType.Sctp);
+		return addAssociation(hostAddress, hostPort, peerAddress, peerPort, assocName, IpChannelType.SCTP);
 	}
 
 	public AssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType)
@@ -623,7 +624,7 @@ public class ManagementImpl implements Management {
 		this.store();
 
 		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Added Associoation=%s of type=%s", association.getName(), association.getType()));
+			logger.info(String.format("Added Associoation=%s of type=%s", association.getName(), association.getAssociationType()));
 		}
 
 		return association;
@@ -711,7 +712,7 @@ public class ManagementImpl implements Management {
 
 		this.associations.remove(assocName);
 
-		if (((AssociationImpl) association).getType() == AssociationType.SERVER) {
+		if (((AssociationImpl) association).getAssociationType() == AssociationType.SERVER) {
 			for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
 				Server serverTemp = n.getValue();
 				if (serverTemp.getName().equals(association.getServerName())) {

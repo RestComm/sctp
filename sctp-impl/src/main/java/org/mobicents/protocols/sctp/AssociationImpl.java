@@ -39,6 +39,7 @@ import javolution.xml.stream.XMLStreamException;
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationListener;
+import org.mobicents.protocols.api.AssociationType;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.PayloadData;
 
@@ -225,7 +226,7 @@ public class AssociationImpl implements Association {
 	/**
 	 * @return the associationType
 	 */
-	public AssociationType getType() {
+	public AssociationType getAssociationType() {
 		return type;
 	}
 
@@ -280,7 +281,7 @@ public class AssociationImpl implements Association {
 	}
 
 	private AbstractSelectableChannel getSocketChannel(){
-		if (this.ipChannelType == IpChannelType.Sctp)
+		if (this.ipChannelType == IpChannelType.SCTP)
 			return this.socketChannelSctp;
 		else
 			return this.socketChannelTcp;
@@ -291,7 +292,7 @@ public class AssociationImpl implements Association {
 	 *            the socketChannel to set
 	 */
 	protected void setSocketChannel(AbstractSelectableChannel socketChannel) {
-		if (this.ipChannelType == IpChannelType.Sctp)
+		if (this.ipChannelType == IpChannelType.SCTP)
 			this.socketChannelSctp = (SctpChannel) socketChannel;
 		else
 			this.socketChannelTcp = (SocketChannel) socketChannel;
@@ -318,7 +319,7 @@ public class AssociationImpl implements Association {
 	}
 
 	private void checkSocketIsOpen() throws Exception {
-		if (this.ipChannelType == IpChannelType.Sctp) {
+		if (this.ipChannelType == IpChannelType.SCTP) {
 			if (!this.started || this.socketChannelSctp == null || !this.socketChannelSctp.isOpen() || this.socketChannelSctp.association() == null)
 				throw new Exception(String.format("Underlying sctp channel doesn't open or doesn't have association for Association=%s", this.name));
 		} else {
@@ -331,7 +332,7 @@ public class AssociationImpl implements Association {
 
 		try {
 			PayloadData payload;
-			if (this.ipChannelType == IpChannelType.Sctp)
+			if (this.ipChannelType == IpChannelType.SCTP)
 				payload = this.doReadSctp();
 			else
 				payload = this.doReadTcp();
@@ -461,7 +462,7 @@ public class AssociationImpl implements Association {
 					// TODO: BufferOverflowException ?
 					txBuffer.put(payloadData.getData());
 
-					if (this.ipChannelType == IpChannelType.Sctp) {
+					if (this.ipChannelType == IpChannelType.SCTP) {
 						int seqControl = payloadData.getStreamNumber();
 						// we use max 32 streams
 						seqControl = seqControl & 0x1F;
@@ -509,7 +510,7 @@ public class AssociationImpl implements Association {
 	}
 
 	private int doSend() throws IOException {
-		if (this.ipChannelType == IpChannelType.Sctp)
+		if (this.ipChannelType == IpChannelType.SCTP)
 			return this.doSendSctp();
 		else
 			return this.doSendTcp();
@@ -540,7 +541,7 @@ public class AssociationImpl implements Association {
 	}
 
 	protected void scheduleConnect() {
-		if (this.getType() == AssociationType.CLIENT) {
+		if (this.getAssociationType() == AssociationType.CLIENT) {
 			// If Associtaion is of Client type, reinitiate the connection
 			// procedure
 			FastList<ChangeRequest> pendingChanges = this.management.getPendingChanges();
@@ -565,7 +566,7 @@ public class AssociationImpl implements Association {
 			}
 		}
 
-		if (this.ipChannelType == IpChannelType.Sctp)
+		if (this.ipChannelType == IpChannelType.SCTP)
 			this.doInitiateConnectionSctp();
 		else
 			this.doInitiateConnectionTcp();
@@ -664,7 +665,7 @@ public class AssociationImpl implements Association {
 			association.peerPort = xml.getAttribute(PEER_PORT, 0);
 
 			association.serverName = xml.getAttribute(SERVER_NAME, "");
-			association.ipChannelType = IpChannelType.getInstance(xml.getAttribute(IPCHANNEL_TYPE, IpChannelType.Sctp.getCode()));
+			association.ipChannelType = IpChannelType.getInstance(xml.getAttribute(IPCHANNEL_TYPE, IpChannelType.SCTP.getCode()));
 			if (association.ipChannelType == null)
 				throw new XMLStreamException("Bad value for association.ipChannelType");
 

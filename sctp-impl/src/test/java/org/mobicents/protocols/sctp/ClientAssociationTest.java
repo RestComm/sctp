@@ -118,7 +118,7 @@ public class ClientAssociationTest {
 	public void testConnectAttemptsSctp() throws Exception {
 		
 		if (SctpTransferTest.checkSctpEnabled())
-			this.testConnectAttemptsByProtoclol(IpChannelType.Sctp);
+			this.testConnectAttemptsByProtoclol(IpChannelType.SCTP);
 	}
 
 	/**
@@ -130,7 +130,7 @@ public class ClientAssociationTest {
 	@Test(groups = { "functional", "tcp" })
 	public void testConnectAttemptsTcp() throws Exception {
 
-		this.testConnectAttemptsByProtoclol(IpChannelType.Tcp);
+		this.testConnectAttemptsByProtoclol(IpChannelType.TCP);
 	}
 
 	private void testConnectAttemptsByProtoclol(IpChannelType ipChannelType) throws Exception {

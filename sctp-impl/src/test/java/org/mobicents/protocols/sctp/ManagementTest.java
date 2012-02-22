@@ -66,7 +66,7 @@ public class ManagementTest {
 	public void testServerSctp() throws Exception {
 		
 		if (SctpTransferTest.checkSctpEnabled())
-			this.testServerByProtocol(IpChannelType.Sctp);
+			this.testServerByProtocol(IpChannelType.SCTP);
 	}
 
 	/**
@@ -78,7 +78,7 @@ public class ManagementTest {
 	@Test(groups = { "functional", "tcp" })
 	public void testServerTcp() throws Exception {
 
-		this.testServerByProtocol(IpChannelType.Tcp);
+		this.testServerByProtocol(IpChannelType.TCP);
 	}
 
 	private void testServerByProtocol(IpChannelType ipChannelType) throws Exception {
@@ -119,13 +119,13 @@ public class ManagementTest {
 	public void testAssociationSctp() throws Exception {
 		
 		if (SctpTransferTest.checkSctpEnabled())
-			this.testAssociationByProtocol(IpChannelType.Sctp);
+			this.testAssociationByProtocol(IpChannelType.SCTP);
 	}
 
 	@Test(groups = { "functional", "tcp" })
 	public void testAssociationTcp() throws Exception {
 
-		this.testAssociationByProtocol(IpChannelType.Tcp);
+		this.testAssociationByProtocol(IpChannelType.TCP);
 	}
 
 	private void testAssociationByProtocol(IpChannelType ipChannelType) throws Exception {

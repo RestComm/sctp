@@ -21,6 +21,7 @@
  */
 package org.mobicents.protocols.api;
 
+
 /**
  * <p>
  * A protocol relationship between endpoints
@@ -40,12 +41,19 @@ package org.mobicents.protocols.api;
 public interface Association {
 
 	/**
-	 * Return the Association channel type TCP or SCTP 
+	 * Return the Association channel type TCP or SCTP
 	 * 
 	 * @return
 	 */
 	public IpChannelType getIpChannelType();
-	
+
+	/**
+	 * Return the type of Association CLIENT or SERVER
+	 * 
+	 * @return
+	 */
+	public AssociationType getAssociationType();
+
 	/**
 	 * Each association has unique name
 	 * 

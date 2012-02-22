@@ -19,14 +19,14 @@
  * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-package org.mobicents.protocols.sctp;
+package org.mobicents.protocols.api;
 
 /**
  * @author amit bhayani
  * 
  */
 public enum AssociationType {
-	CLIENT("client"), SERVER("server");
+	CLIENT("CLIENT"), SERVER("SERVER");
 
 	private final String type;
 
@@ -44,9 +44,9 @@ public enum AssociationType {
 	public static AssociationType getAssociationType(String type) {
 		if (type == null) {
 			return null;
-		} else if (type.equals(CLIENT.getType())) {
+		} else if (type.equalsIgnoreCase(CLIENT.getType())) {
 			return CLIENT;
-		} else if (type.equals(SERVER.getType())) {
+		} else if (type.equalsIgnoreCase(SERVER.getType())) {
 			return SERVER;
 		} else {
 			return null;

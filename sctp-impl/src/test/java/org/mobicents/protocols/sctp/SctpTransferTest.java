@@ -115,7 +115,7 @@ public class SctpTransferTest {
 	public void testDataTransferSctp() throws Exception {
 
 		if (SctpTransferTest.checkSctpEnabled())
-			this.testDataTransferByProtocol(IpChannelType.Sctp);
+			this.testDataTransferByProtocol(IpChannelType.SCTP);
 	}
 
 	/**
@@ -129,7 +129,7 @@ public class SctpTransferTest {
 //		Logger logger = Logger.getLogger(ServerImpl.class.getName());
 //		logger.setLevel(Level.ALL);
 
-		this.testDataTransferByProtocol(IpChannelType.Tcp);
+		this.testDataTransferByProtocol(IpChannelType.TCP);
 	}
 
 	private void testDataTransferByProtocol(IpChannelType ipChannelType) throws Exception {

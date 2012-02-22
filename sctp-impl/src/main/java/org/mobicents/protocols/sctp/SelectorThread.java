@@ -249,7 +249,7 @@ public class SelectorThread implements Runnable {
 						logger.info(String.format("Connected %s", association));
 					}
 
-					if (association.getIpChannelType() == IpChannelType.Tcp) {
+					if (association.getIpChannelType() == IpChannelType.TCP) {
 						AssocChangeEvent ace = AssocChangeEvent.COMM_UP;
 						AssociationChangeNotification2 acn = new AssociationChangeNotification2(ace);
 						association.associationHandler.handleNotification(acn, association);
@@ -271,7 +271,7 @@ public class SelectorThread implements Runnable {
 
 	private void finishConnection(SelectionKey key) throws IOException{
 		AssociationImpl association = (AssociationImpl) key.attachment();
-		if (association.getIpChannelType() == IpChannelType.Sctp)
+		if (association.getIpChannelType() == IpChannelType.SCTP)
 			this.finishConnectionSctp(key);
 		else
 			this.finishConnectionTcp(key);
