@@ -107,7 +107,8 @@ public class ServerImpl implements Server {
 			String assocName = n.getValue();
 			Association associationTemp = this.management.getAssociation(assocName);
 			if (associationTemp.isStarted()) {
-				throw new Exception(String.format("Stop all the associations first. Association=%s is still started"));
+				throw new Exception(String.format("Stop all the associations first. Association=%s is still started",
+						associationTemp.getName()));
 			}
 		}
 
@@ -141,12 +142,13 @@ public class ServerImpl implements Server {
 		synchronized (pendingChanges) {
 
 			// Indicate we want the interest ops set changed
-			pendingChanges.add(new ChangeRequest(this.getIpChannel(), null, ChangeRequest.REGISTER, SelectionKey.OP_ACCEPT));
+			pendingChanges.add(new ChangeRequest(this.getIpChannel(), null, ChangeRequest.REGISTER,
+					SelectionKey.OP_ACCEPT));
 		}
 
 		this.management.getSocketSelector().wakeup();
 	}
-	
+
 	private void doInitSocketSctp() throws IOException {
 		// Create a new non-blocking server socket channel
 		this.serverChannelSctp = SctpServerChannel.open();
@@ -228,19 +230,20 @@ public class ServerImpl implements Server {
 	public List<String> getAssociations() {
 		return associations.unmodifiable();
 	}
-	
+
 	@Override
 	public String toString() {
-		
+
 		StringBuilder sb = new StringBuilder();
 		for (FastList.Node<String> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
 			if (sb.length() > 0)
 				sb.append(", ");
 			sb.append(n.getValue());
 		}
-		
-		return "Server [name=" + name + ", hostAddress=" + hostAddress + ", hostPort=" + hostport + ", peerAddress=" + ", ipChannelType=" + ipChannelType
-				+ ", associations=[" + sb.toString() + "], started=" + started + "]";
+
+		return "Server [name=" + name + ", hostAddress=" + hostAddress + ", hostPort=" + hostport + ", peerAddress="
+				+ ", ipChannelType=" + ipChannelType + ", associations=[" + sb.toString() + "], started=" + started
+				+ "]";
 	}
 
 	/**
@@ -255,7 +258,8 @@ public class ServerImpl implements Server {
 			server.started = xml.getAttribute(STARTED, false);
 			server.hostAddress = xml.getAttribute(HOST_ADDRESS, "");
 			server.hostport = xml.getAttribute(HOST_PORT, 0);
-			server.ipChannelType = IpChannelType.getInstance(xml.getAttribute(IPCHANNEL_TYPE, IpChannelType.SCTP.getCode()));
+			server.ipChannelType = IpChannelType.getInstance(xml.getAttribute(IPCHANNEL_TYPE,
+					IpChannelType.SCTP.getCode()));
 			if (server.ipChannelType == null)
 				throw new XMLStreamException("Bad value for server.ipChannelType");
 
@@ -274,4 +278,3 @@ public class ServerImpl implements Server {
 		}
 	};
 }
-
