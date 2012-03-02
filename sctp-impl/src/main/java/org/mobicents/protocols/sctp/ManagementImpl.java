@@ -371,10 +371,10 @@ public class ManagementImpl implements Management {
 	}
 
 	public ServerImpl addServer(String serverName, String hostAddress, int port) throws Exception {
-		return addServer(serverName, hostAddress, port, IpChannelType.SCTP);
+		return addServer(serverName, hostAddress, port, IpChannelType.SCTP, null);
 	}
 
-	public ServerImpl addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType) throws Exception {
+	public ServerImpl addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, FastList<String> extraHostAddresses) throws Exception {
 
 		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
@@ -404,7 +404,7 @@ public class ManagementImpl implements Management {
 			}
 		}
 
-		ServerImpl server = new ServerImpl(serverName, hostAddress, port, ipChannelType);
+		ServerImpl server = new ServerImpl(serverName, hostAddress, port, ipChannelType, extraHostAddresses);
 		server.setManagement(this);
 
 		this.servers.add(server);
@@ -568,11 +568,11 @@ public class ManagementImpl implements Management {
 	}
 
 	public AssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName) throws Exception {
-		return addAssociation(hostAddress, hostPort, peerAddress, peerPort, assocName, IpChannelType.SCTP);
+		return addAssociation(hostAddress, hostPort, peerAddress, peerPort, assocName, IpChannelType.SCTP, null);
 	}
 
-	public AssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType)
-			throws Exception {
+	public AssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
+			FastList<String> extraHostAddresses) throws Exception {
 
 		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
@@ -617,7 +617,7 @@ public class ManagementImpl implements Management {
 
 		}
 
-		AssociationImpl association = new AssociationImpl(hostAddress, hostPort, peerAddress, peerPort, assocName, ipChannelType);
+		AssociationImpl association = new AssociationImpl(hostAddress, hostPort, peerAddress, peerPort, assocName, ipChannelType, extraHostAddresses);
 		association.setManagement(this);
 		associations.put(assocName, association);
 

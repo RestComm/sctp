@@ -23,11 +23,13 @@
 package org.mobicents.protocols.sctp;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
@@ -64,6 +66,7 @@ public class AssociationImpl implements Association {
 
 	private static final String ASSOCIATION_TYPE = "assoctype";
 	private static final String IPCHANNEL_TYPE = "ipChannelType";
+	private static final String EXTRA_HOST_ADDRESSES = "extraHostAddresses";
 
 	private String hostAddress;
 	private int hostPort;
@@ -72,6 +75,7 @@ public class AssociationImpl implements Association {
 	private String serverName;
 	private String name;
 	private IpChannelType ipChannelType;
+	private FastList<String> extraHostAddresses;
 
 	private AssociationType type;
 
@@ -130,7 +134,8 @@ public class AssociationImpl implements Association {
 	 * @param assocName
 	 * @throws IOException
 	 */
-	public AssociationImpl(String hostAddress, int hostport, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType) throws IOException {
+	public AssociationImpl(String hostAddress, int hostport, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
+			FastList<String> extraHostAddresses) throws IOException {
 		this();
 		this.hostAddress = hostAddress;
 		this.hostPort = hostport;
@@ -138,6 +143,7 @@ public class AssociationImpl implements Association {
 		this.peerPort = peerPort;
 		this.name = assocName;
 		this.ipChannelType = ipChannelType;
+		this.extraHostAddresses = extraHostAddresses;
 
 		this.type = AssociationType.CLIENT;
 
@@ -270,6 +276,11 @@ public class AssociationImpl implements Association {
 	 */
 	public String getServerName() {
 		return serverName;
+	}
+
+	@Override
+	public List<String> getExtraHostAddresses() {
+		return extraHostAddresses.unmodifiable();
 	}
 	
 	/**
@@ -596,6 +607,11 @@ public class AssociationImpl implements Association {
 
 		// bind to host address:port
 		this.socketChannelSctp.bind(new InetSocketAddress(this.hostAddress, this.hostPort));
+		if (this.extraHostAddresses != null) {
+			for (String s : extraHostAddresses) {
+				this.socketChannelSctp.bindAddress(InetAddress.getByName(s));
+			}
+		}
 
 		// Kick off connection establishment
 		this.socketChannelSctp.connect(new InetSocketAddress(this.peerAddress, this.peerPort), 32, 32);
@@ -645,8 +661,17 @@ public class AssociationImpl implements Association {
 	 */
 	@Override
 	public String toString() {
+
+		StringBuilder sb2 = new StringBuilder();
+		if (this.extraHostAddresses != null) {
+			for (FastList.Node<String> n = this.extraHostAddresses.head(), end = this.extraHostAddresses.tail(); (n = n.getNext()) != end;) {
+				if (sb2.length() > 0)
+					sb2.append(", ");
+				sb2.append(n.getValue());
+			}
+		}
 		return "Association [name=" + name + ",hostAddress=" + hostAddress + ", hostPort=" + hostPort + ", peerAddress=" + peerAddress + ", peerPort="
-				+ peerPort + ", serverName=" + serverName + ", associationType=" + type + ", ipChannelType=" + ipChannelType + ", started=" + started + "]";
+				+ peerPort + ", serverName=" + serverName + ", associationType=" + type + ", ipChannelType=" + ipChannelType + ", extraHostAddresses=["+sb2+"], started=" + started + "]";
 	}
 
 	/**
@@ -654,6 +679,7 @@ public class AssociationImpl implements Association {
 	 */
 	protected static final XMLFormat<AssociationImpl> ASSOCIATION_XML = new XMLFormat<AssociationImpl>(AssociationImpl.class) {
 
+		@SuppressWarnings("unchecked")
 		@Override
 		public void read(javolution.xml.XMLFormat.InputElement xml, AssociationImpl association) throws XMLStreamException {
 			association.name = xml.getAttribute(NAME, "");
@@ -667,7 +693,9 @@ public class AssociationImpl implements Association {
 			association.serverName = xml.getAttribute(SERVER_NAME, "");
 			association.ipChannelType = IpChannelType.getInstance(xml.getAttribute(IPCHANNEL_TYPE, IpChannelType.SCTP.getCode()));
 			if (association.ipChannelType == null)
-				throw new XMLStreamException("Bad value for association.ipChannelType");
+				association.ipChannelType = IpChannelType.SCTP;
+
+			association.extraHostAddresses = xml.get(EXTRA_HOST_ADDRESSES, FastList.class);
 
 		}
 
@@ -684,6 +712,7 @@ public class AssociationImpl implements Association {
 			xml.setAttribute(SERVER_NAME, association.serverName);
 			xml.setAttribute(IPCHANNEL_TYPE, association.ipChannelType.getCode());
 
+			xml.add(association.extraHostAddresses, EXTRA_HOST_ADDRESSES, FastList.class);
 		}
 	};
 

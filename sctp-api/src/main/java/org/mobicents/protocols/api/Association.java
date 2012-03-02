@@ -21,6 +21,8 @@
  */
 package org.mobicents.protocols.api;
 
+import java.util.List;
+
 
 /**
  * <p>
@@ -116,6 +118,13 @@ public interface Association {
 	 * @return
 	 */
 	public String getServerName();
+	
+	/**
+	 * When SCTP multi-homing configuration extra IP addresses are here
+	 * 
+	 * @return
+	 */
+	public List<String> getExtraHostAddresses();
 
 	/**
 	 * Send the {@link PayloadData} to the peer

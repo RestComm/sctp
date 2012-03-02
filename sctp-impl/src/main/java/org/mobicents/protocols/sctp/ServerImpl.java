@@ -23,6 +23,7 @@
 package org.mobicents.protocols.sctp;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
@@ -55,6 +56,7 @@ public class ServerImpl implements Server {
 	private static final String IPCHANNEL_TYPE = "ipChannelType";
 
 	private static final String ASSOCIATIONS = "associations";
+	private static final String EXTRA_HOST_ADDRESSES = "extraHostAddresses";
 
 	private static final String STARTED = "started";
 
@@ -63,6 +65,7 @@ public class ServerImpl implements Server {
 	private int hostport;
 	private volatile boolean started = false;
 	private IpChannelType ipChannelType;
+	private FastList<String> extraHostAddresses;
 
 	private ManagementImpl management = null;
 
@@ -85,12 +88,13 @@ public class ServerImpl implements Server {
 	 * @param port
 	 * @throws IOException
 	 */
-	public ServerImpl(String name, String hostAddress, int hostport, IpChannelType ipChannelType) throws IOException {
+	public ServerImpl(String name, String hostAddress, int hostport, IpChannelType ipChannelType, FastList<String> extraHostAddresses) throws IOException {
 		super();
 		this.name = name;
 		this.hostAddress = hostAddress;
 		this.hostport = hostport;
 		this.ipChannelType = ipChannelType;
+		this.extraHostAddresses = extraHostAddresses;
 	}
 
 	protected void start() throws Exception {
@@ -157,6 +161,11 @@ public class ServerImpl implements Server {
 		// Bind the server socket to the specified address and port
 		InetSocketAddress isa = new InetSocketAddress(this.hostAddress, this.hostport);
 		this.serverChannelSctp.bind(isa);
+		if (this.extraHostAddresses != null) {
+			for (String s : extraHostAddresses) {
+				this.serverChannelSctp.bindAddress(InetAddress.getByName(s));
+			}
+		}
 
 		if (logger.isInfoEnabled()) {
 			logger.info(String.format("SctpServerChannel bound to=%s ", serverChannelSctp.getAllLocalAddresses()));
@@ -209,6 +218,11 @@ public class ServerImpl implements Server {
 		return hostport;
 	}
 
+	@Override
+	public List<String> getExtraHostAddresses() {
+		return extraHostAddresses.unmodifiable();
+	}
+
 	/**
 	 * @return the started
 	 */
@@ -241,9 +255,17 @@ public class ServerImpl implements Server {
 			sb.append(n.getValue());
 		}
 
-		return "Server [name=" + name + ", hostAddress=" + hostAddress + ", hostPort=" + hostport + ", peerAddress="
-				+ ", ipChannelType=" + ipChannelType + ", associations=[" + sb.toString() + "], started=" + started
-				+ "]";
+		StringBuilder sb2 = new StringBuilder();
+		if (this.extraHostAddresses != null) {
+			for (FastList.Node<String> n = this.extraHostAddresses.head(), end = this.extraHostAddresses.tail(); (n = n.getNext()) != end;) {
+				if (sb2.length() > 0)
+					sb2.append(", ");
+				sb2.append(n.getValue());
+			}
+		}
+
+		return "Server [name=" + name + ", hostAddress=" + hostAddress + ", hostPort=" + hostport + ", peerAddress=" + ", ipChannelType=" + ipChannelType
+				+ ", associations=[" + sb.toString() + "], extraHostAddresses=[" + sb2.toString() + "], started=" + started + "]";
 	}
 
 	/**
@@ -264,6 +286,7 @@ public class ServerImpl implements Server {
 				throw new XMLStreamException("Bad value for server.ipChannelType");
 
 			server.associations = xml.get(ASSOCIATIONS, FastList.class);
+			server.extraHostAddresses = xml.get(EXTRA_HOST_ADDRESSES, FastList.class);
 		}
 
 		@Override
@@ -275,6 +298,7 @@ public class ServerImpl implements Server {
 			xml.setAttribute(IPCHANNEL_TYPE, server.ipChannelType.getCode());
 
 			xml.add(server.associations, ASSOCIATIONS, FastList.class);
+			xml.add(server.extraHostAddresses, EXTRA_HOST_ADDRESSES, FastList.class);
 		}
 	};
 }

@@ -24,8 +24,6 @@ package org.mobicents.protocols.sctp;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.mobicents.protocols.api.IpChannelType;
-
 import javolution.xml.XMLBinding;
 import javolution.xml.XMLFormat;
 import javolution.xml.stream.XMLStreamException;

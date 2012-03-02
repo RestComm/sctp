@@ -24,6 +24,8 @@ package org.mobicents.protocols.api;
 import java.util.List;
 import java.util.Map;
 
+import javolution.util.FastList;
+
 /**
  * <p>
  * {@link Management} class manages the underlying {@link Association} and
@@ -108,12 +110,15 @@ public interface Management {
 	 *            port that this server will bind to
 	 * @param ipChannelType
 	 *            IP channel type: SCTP or TCP
+	 * @param extraHostAddresses
+	 *            When SCTP multi-homing configuration extra IP addresses can be put here
+	 *            If multi-homing absence this parameter can be null 
 	 * @return new Server instance
 	 * @throws Exception
 	 *             Exception if management not started or server name already
 	 *             taken or some other server already has same ip:port
 	 */
-	public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType) throws Exception;
+	public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, FastList<String> extraHostAddresses) throws Exception;
 
 	/**
 	 * Add new {@link Server}. IP channel type is SCTP.
@@ -207,7 +212,8 @@ public interface Management {
 	 * @return
 	 * @throws Exception
 	 */
-	public Association addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName, IpChannelType ipChannelType) throws Exception;
+	public Association addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName, IpChannelType ipChannelType)
+			throws Exception;
 
 	/**
 	 * Add Association. IP channel type is SCTP.
@@ -220,7 +226,8 @@ public interface Management {
 	 * @return
 	 * @throws Exception
 	 */
-	public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName) throws Exception;
+	public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName)
+			throws Exception;
 
 	/**
 	 * Add Association
@@ -232,10 +239,14 @@ public interface Management {
 	 * @param assocName
 	 * @param ipChannelType
 	 *            IP channel type: SCTP or TCP
+	 * @param extraHostAddresses
+	 *            When SCTP multi-homing configuration extra IP addresses can be put here
+	 *            If multi-homing absence this parameter can be null 
 	 * @return
 	 * @throws Exception
 	 */
-	public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType) throws Exception;
+	public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
+			FastList<String> extraHostAddresses) throws Exception;
 
 	/**
 	 * Remove existing Association. Association should be stopped before

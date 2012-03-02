@@ -58,6 +58,13 @@ public interface Server {
 	 * @return
 	 */
 	public int getHostport();
+	
+	/**
+	 * When SCTP multi-homing configuration extra IP addresses are here
+	 * 
+	 * @return
+	 */
+	public List<String> getExtraHostAddresses();
 
 	/**
 	 * If the server is started

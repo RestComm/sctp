@@ -25,6 +25,8 @@ import static org.junit.Assert.*;
 
 import java.util.List;
 
+import javolution.util.FastList;
+
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.Server;
@@ -87,7 +89,10 @@ public class ManagementTest {
 		management.start();
 		management.removeAllResourses();
 
-		Server server = management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType);
+		FastList<String> arr = new FastList<String>();
+		arr.add("192.168.1.1");
+		arr.add("192.168.2.1");
+		Server server = management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, arr);
 		management.startServer(SERVER_NAME);
 
 		assertTrue(server.isStarted());
@@ -135,12 +140,15 @@ public class ManagementTest {
 		management.removeAllResourses();
 
 		// Add association
-		Association clientAss1 = management.addAssociation("localhost", 2905, "localhost", 2906, "ClientAssoc1", ipChannelType);
+		FastList<String> arr = new FastList<String>();
+		arr.add("192.168.1.1");
+		arr.add("192.168.2.1");
+		Association clientAss1 = management.addAssociation("localhost", 2905, "localhost", 2906, "ClientAssoc1", ipChannelType, arr);
 		assertNotNull(clientAss1);
 
 		// Try to add assoc with same name
 		try {
-			clientAss1 = management.addAssociation("localhost", 2907, "localhost", 2908, "ClientAssoc1", ipChannelType);
+			clientAss1 = management.addAssociation("localhost", 2907, "localhost", 2908, "ClientAssoc1", ipChannelType, null);
 			fail("Expected Exception");
 		} catch (Exception e) {
 			assertEquals("Already has association=ClientAssoc1", e.getMessage());
@@ -148,7 +156,7 @@ public class ManagementTest {
 
 		// Try to add assoc with same peer add and port
 		try {
-			clientAss1 = management.addAssociation("localhost", 2907, "localhost", 2906, "ClientAssoc2", ipChannelType);
+			clientAss1 = management.addAssociation("localhost", 2907, "localhost", 2906, "ClientAssoc2", ipChannelType, null);
 			fail("Expected Exception");
 		} catch (Exception e) {
 			assertEquals("Already has association=ClientAssoc1 with same peer address=localhost and port=2906", e.getMessage());
@@ -156,7 +164,7 @@ public class ManagementTest {
 
 		// Try to add assoc with same host add and port
 		try {
-			clientAss1 = management.addAssociation("localhost", 2905, "localhost", 2908, "ClientAssoc2", ipChannelType);
+			clientAss1 = management.addAssociation("localhost", 2905, "localhost", 2908, "ClientAssoc2", ipChannelType, null);
 			fail("Expected Exception");
 		} catch (Exception e) {
 			assertEquals("Already has association=ClientAssoc1 with same host address=localhost and port=2905", e.getMessage());
