@@ -50,22 +50,25 @@ public class ServerImpl implements Server {
 
 	private static final Logger logger = Logger.getLogger(ServerImpl.class.getName());
 
+	private static final String COMMA = ", ";
 	private static final String NAME = "name";
 	private static final String HOST_ADDRESS = "hostAddress";
 	private static final String HOST_PORT = "hostPort";
 	private static final String IPCHANNEL_TYPE = "ipChannelType";
 
 	private static final String ASSOCIATIONS = "associations";
-	private static final String EXTRA_HOST_ADDRESSES = "extraHostAddresses";
+	private static final String EXTRA_HOST_ADDRESS = "extraHostAddress";
 
 	private static final String STARTED = "started";
+
+	private static final String EXTRA_HOST_ADDRESS_SIZE = "extraHostAddresseSize";
 
 	private String name;
 	private String hostAddress;
 	private int hostport;
 	private volatile boolean started = false;
 	private IpChannelType ipChannelType;
-	private FastList<String> extraHostAddresses;
+	private String[] extraHostAddresses;
 
 	private ManagementImpl management = null;
 
@@ -88,7 +91,8 @@ public class ServerImpl implements Server {
 	 * @param port
 	 * @throws IOException
 	 */
-	public ServerImpl(String name, String hostAddress, int hostport, IpChannelType ipChannelType, FastList<String> extraHostAddresses) throws IOException {
+	public ServerImpl(String name, String hostAddress, int hostport, IpChannelType ipChannelType,
+			String[] extraHostAddresses) throws IOException {
 		super();
 		this.name = name;
 		this.hostAddress = hostAddress;
@@ -163,6 +167,7 @@ public class ServerImpl implements Server {
 		this.serverChannelSctp.bind(isa);
 		if (this.extraHostAddresses != null) {
 			for (String s : extraHostAddresses) {
+
 				this.serverChannelSctp.bindAddress(InetAddress.getByName(s));
 			}
 		}
@@ -219,8 +224,8 @@ public class ServerImpl implements Server {
 	}
 
 	@Override
-	public List<String> getExtraHostAddresses() {
-		return extraHostAddresses.unmodifiable();
+	public String[] getExtraHostAddresses() {
+		return extraHostAddresses;
 	}
 
 	/**
@@ -249,23 +254,29 @@ public class ServerImpl implements Server {
 	public String toString() {
 
 		StringBuilder sb = new StringBuilder();
+
+		sb.append("Server [name=").append(this.name).append(", started=").append(this.started).append(", hostAddress=")
+				.append(this.hostAddress).append(", hostPort=").append(hostport).append(", ipChannelType=")
+				.append(ipChannelType).append(", associations=[");
+
 		for (FastList.Node<String> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
-			if (sb.length() > 0)
-				sb.append(", ");
 			sb.append(n.getValue());
+			sb.append(", ");
 		}
 
-		StringBuilder sb2 = new StringBuilder();
+		sb.append("], extraHostAddress=[");
+
 		if (this.extraHostAddresses != null) {
-			for (FastList.Node<String> n = this.extraHostAddresses.head(), end = this.extraHostAddresses.tail(); (n = n.getNext()) != end;) {
-				if (sb2.length() > 0)
-					sb2.append(", ");
-				sb2.append(n.getValue());
+			for (int i = 0; i < this.extraHostAddresses.length; i++) {
+				String extraHostAddress = this.extraHostAddresses[i];
+				sb.append(extraHostAddress);
+				sb.append(", ");
 			}
 		}
 
-		return "Server [name=" + name + ", hostAddress=" + hostAddress + ", hostPort=" + hostport + ", peerAddress=" + ", ipChannelType=" + ipChannelType
-				+ ", associations=[" + sb.toString() + "], extraHostAddresses=[" + sb2.toString() + "], started=" + started + "]";
+		sb.append("]]");
+
+		return sb.toString();
 	}
 
 	/**
@@ -285,8 +296,14 @@ public class ServerImpl implements Server {
 			if (server.ipChannelType == null)
 				throw new XMLStreamException("Bad value for server.ipChannelType");
 
+			int extraHostAddressesSize = xml.getAttribute(EXTRA_HOST_ADDRESS_SIZE, 0);
+			server.extraHostAddresses = new String[extraHostAddressesSize];
+			
+			for(int i=0;i<extraHostAddressesSize;i++){
+				server.extraHostAddresses[i] = xml.get(EXTRA_HOST_ADDRESS, String.class);
+			}
+			
 			server.associations = xml.get(ASSOCIATIONS, FastList.class);
-			server.extraHostAddresses = xml.get(EXTRA_HOST_ADDRESSES, FastList.class);
 		}
 
 		@Override
@@ -296,9 +313,14 @@ public class ServerImpl implements Server {
 			xml.setAttribute(HOST_ADDRESS, server.hostAddress);
 			xml.setAttribute(HOST_PORT, server.hostport);
 			xml.setAttribute(IPCHANNEL_TYPE, server.ipChannelType.getCode());
-
+			xml.setAttribute(EXTRA_HOST_ADDRESS_SIZE,
+					server.extraHostAddresses != null ? server.extraHostAddresses.length : 0);
+			if (server.extraHostAddresses != null) {
+				for (String s : server.extraHostAddresses) {
+					xml.add(s, EXTRA_HOST_ADDRESS, String.class);
+				}
+			}
 			xml.add(server.associations, ASSOCIATIONS, FastList.class);
-			xml.add(server.extraHostAddresses, EXTRA_HOST_ADDRESSES, FastList.class);
 		}
 	};
 }

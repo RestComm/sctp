@@ -21,16 +21,20 @@
  */
 package org.mobicents.protocols.sctp;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.List;
-
-import javolution.util.FastList;
+import java.util.Map;
 
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.Server;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * @author amit bhayani
@@ -89,9 +93,7 @@ public class ManagementTest {
 		management.start();
 		management.removeAllResourses();
 
-		FastList<String> arr = new FastList<String>();
-		arr.add("192.168.1.1");
-		arr.add("192.168.2.1");
+		String[] arr = new String[]{"127.0.0.2", "127.0.0.3"};
 		Server server = management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, arr);
 		management.startServer(SERVER_NAME);
 
@@ -140,9 +142,7 @@ public class ManagementTest {
 		management.removeAllResourses();
 
 		// Add association
-		FastList<String> arr = new FastList<String>();
-		arr.add("192.168.1.1");
-		arr.add("192.168.2.1");
+		String[] arr = new String[]{"127.0.0.2", "127.0.0.3"};
 		Association clientAss1 = management.addAssociation("localhost", 2905, "localhost", 2906, "ClientAssoc1", ipChannelType, arr);
 		assertNotNull(clientAss1);
 
@@ -169,6 +169,17 @@ public class ManagementTest {
 		} catch (Exception e) {
 			assertEquals("Already has association=ClientAssoc1 with same host address=localhost and port=2905", e.getMessage());
 		}
+		
+		//Test Serialization.
+		management.stop();
+		
+		management = new ManagementImpl("ManagementTest");
+		// start again
+		management.start();
+		
+		Map<String, Association> associations  = management.getAssociations();
+		
+		assertEquals(associations.size(), 1);
 
 		// Remove Assoc
 		management.removeAssociation("ClientAssoc1");

@@ -98,7 +98,7 @@ public interface Management {
 	 * @throws Exception
 	 */
 	public void removeAllResourses() throws Exception;
-
+	
 	/**
 	 * Add new {@link Server}.
 	 * 
@@ -118,7 +118,7 @@ public interface Management {
 	 *             Exception if management not started or server name already
 	 *             taken or some other server already has same ip:port
 	 */
-	public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, FastList<String> extraHostAddresses) throws Exception;
+	public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, String[] extraHostAddresses) throws Exception;
 
 	/**
 	 * Add new {@link Server}. IP channel type is SCTP.
@@ -246,7 +246,7 @@ public interface Management {
 	 * @throws Exception
 	 */
 	public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
-			FastList<String> extraHostAddresses) throws Exception;
+			String[] extraHostAddresses) throws Exception;
 
 	/**
 	 * Remove existing Association. Association should be stopped before

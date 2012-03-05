@@ -64,7 +64,7 @@ public interface Server {
 	 * 
 	 * @return
 	 */
-	public List<String> getExtraHostAddresses();
+	public String[] getExtraHostAddresses();
 
 	/**
 	 * If the server is started

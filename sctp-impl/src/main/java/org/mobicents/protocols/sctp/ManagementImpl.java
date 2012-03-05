@@ -198,10 +198,11 @@ public class ManagementImpl implements Management {
 		this.persistFile.clear();
 
 		if (persistDir != null) {
-			this.persistFile.append(persistDir).append(File.separator).append(this.name).append("_").append(PERSIST_FILE_NAME);
-		} else {
-			persistFile.append(System.getProperty(SCTP_PERSIST_DIR_KEY, System.getProperty(USER_DIR_KEY))).append(File.separator).append(this.name).append("_")
+			this.persistFile.append(persistDir).append(File.separator).append(this.name).append("_")
 					.append(PERSIST_FILE_NAME);
+		} else {
+			persistFile.append(System.getProperty(SCTP_PERSIST_DIR_KEY, System.getProperty(USER_DIR_KEY)))
+					.append(File.separator).append(this.name).append("_").append(PERSIST_FILE_NAME);
 		}
 
 		logger.info(String.format("SCTP configuration file path %s", persistFile.toString()));
@@ -227,8 +228,8 @@ public class ManagementImpl implements Management {
 		this.started = true;
 
 		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Started SCTP Management=%s WorkerThreads=%d SingleThread=%s", this.name, (this.singleThread ? 0 : this.workerThreads),
-					this.singleThread));
+			logger.info(String.format("Started SCTP Management=%s WorkerThreads=%d SingleThread=%s", this.name,
+					(this.singleThread ? 0 : this.workerThreads), this.singleThread));
 		}
 	}
 
@@ -238,7 +239,8 @@ public class ManagementImpl implements Management {
 		this.store();
 
 		// Stop all associations
-		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n
+				.getNext()) != end;) {
 			Association associationTemp = n.getValue();
 			if (associationTemp.isStarted()) {
 				((AssociationImpl) associationTemp).stop();
@@ -305,7 +307,8 @@ public class ManagementImpl implements Management {
 			}
 
 			this.associations = reader.read(ASSOCIATIONS, AssociationMap.class);
-			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n
+					.getNext()) != end;) {
 				AssociationImpl associationTemp = (AssociationImpl) n.getValue();
 				associationTemp.setManagement(this);
 			}
@@ -341,14 +344,16 @@ public class ManagementImpl implements Management {
 		if (this.associations.size() == 0 && this.servers.size() == 0)
 			// no resources allocated - nothing to do
 			return;
-		
+
 		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Removing allocated resources: Servers=%d, Associations=%d", this.servers.size(), this.associations.size()));
+			logger.info(String.format("Removing allocated resources: Servers=%d, Associations=%d", this.servers.size(),
+					this.associations.size()));
 		}
 
 		// Remove all associations
 		ArrayList<String> lst = new ArrayList<String>();
-		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n
+				.getNext()) != end;) {
 			lst.add(n.getKey());
 		}
 		for (String n : lst) {
@@ -374,7 +379,8 @@ public class ManagementImpl implements Management {
 		return addServer(serverName, hostAddress, port, IpChannelType.SCTP, null);
 	}
 
-	public ServerImpl addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, FastList<String> extraHostAddresses) throws Exception {
+	public ServerImpl addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType,
+			String[] extraHostAddresses) throws Exception {
 
 		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
@@ -399,8 +405,8 @@ public class ManagementImpl implements Management {
 			}
 
 			if (hostAddress.equals(serverTemp.getHostAddress()) && port == serverTemp.getHostport()) {
-				throw new Exception(String.format("Server name=%s is already bound to %s:%d", serverTemp.getName(), serverTemp.getHostAddress(),
-						serverTemp.getHostport()));
+				throw new Exception(String.format("Server name=%s is already bound to %s:%d", serverTemp.getName(),
+						serverTemp.getHostAddress(), serverTemp.getHostport()));
 			}
 		}
 
@@ -433,7 +439,8 @@ public class ManagementImpl implements Management {
 
 			if (serverName.equals(serverTemp.getName())) {
 				if (serverTemp.isStarted()) {
-					throw new Exception(String.format("Server=%s is started. Stop the server before removing", serverName));
+					throw new Exception(String.format("Server=%s is started. Stop the server before removing",
+							serverName));
 				}
 				removeServer = serverTemp;
 				break;
@@ -497,12 +504,13 @@ public class ManagementImpl implements Management {
 		throw new Exception(String.format("No Server found with name=%s", serverName));
 	}
 
-	public AssociationImpl addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName) throws Exception {
+	public AssociationImpl addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName)
+			throws Exception {
 		return addServerAssociation(peerAddress, peerPort, serverName, assocName, IpChannelType.SCTP);
 	}
 
-	public AssociationImpl addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName, IpChannelType ipChannelType)
-			throws Exception {
+	public AssociationImpl addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName,
+			IpChannelType ipChannelType) throws Exception {
 
 		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
@@ -541,15 +549,16 @@ public class ManagementImpl implements Management {
 			throw new Exception(String.format("No Server found for name=%s", serverName));
 		}
 
-		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n
+				.getNext()) != end;) {
 			Association associationTemp = n.getValue();
 
 			if (peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
-				throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d", associationTemp.getName(), peerAddress,
-						peerPort));
+				throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d",
+						associationTemp.getName(), peerAddress, peerPort));
 			}
 		}
-		
+
 		if (server.getIpChannelType() != ipChannelType)
 			throw new Exception(String.format("Server and Accociation has different IP channel type"));
 
@@ -561,18 +570,20 @@ public class ManagementImpl implements Management {
 		this.store();
 
 		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Added Associoation=%s of type=%s", association.getName(), association.getAssociationType()));
+			logger.info(String.format("Added Associoation=%s of type=%s", association.getName(),
+					association.getAssociationType()));
 		}
 
 		return association;
 	}
 
-	public AssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName) throws Exception {
+	public AssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort,
+			String assocName) throws Exception {
 		return addAssociation(hostAddress, hostPort, peerAddress, peerPort, assocName, IpChannelType.SCTP, null);
 	}
 
-	public AssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
-			FastList<String> extraHostAddresses) throws Exception {
+	public AssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort,
+			String assocName, IpChannelType ipChannelType, String[] extraHostAddresses) throws Exception {
 
 		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
@@ -598,7 +609,8 @@ public class ManagementImpl implements Management {
 			throw new Exception("Association name cannot be null");
 		}
 
-		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n
+				.getNext()) != end;) {
 			Association associationTemp = n.getValue();
 
 			if (assocName.equals(associationTemp.getName())) {
@@ -606,25 +618,27 @@ public class ManagementImpl implements Management {
 			}
 
 			if (peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
-				throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d", associationTemp.getName(), peerAddress,
-						peerPort));
+				throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d",
+						associationTemp.getName(), peerAddress, peerPort));
 			}
 
 			if (hostAddress.equals(associationTemp.getHostAddress()) && associationTemp.getHostPort() == hostPort) {
-				throw new Exception(String.format("Already has association=%s with same host address=%s and port=%d", associationTemp.getName(), hostAddress,
-						hostPort));
+				throw new Exception(String.format("Already has association=%s with same host address=%s and port=%d",
+						associationTemp.getName(), hostAddress, hostPort));
 			}
 
 		}
 
-		AssociationImpl association = new AssociationImpl(hostAddress, hostPort, peerAddress, peerPort, assocName, ipChannelType, extraHostAddresses);
+		AssociationImpl association = new AssociationImpl(hostAddress, hostPort, peerAddress, peerPort, assocName,
+				ipChannelType, extraHostAddresses);
 		association.setManagement(this);
 		associations.put(assocName, association);
 
 		this.store();
 
 		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Added Associoation=%s of type=%s", association.getName(), association.getAssociationType()));
+			logger.info(String.format("Added Associoation=%s of type=%s", association.getName(),
+					association.getAssociationType()));
 		}
 
 		return association;
@@ -761,4 +775,3 @@ public class ManagementImpl implements Management {
 		return this.executorServices[index];
 	}
 }
-

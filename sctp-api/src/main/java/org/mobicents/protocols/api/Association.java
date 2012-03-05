@@ -124,7 +124,7 @@ public interface Association {
 	 * 
 	 * @return
 	 */
-	public List<String> getExtraHostAddresses();
+	public String[] getExtraHostAddresses();
 
 	/**
 	 * Send the {@link PayloadData} to the peer
