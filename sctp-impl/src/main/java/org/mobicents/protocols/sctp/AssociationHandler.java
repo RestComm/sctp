@@ -22,10 +22,12 @@
 package org.mobicents.protocols.sctp;
 
 import org.apache.log4j.Logger;
+import org.apache.log4j.Priority;
 
 import com.sun.nio.sctp.AbstractNotificationHandler;
 import com.sun.nio.sctp.AssociationChangeNotification;
 import com.sun.nio.sctp.HandlerResult;
+import com.sun.nio.sctp.PeerAddressChangeNotification;
 import com.sun.nio.sctp.SendFailedNotification;
 import com.sun.nio.sctp.ShutdownNotification;
 
@@ -111,6 +113,9 @@ class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 						e);
 			}
 			return HandlerResult.RETURN;
+		default:
+			logger.warn(String.format("Received unkown Event=%s for Association=%s", not.event(), associtaion.getName()));
+			break;
 		}
 
 		return HandlerResult.CONTINUE;
@@ -137,5 +142,14 @@ class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 	public HandlerResult handleNotification(SendFailedNotification notification, AssociationImpl associtaion) {
 		logger.error(String.format("Association=%s SendFailedNotification", associtaion.getName()));
 		return HandlerResult.RETURN;
+	}
+	
+	@Override
+	public  HandlerResult handleNotification(PeerAddressChangeNotification notification, AssociationImpl associtaion) {
+		associtaion.peerSocketAddress = notification.address();
+		if(logger.isEnabledFor(Priority.WARN)){
+			logger.warn(String.format("Peer Address changed to=%s for Association=%s", notification.address(), associtaion.getName()));
+		}
+		return HandlerResult.CONTINUE;
 	}
 }

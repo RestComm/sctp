@@ -20,38 +20,56 @@
  * MA 02110-1301, USA.
  */
 
-package org.mobicents.protocols.sctp;
+package org.mobicents.protocols.sctp.multihome;
 
 import static org.junit.Assert.assertTrue;
-
-import java.util.Arrays;
+import javolution.util.FastList;
 
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationListener;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.PayloadData;
-import org.testng.annotations.*;
-
-import com.sun.nio.sctp.SctpChannel;
+import org.mobicents.protocols.sctp.AssociationImpl;
+import org.mobicents.protocols.sctp.ManagementImpl;
+import org.mobicents.protocols.sctp.ServerImpl;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
+ * <p>
+ * This test is for SCTP Multihoming. Make sure you change SERVER_HOST1 and
+ * CLIENT_HOST1 to match your current ip before you run this test.
+ * <p>
+ * <p>
+ * Once this test is started you can randomly bring down loop back interface or
+ * real interafce and see that traffic still continues.
+ * </p>
+ * <p>
+ * This is not automated test. Please don't add in automation.
+ * </p>
+ * 
  * @author amit bhayani
  * 
  */
-public class SctpTransferTest {
+public class SctpMultiHomeTransferTest {
 	private static final String SERVER_NAME = "testserver";
 	private static final String SERVER_HOST = "127.0.0.1";
+	private static final String SERVER_HOST1 = "10.2.50.212";
+
 	private static final int SERVER_PORT = 2347;
 
 	private static final String SERVER_ASSOCIATION_NAME = "serverAssociation";
 	private static final String CLIENT_ASSOCIATION_NAME = "clientAssociation";
 
 	private static final String CLIENT_HOST = "127.0.0.1";
+	private static final String CLIENT_HOST1 = "10.2.50.212";
+
 	private static final int CLIENT_PORT = 2348;
 
-	private final byte[] CLIENT_MESSAGE = "Client says Hi".getBytes();
-	private final byte[] SERVER_MESSAGE = "Server says Hi".getBytes();
+	private final String CLIENT_MESSAGE = "Client says Hi";
+	private final String SERVER_MESSAGE = "Server says Hi";
 
 	private ManagementImpl management = null;
 
@@ -67,8 +85,8 @@ public class SctpTransferTest {
 	private volatile boolean clientAssocDown = false;
 	private volatile boolean serverAssocDown = false;
 
-	private byte[] clientMessage;
-	private byte[] serverMessage;
+	private FastList<String> clientMessage = null;
+	private FastList<String> serverMessage = null;
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
@@ -85,8 +103,8 @@ public class SctpTransferTest {
 		this.clientAssocDown = false;
 		this.serverAssocDown = false;
 
-		this.clientMessage = null;
-		this.serverMessage = null;
+		this.clientMessage = new FastList<String>();
+		this.serverMessage = new FastList<String>();
 
 		this.management = new ManagementImpl("server-management");
 		this.management.setConnectDelay(10000);// Try connecting every 10 secs
@@ -94,10 +112,10 @@ public class SctpTransferTest {
 		this.management.start();
 		this.management.removeAllResourses();
 
-		this.server = this.management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, null);
+		this.server = this.management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, new String[] { SERVER_HOST1 });
 		this.serverAssociation = this.management.addServerAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_NAME, SERVER_ASSOCIATION_NAME, ipChannelType);
 		this.clientAssociation = this.management.addAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_HOST, SERVER_PORT, CLIENT_ASSOCIATION_NAME, ipChannelType,
-				null);
+				new String[] { CLIENT_HOST1 });
 	}
 
 	public void tearDown() throws Exception {
@@ -113,30 +131,10 @@ public class SctpTransferTest {
 	 * Simple test that creates Client and Server Association, exchanges data
 	 * and brings down association. Finally removes the Associations and Server
 	 */
-	@Test(groups = { "functional", "sctp" })
+	@Test(groups = { "functional", "sctp-multihome" })
 	public void testDataTransferSctp() throws Exception {
 
-		if (SctpTransferTest.checkSctpEnabled())
-			this.testDataTransferByProtocol(IpChannelType.SCTP);
-	}
-
-	/**
-	 * Simple test that creates Client and Server Association, exchanges data
-	 * and brings down association. Finally removes the Associations and Server
-	 */
-	@Test(groups = { "functional", "tcp" })
-	public void testDataTransferTcp() throws Exception {
-
-		// BasicConfigurator.configure();
-		// Logger logger = Logger.getLogger(ServerImpl.class.getName());
-		// logger.setLevel(Level.ALL);
-
-		this.testDataTransferByProtocol(IpChannelType.TCP);
-	}
-
-	private void testDataTransferByProtocol(IpChannelType ipChannelType) throws Exception {
-
-		this.setUp(ipChannelType);
+		this.setUp(IpChannelType.SCTP);
 
 		this.management.startServer(SERVER_NAME);
 
@@ -151,7 +149,7 @@ public class SctpTransferTest {
 				break;
 			Thread.sleep(1000 * 5); // was: 40
 		}
-		Thread.sleep(1000 * 1); // was: 40
+		Thread.sleep(1000 * 15000); // was: 40
 
 		this.management.stopAssociation(CLIENT_ASSOCIATION_NAME);
 
@@ -162,8 +160,8 @@ public class SctpTransferTest {
 
 		Thread.sleep(1000 * 2);
 
-		assertTrue(Arrays.equals(SERVER_MESSAGE, clientMessage));
-		assertTrue(Arrays.equals(CLIENT_MESSAGE, serverMessage));
+		// assertTrue(Arrays.equals(SERVER_MESSAGE, clientMessage));
+		// assertTrue(Arrays.equals(CLIENT_MESSAGE, serverMessage));
 
 		assertTrue(clientAssocUp);
 		assertTrue(serverAssocUp);
@@ -176,22 +174,10 @@ public class SctpTransferTest {
 		this.tearDown();
 	}
 
-	/**
-	 * @return true if sctp is supported by this OS and false in not
-	 */
-	public static boolean checkSctpEnabled() {
-		try {
-			SctpChannel socketChannel = SctpChannel.open();
-			socketChannel.close();
-			return true;
-		} catch (Exception e) {
-			return false;
-		}
-	}
-
 	private class ClientAssociationListener implements AssociationListener {
-		
 		private final Logger logger = Logger.getLogger(ClientAssociationListener.class);
+		
+		private LoadGenerator loadGenerator = null;
 
 		/*
 		 * (non-Javadoc)
@@ -202,17 +188,12 @@ public class SctpTransferTest {
 		 */
 		@Override
 		public void onCommunicationUp(Association association) {
-			System.out.println(this + " onCommunicationUp");
+			logger.info(" onCommunicationUp");
 
 			clientAssocUp = true;
+			loadGenerator = new LoadGenerator(association, CLIENT_MESSAGE);
+			(new Thread(loadGenerator)).start();
 
-			PayloadData payloadData = new PayloadData(CLIENT_MESSAGE.length, CLIENT_MESSAGE, true, false, 3, 1);
-
-			try {
-				association.send(payloadData);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
 		}
 
 		/*
@@ -224,8 +205,9 @@ public class SctpTransferTest {
 		 */
 		@Override
 		public void onCommunicationShutdown(Association association) {
-			System.out.println(this + " onCommunicationShutdown");
+			logger.warn( " onCommunicationShutdown");
 			clientAssocDown = true;
+			loadGenerator.stop();
 		}
 
 		/*
@@ -237,7 +219,8 @@ public class SctpTransferTest {
 		 */
 		@Override
 		public void onCommunicationLost(Association association) {
-			System.out.println(this + " onCommunicationLost");
+			logger.warn(" onCommunicationLost");
+			loadGenerator.stop();
 		}
 
 		/*
@@ -249,7 +232,7 @@ public class SctpTransferTest {
 		 */
 		@Override
 		public void onCommunicationRestart(Association association) {
-			System.out.println(this + " onCommunicationRestart");
+			logger.warn(" onCommunicationRestart");
 		}
 
 		/*
@@ -262,16 +245,60 @@ public class SctpTransferTest {
 		 */
 		@Override
 		public void onPayload(Association association, PayloadData payloadData) {
-			clientMessage = new byte[payloadData.getDataLength()];
-			System.arraycopy(payloadData.getData(), 0, clientMessage, 0, payloadData.getDataLength());
-			logger.debug("CLIENT received " + new String(clientMessage));
+			byte[] data = new byte[payloadData.getDataLength()];
+			System.arraycopy(payloadData.getData(), 0, data, 0, payloadData.getDataLength());
+			String rxMssg = new String(data);
+			logger.debug("CLIENT received " + rxMssg);
+			clientMessage.add(rxMssg);
+
+		}
+
+	}
+
+	private class LoadGenerator implements Runnable {
+
+		private String message = null;
+		private Association association;
+		private volatile boolean started = true;
+
+		LoadGenerator(Association association, String message) {
+			this.association = association;
+			this.message = message;
+		}
+
+		void stop() {
+			this.started = false;
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see java.lang.Runnable#run()
+		 */
+		@Override
+		public void run() {
+			for (int i = 0; i < 10000 && started; i++) {
+				byte[] data = (this.message + i).getBytes();
+				PayloadData payloadData = new PayloadData(data.length, data, true, false, 3, 1);
+
+				try {
+					this.association.send(payloadData);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 
 	}
 
 	private class ServerAssociationListener implements AssociationListener {
-
 		private final Logger logger = Logger.getLogger(ServerAssociationListener.class);
+		private LoadGenerator loadGenerator = null;
 
 		/*
 		 * (non-Javadoc)
@@ -282,17 +309,12 @@ public class SctpTransferTest {
 		 */
 		@Override
 		public void onCommunicationUp(Association association) {
-			System.out.println(this + " onCommunicationUp");
+			logger.info(" onCommunicationUp");
 
 			serverAssocUp = true;
 
-			PayloadData payloadData = new PayloadData(SERVER_MESSAGE.length, SERVER_MESSAGE, true, false, 3, 1);
-
-			try {
-				association.send(payloadData);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			loadGenerator = new LoadGenerator(association, SERVER_MESSAGE);
+			(new Thread(loadGenerator)).start();
 		}
 
 		/*
@@ -304,8 +326,9 @@ public class SctpTransferTest {
 		 */
 		@Override
 		public void onCommunicationShutdown(Association association) {
-			System.out.println(this + " onCommunicationShutdown");
+			logger.warn(" onCommunicationShutdown");
 			serverAssocDown = true;
+			loadGenerator.stop();
 		}
 
 		/*
@@ -317,7 +340,8 @@ public class SctpTransferTest {
 		 */
 		@Override
 		public void onCommunicationLost(Association association) {
-			System.out.println(this + " onCommunicationLost");
+			logger.warn(" onCommunicationLost");
+			loadGenerator.stop();
 		}
 
 		/*
@@ -329,7 +353,7 @@ public class SctpTransferTest {
 		 */
 		@Override
 		public void onCommunicationRestart(Association association) {
-			System.out.println(this + " onCommunicationRestart");
+			logger.warn(" onCommunicationRestart");
 		}
 
 		/*
@@ -342,9 +366,11 @@ public class SctpTransferTest {
 		 */
 		@Override
 		public void onPayload(Association association, PayloadData payloadData) {
-			serverMessage = new byte[payloadData.getDataLength()];
-			System.arraycopy(payloadData.getData(), 0, serverMessage, 0, payloadData.getDataLength());
-			logger.debug("SERVER received " + new String(serverMessage));
+			byte[] data = new byte[payloadData.getDataLength()];
+			System.arraycopy(payloadData.getData(), 0, data, 0, payloadData.getDataLength());
+			String rxMssg = new String(data);
+			logger.debug("SERVER received " + rxMssg);
+			serverMessage.add(rxMssg);
 		}
 
 	}

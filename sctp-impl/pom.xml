@@ -16,11 +16,6 @@
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<scope>provided</scope>
-		</dependency>
 		<!-- javolution -->
 		<dependency>
 			<groupId>javolution</groupId>
@@ -46,14 +41,34 @@
 	</dependencies>
 	<build>
 		<plugins>
-			<plugin>
+				<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.9</version>
 				<configuration>
-					<forkMode>always</forkMode>
+					<suiteXmlFiles>
+						<suiteXmlFile>testng-methods.xml</suiteXmlFile>
+						<suiteXmlFile>testng-classes.xml</suiteXmlFile>
+					</suiteXmlFiles>
 				</configuration>
-			</plugin>
+			</plugin>	
+			<plugin>
+				<artifactId>maven-clean-plugin</artifactId>
+				<configuration>
+					<filesets>
+						<fileset>
+							<directory>.</directory>
+							<includes>
+								<include>*_sctp.xml</include>
+								<include>sctptest.log</include>
+							</includes>
+							<!-- <excludes> <exclude>**/important.log</exclude> <exclude>**/another-important.log</exclude> 
+								</excludes> -->
+							<followSymlinks>false</followSymlinks>
+						</fileset>
+					</filesets>
+				</configuration>
+			</plugin>					
 		</plugins>
 	</build>
 	<properties>
