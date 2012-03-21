@@ -24,8 +24,6 @@ package org.mobicents.protocols.api;
 import java.util.List;
 import java.util.Map;
 
-import javolution.util.FastList;
-
 /**
  * <p>
  * {@link Management} class manages the underlying {@link Association} and

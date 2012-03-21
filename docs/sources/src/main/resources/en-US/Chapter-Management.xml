@@ -62,6 +62,12 @@ public interface Management {
 	public String getName();
 	
 	/**
+	 * Get persist dir
+	 * @return
+	 */
+	public String getPersistDir();
+	
+	/**
 	 * Directory where the XXX.xml will be searched
 	 * @param persistDir
 	 */
@@ -86,7 +92,37 @@ public interface Management {
 	public void stop() throws Exception;
 
 	/**
+	 * This method stops and removes all registered servers and associations
+	 * Management should be started
+	 * Use this method only for test purposes or after total crashes 
+	 * 
+	 * @throws Exception
+	 */
+	public void removeAllResourses() throws Exception;
+	
+	/**
 	 * Add new {@link Server}.
+	 * 
+	 * @param serverName
+	 *            name of the Server. Should be unique name
+	 * @param hostAddress
+	 *            IP address that this server will bind to
+	 * @param port
+	 *            port that this server will bind to
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
+	 * @param extraHostAddresses
+	 *            When SCTP multi-homing configuration extra IP addresses can be put here
+	 *            If multi-homing absence this parameter can be null 
+	 * @return new Server instance
+	 * @throws Exception
+	 *             Exception if management not started or server name already
+	 *             taken or some other server already has same ip:port
+	 */
+	public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, String[] extraHostAddresses) throws Exception;
+
+	/**
+	 * Add new {@link Server}. IP channel type is SCTP.
 	 * 
 	 * @param serverName
 	 *            name of the Server. Should be unique name
@@ -100,7 +136,7 @@ public interface Management {
 	 *             taken or some other server already has same ip:port
 	 */
 	public Server addServer(String serverName, String hostAddress, int port) throws Exception;
-
+	
 	/**
 	 * Remove existing {@link Server}
 	 * 
@@ -160,7 +196,28 @@ public interface Management {
 	public Association addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName) throws Exception;
 
 	/**
-	 * Add Association
+	 * Add server Association. IP channel type is SCTP.
+	 * 
+	 * @param peerAddress
+	 *            the peer IP address that this association will accept
+	 *            connection from
+	 * @param peerPort
+	 *            the peer port that this association will accept connection
+	 *            from
+	 * @param serverName
+	 *            the Server that this association belongs to
+	 * @param assocName
+	 *            unique name of Association
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
+	 * @return
+	 * @throws Exception
+	 */
+	public Association addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName, IpChannelType ipChannelType)
+			throws Exception;
+
+	/**
+	 * Add Association. IP channel type is SCTP.
 	 * 
 	 * @param hostAddress
 	 * @param hostPort
@@ -170,7 +227,27 @@ public interface Management {
 	 * @return
 	 * @throws Exception
 	 */
-	public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName) throws Exception;
+	public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName)
+			throws Exception;
+
+	/**
+	 * Add Association
+	 * 
+	 * @param hostAddress
+	 * @param hostPort
+	 * @param peerAddress
+	 * @param peerPort
+	 * @param assocName
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
+	 * @param extraHostAddresses
+	 *            When SCTP multi-homing configuration extra IP addresses can be put here
+	 *            If multi-homing absence this parameter can be null 
+	 * @return
+	 * @throws Exception
+	 */
+	public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
+			String[] extraHostAddresses) throws Exception;
 
 	/**
 	 * Remove existing Association. Association should be stopped before
@@ -273,18 +350,21 @@ public interface Management {
 			<variablelist>
 				<varlistentry>
 					<term>
-						<literal>public Association addAssociation(String hostAddress, int
-							hostPort, String peerAddress, int peerPort, String assocName)</literal>
+						<literal>public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
+			String[] extraHostAddresses)</literal>
 					</term>
 					<listitem>
 						<para>
-							Add's a new client side association to the management.
-							Association when started will create underlying SCTP socket that will bind to
+							Add's a new client side association to the management. The underlying protocol (SCTP or TCP) depends on IpChannelType passed.
+							Association when started will create underlying SCTP/TCP socket that will bind to
 							hostAddress:hostPort and tries to connect to
 							peerAddress:peerPort. Each association is identified by unique name. The connection attempt
-							be will made after every
-							<code>connectDelay</code>
+							be will made after every <code>connectDelay</code>
 							milliseconds till the connection is successfully created.
+						</para>
+						<para>
+							If SCTP socket is being created, extraHostAddresses can be passed for multi-home machines. SCTP Socket will bind to "hostAddress" as primary address and use "extraHostAddresses" as fall-back 
+							in case if primary network goes down.  
 						</para>
 						<para>
 							Appropriate Exception's are thrown if other association with same name
@@ -297,26 +377,19 @@ public interface Management {
 
 				<varlistentry>
 					<term>
-						<literal>public Association addServerAssociation(String
-							peerAddress, int peerPort, String serverName, String assocName)</literal>
+						<literal>public Association addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName, IpChannelType ipChannelType)</literal>
 					</term>
 					<listitem>
 						<para>
 							Add's a new server side association to the management. A server
-							by name
-							<code>serverName</code>
-							should already have been added to the management before adding
-							server side association.
-							Only Association from peerAddress:peerPort will be accepted by
+							by name <code>serverName</code> should already have been added to the management before adding
+							server side association. Only Association from peerAddress:peerPort will be accepted by
 							underlying server socket. If connection request is coming from
 							any other ip:port combination it's gracefully closed and error
 							message is logged. If connect request comes for configured peerAddress:peerPort, but underlying association is not started, it's gracefully closed
-							and error message is logged. 
+							and error message is logged. The IpChannelType should match with that configured for server.
 						</para>
-						<para>
-							Each association is identified by unique name. The connection attempt
-							be will made after every <code>connectDelay</code> milliseconds till the connection is successfully created.
-						</para>
+						
 						<para>
 							Appropriate Exception's are thrown if other association with same name
 							already exist or if other association is already configured to receive connection request from
@@ -327,12 +400,16 @@ public interface Management {
 				
 				<varlistentry>
 					<term>
-						<literal>public Server addServer(String serverName, String hostAddress, int port)</literal>
+						<literal>public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, String[] extraHostAddresses)</literal>
 					</term>
 					<listitem>
 						<para>
-							Add's a new server to the management. Server will be bound to hostAddress:port when started.
+							Add's a new server to the management. Server will be bound to hostAddress:port when started. Type of underlying protocol (SCTP/TCP) depends on IpChannelType passed
 						</para>
+						<para>
+							If SCTP server socket is being created, extraHostAddresses can be passed for multi-home machines. SCTP Socket will bind to "hostAddress" as primary address and use 
+							"extraHostAddresses" as fall-back in case if primary network goes down.  
+						</para>						
 						<para>
 							Each server is identified by unique name. 
 						</para>
@@ -462,7 +539,18 @@ public interface Management {
 							Returns the unmodifiable lis of servers. 
 						</para>
 					</listitem>
-				</varlistentry>																									
+				</varlistentry>		
+				
+				<varlistentry>
+					<term>
+						<literal>public void removeAllResourses()</literal>
+					</term>
+					<listitem>
+						<para>
+							This method stops and removes all registered servers and associations. Management should be started before this operation can be called. Use this method only for test purposes or after total crashes.
+						</para>
+					</listitem>
+				</varlistentry>																												
 											
 			</variablelist>
 		</section>

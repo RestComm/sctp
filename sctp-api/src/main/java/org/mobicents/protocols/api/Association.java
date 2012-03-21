@@ -21,7 +21,6 @@
  */
 package org.mobicents.protocols.api;
 
-import java.util.List;
 
 
 /**

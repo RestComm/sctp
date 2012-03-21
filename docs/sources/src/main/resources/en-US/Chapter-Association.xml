@@ -11,7 +11,7 @@
 		Association is a protocol relationship between endpoints. Its
 		wrapper over actual socket exposing the same API's irrespective
 		if its client side socket initiating connection or server side socket
-		accepting connection.
+		accepting connection. Also the underlying scoket can be of type TCP or SCTP.
 	</para>
 	<para>
 		The Application using &THIS.PLATFORM; &THIS.APPLICATION;
@@ -27,6 +27,8 @@
 
 	<programlisting lang="JAVA" role="JAVA"><![CDATA[
 package org.mobicents.protocols.api;
+
+
 
 /**
  * <p>
@@ -45,6 +47,20 @@ package org.mobicents.protocols.api;
  * 
  */
 public interface Association {
+
+	/**
+	 * Return the Association channel type TCP or SCTP
+	 * 
+	 * @return
+	 */
+	public IpChannelType getIpChannelType();
+
+	/**
+	 * Return the type of Association CLIENT or SERVER
+	 * 
+	 * @return
+	 */
+	public AssociationType getAssociationType();
 
 	/**
 	 * Each association has unique name
@@ -108,6 +124,13 @@ public interface Association {
 	 * @return
 	 */
 	public String getServerName();
+	
+	/**
+	 * When SCTP multi-homing configuration extra IP addresses are here
+	 * 
+	 * @return
+	 */
+	public String[] getExtraHostAddresses();
 
 	/**
 	 * Send the {@link PayloadData} to the peer
@@ -117,7 +140,7 @@ public interface Association {
 	 */
 	public void send(PayloadData payloadData) throws Exception;
 
-}		
+}	
 		
 		]]>
 	</programlisting>

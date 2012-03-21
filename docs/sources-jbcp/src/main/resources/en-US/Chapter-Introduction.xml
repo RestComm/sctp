@@ -32,6 +32,15 @@
 		only with version JDK 1.7 or above.
 	</para>
 	<para>
+		&THIS.PLATFORM; &THIS.APPLICATION; can also create the TCP sockets exposing same high level API's hence application using &THIS.PLATFORM; &THIS.APPLICATION;
+		can work seamless with TCP or SCTP. 
+	</para>
+	<note>
+		<para>
+			The TCP facility is only for test to support the OS which doesn't have SCTP available out-of-box. For example Windows OS.
+		</para>
+	</note>
+	<para>
 		In addition to exposing the SCTP protocol, &THIS.PLATFORM; &THIS.APPLICATION;
 		contains number of features which other wise the application depending on
 		SCTP will have to take care of. For example &THIS.PLATFORM; &THIS.APPLICATION;
