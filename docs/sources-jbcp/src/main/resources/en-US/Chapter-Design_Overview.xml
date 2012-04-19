@@ -1,30 +1,0 @@
-<?xml version='1.0'?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [<!ENTITY % BOOK_ENTITIES SYSTEM "SCTP_Stack_User_Guide.ent">%BOOK_ENTITIES;]>
-
-<chapter id="design_overview">
-
-	<title>Design Overview</title>
-		<para>
-		The internal structure of &THIS.PLATFORM; &THIS.APPLICATION; looks like
-	</para>
-	
-		<figure>
-		<title>Architecture</title>
-		<mediaobject id="sctp_architecture">
-			<imageobject>
-				<imagedata align="center"
-					fileref="images/SCTPInternalArchitecture.jpg" format="JPG" />
-			</imageobject>
-		</mediaobject>
-	</figure>
-	
-	<para>
-		The prime responsibility of &THIS.PLATFORM; &THIS.APPLICATION; is abstract Application from underlying SCTP sockets and expose same API (<code>Association.java</code>) irrespective if the underlying SCTP is acting as 
-		server side waiting for client to connect or client side initiating connection. 
-	</para>
-	
-	<para>
-		The management (<code>Management.java</code>) controls the associations and servers. The Application can execute commands to create/delete associations/servers. 
-	</para>
-</chapter>
-
