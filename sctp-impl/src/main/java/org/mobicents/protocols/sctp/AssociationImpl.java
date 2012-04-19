@@ -94,6 +94,8 @@ public class AssociationImpl implements Association {
 
 	// Is the Association been started by management?
 	private volatile boolean started = false;
+	// Is the Association up (connection is established)
+	protected volatile boolean up = false;
 
 	private static final int MAX_SLS = 32;
 	private int slsTable[] = new int[MAX_SLS];
@@ -248,8 +250,14 @@ public class AssociationImpl implements Association {
 	/**
 	 * @return the started
 	 */
+	@Override
 	public boolean isStarted() {
 		return started;
+	}
+
+	@Override
+	public boolean isConnected() {
+		return started && up;
 	}
 
 	/**
@@ -554,6 +562,7 @@ public class AssociationImpl implements Association {
 		}
 
 		try {
+			this.up = false;
 			this.associationListener.onCommunicationShutdown(this);
 		} catch (Exception e) {
 			logger.error(String.format("Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", this.name), e);
@@ -586,10 +595,15 @@ public class AssociationImpl implements Association {
 			}
 		}
 
-		if (this.ipChannelType == IpChannelType.SCTP)
-			this.doInitiateConnectionSctp();
-		else
-			this.doInitiateConnectionTcp();
+		try {
+			if (this.ipChannelType == IpChannelType.SCTP)
+				this.doInitiateConnectionSctp();
+			else
+				this.doInitiateConnectionTcp();
+		} catch (Exception e) {
+			logger.error("Error while initiating a connection", e);
+			this.scheduleConnect();
+		}
 
 		// reset the ioErrors
 		this.ioErrors = 0;

@@ -19,6 +19,7 @@
  * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
+
 package org.mobicents.protocols.api;
 
 
@@ -68,6 +69,13 @@ public interface Association {
 	 * @return
 	 */
 	public boolean isStarted();
+
+	/**
+	 * If this association up (connection is established)
+	 * 
+	 * @return
+	 */
+	public boolean isConnected();
 
 	/**
 	 * The AssociationListener set for this Association
