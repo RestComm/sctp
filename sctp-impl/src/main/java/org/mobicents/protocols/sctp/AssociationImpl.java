@@ -611,6 +611,7 @@ public class AssociationImpl implements Association {
 		} catch (Exception e) {
 			logger.error("Error while initiating a connection", e);
 			this.scheduleConnect();
+			return;
 		}
 
 		// reset the ioErrors
