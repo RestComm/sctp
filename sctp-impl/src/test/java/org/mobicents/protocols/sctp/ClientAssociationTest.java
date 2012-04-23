@@ -189,7 +189,7 @@ public class ClientAssociationTest {
 		 * (org.mobicents.protocols.sctp.Association)
 		 */
 		@Override
-		public void onCommunicationUp(Association association) {
+		public void onCommunicationUp(Association association, int maxInboundStreams, int maxOutboundStreams) {
 			System.out.println(this + " onCommunicationUp");
 
 			clientAssocUp = true;
@@ -259,6 +259,15 @@ public class ClientAssociationTest {
 
 		}
 
+		/* (non-Javadoc)
+		 * @see org.mobicents.protocols.api.AssociationListener#inValidStreamId(org.mobicents.protocols.api.PayloadData)
+		 */
+		@Override
+		public void inValidStreamId(PayloadData payloadData) {
+			// TODO Auto-generated method stub
+			
+		}
+
 	}
 
 	private class ServerAssociationListener implements AssociationListener {
@@ -271,7 +280,7 @@ public class ClientAssociationTest {
 		 * (org.mobicents.protocols.sctp.Association)
 		 */
 		@Override
-		public void onCommunicationUp(Association association) {
+		public void onCommunicationUp(Association association, int maxInboundStreams, int maxOutboundStreams) {
 			System.out.println(this + " onCommunicationUp");
 
 			serverAssocUp = true;
@@ -338,6 +347,15 @@ public class ClientAssociationTest {
 			System.arraycopy(payloadData.getData(), 0, serverMessage, 0, payloadData.getDataLength());
 
 			System.out.println(this + "received " + new String(serverMessage));
+		}
+
+		/* (non-Javadoc)
+		 * @see org.mobicents.protocols.api.AssociationListener#inValidStreamId(org.mobicents.protocols.api.PayloadData)
+		 */
+		@Override
+		public void inValidStreamId(PayloadData payloadData) {
+			// TODO Auto-generated method stub
+			
 		}
 
 	}

@@ -69,6 +69,12 @@ public class SctpTransferTest {
 
 	private byte[] clientMessage;
 	private byte[] serverMessage;
+	
+	private volatile int clientMaxInboundStreams = 0;
+	private volatile int clientMaxOutboundStreams = 0;
+	
+	private volatile int serverMaxInboundStreams = 0;
+	private volatile int serverMaxOutboundStreams = 0;
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
@@ -79,6 +85,9 @@ public class SctpTransferTest {
 	}
 
 	public void setUp(IpChannelType ipChannelType) throws Exception {
+		this.clientMaxInboundStreams = 0;
+		this.serverMaxOutboundStreams = 0;
+		
 		this.clientAssocUp = false;
 		this.serverAssocUp = false;
 
@@ -170,8 +179,12 @@ public class SctpTransferTest {
 
 		assertTrue(clientAssocDown);
 		assertTrue(serverAssocDown);
-
-		Runtime runtime = Runtime.getRuntime();
+		
+		assertTrue(this.clientMaxInboundStreams> 0 );
+		assertTrue(this.clientMaxOutboundStreams > 0);
+		
+		assertTrue(this.serverMaxInboundStreams> 0 );
+		assertTrue(this.serverMaxOutboundStreams > 0);
 
 		this.tearDown();
 	}
@@ -201,9 +214,11 @@ public class SctpTransferTest {
 		 * (org.mobicents.protocols.sctp.Association)
 		 */
 		@Override
-		public void onCommunicationUp(Association association) {
+		public void onCommunicationUp(Association association, int maxInboundStreams, int maxOutboundStreams) {
 			System.out.println(this + " onCommunicationUp");
-
+			
+			clientMaxInboundStreams = maxInboundStreams;
+			clientMaxOutboundStreams = maxOutboundStreams;
 			clientAssocUp = true;
 
 			PayloadData payloadData = new PayloadData(CLIENT_MESSAGE.length, CLIENT_MESSAGE, true, false, 3, 1);
@@ -267,6 +282,15 @@ public class SctpTransferTest {
 			logger.debug("CLIENT received " + new String(clientMessage));
 		}
 
+		/* (non-Javadoc)
+		 * @see org.mobicents.protocols.api.AssociationListener#inValidStreamId(org.mobicents.protocols.api.PayloadData)
+		 */
+		@Override
+		public void inValidStreamId(PayloadData payloadData) {
+			// TODO Auto-generated method stub
+			
+		}
+
 	}
 
 	private class ServerAssociationListener implements AssociationListener {
@@ -281,10 +305,13 @@ public class SctpTransferTest {
 		 * (org.mobicents.protocols.sctp.Association)
 		 */
 		@Override
-		public void onCommunicationUp(Association association) {
+		public void onCommunicationUp(Association association, int maxInboundStreams, int maxOutboundStreams) {
 			System.out.println(this + " onCommunicationUp");
 
 			serverAssocUp = true;
+			serverMaxInboundStreams = maxInboundStreams;
+			serverMaxOutboundStreams = maxOutboundStreams;
+					
 
 			PayloadData payloadData = new PayloadData(SERVER_MESSAGE.length, SERVER_MESSAGE, true, false, 3, 1);
 
@@ -345,6 +372,15 @@ public class SctpTransferTest {
 			serverMessage = new byte[payloadData.getDataLength()];
 			System.arraycopy(payloadData.getData(), 0, serverMessage, 0, payloadData.getDataLength());
 			logger.debug("SERVER received " + new String(serverMessage));
+		}
+
+		/* (non-Javadoc)
+		 * @see org.mobicents.protocols.api.AssociationListener#inValidStreamId(org.mobicents.protocols.api.PayloadData)
+		 */
+		@Override
+		public void inValidStreamId(PayloadData payloadData) {
+			// TODO Auto-generated method stub
+			
 		}
 
 	}

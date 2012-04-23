@@ -97,6 +97,21 @@ public class PayloadData {
 	}
 
 	/**
+	 * <p>
+	 * This is SCTP Stream sequence identifier.
+	 * </p>
+	 * <p>
+	 * While sending PayloadData to SCTP Association, this value should be set
+	 * by SCTP user. If value greater than or equal to maxOutboundStreams or
+	 * lesser than 0 is used, packet will be dropped and error message will be
+	 * logged
+	 * </p>
+	 * </p> While PayloadData is received from underlying SCTP socket, this
+	 * value indicates stream identifier on which data was received. Its
+	 * guaranteed that this value will be greater than 0 and less than
+	 * maxInboundStreams
+	 * <p>
+	 * 
 	 * @return the streamNumber
 	 */
 	public int getStreamNumber() {
@@ -111,10 +126,10 @@ public class PayloadData {
 	@Override
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
-        sb.append("PayloadData [dataLength=").append(dataLength).append(", complete=").append(complete)
-                .append(", unordered=").append(unordered).append(", payloadProtocolId=").append(payloadProtocolId).append(", streamNumber=")
-                .append(streamNumber).append(", data=\n").append(HexTools.dump(data, 0)).append("]");
-        return sb.toString();
+		sb.append("PayloadData [dataLength=").append(dataLength).append(", complete=").append(complete).append(", unordered=").append(unordered)
+				.append(", payloadProtocolId=").append(payloadProtocolId).append(", streamNumber=").append(streamNumber).append(", data=\n")
+				.append(HexTools.dump(data, 0)).append("]");
+		return sb.toString();
 	}
 
 }

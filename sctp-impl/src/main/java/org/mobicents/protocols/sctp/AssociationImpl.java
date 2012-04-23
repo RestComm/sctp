@@ -97,9 +97,6 @@ public class AssociationImpl implements Association {
 	// Is the Association up (connection is established)
 	protected volatile boolean up = false;
 
-	private static final int MAX_SLS = 32;
-	private int slsTable[] = new int[MAX_SLS];
-
 	private int workerThreadTable[] = null;
 
 	private ConcurrentLinkedQueue<PayloadData> txQueue = new ConcurrentLinkedQueue<PayloadData>();
@@ -492,10 +489,21 @@ public class AssociationImpl implements Association {
 
 					if (this.ipChannelType == IpChannelType.SCTP) {
 						int seqControl = payloadData.getStreamNumber();
-						// we use max 32 streams
-						seqControl = seqControl & 0x1F;
 
-						msgInfo = MessageInfo.createOutgoing(this.peerSocketAddress, this.slsTable[seqControl]);
+						if (seqControl < 0 || seqControl >= this.associationHandler.getMaxOutboundStreams()) {
+							try {
+								// TODO : calling in same Thread. Is this ok? or
+								// dangerous?
+								this.associationListener.inValidStreamId(payloadData);
+							} catch (Exception e) {
+
+							}
+							txBuffer.clear();
+							txBuffer.flip();
+							continue;
+						}
+
+						msgInfo = MessageInfo.createOutgoing(this.peerSocketAddress, seqControl);
 						msgInfo.payloadProtocolID(payloadData.getPayloadProtocolId());
 						msgInfo.complete(payloadData.isComplete());
 						msgInfo.unordered(payloadData.isUnordered());
@@ -651,25 +659,6 @@ public class AssociationImpl implements Association {
 
 		// Kick off connection establishment
 		this.socketChannelTcp.connect(new InetSocketAddress(this.peerAddress, this.peerPort));
-	}
-
-	protected void createSLSTable(int minimumBoundStream) {
-
-		if (minimumBoundStream == 1) { // special case - only 1 stream
-			for (int i = 0; i < MAX_SLS; i++) {
-				slsTable[i] = 0;
-			}
-		} else {
-			slsTable[0] = 0;
-			// Stream 0 is for management messages, we start from 1
-			int stream = 1;
-			for (int i = 1; i < MAX_SLS; i++) {
-				if (stream > minimumBoundStream) {
-					stream = 1;
-				}
-				slsTable[i] = stream++;
-			}
-		}
 	}
 
 	protected void createworkerThreadTable(int maximumBooundStream) {

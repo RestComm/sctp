@@ -192,7 +192,7 @@ public class SctpMultiHomeTransferTest {
 		 * (org.mobicents.protocols.sctp.Association)
 		 */
 		@Override
-		public void onCommunicationUp(Association association) {
+		public void onCommunicationUp(Association association, int maxInboundStreams, int maxOutboundStreams) {
 			logger.info(" onCommunicationUp");
 
 			clientAssocUp = true;
@@ -258,6 +258,15 @@ public class SctpMultiHomeTransferTest {
 
 		}
 
+		/* (non-Javadoc)
+		 * @see org.mobicents.protocols.api.AssociationListener#inValidStreamId(org.mobicents.protocols.api.PayloadData)
+		 */
+		@Override
+		public void inValidStreamId(PayloadData payloadData) {
+			// TODO Auto-generated method stub
+			
+		}
+
 	}
 
 	private class LoadGenerator implements Runnable {
@@ -313,7 +322,7 @@ public class SctpMultiHomeTransferTest {
 		 * (org.mobicents.protocols.sctp.Association)
 		 */
 		@Override
-		public void onCommunicationUp(Association association) {
+		public void onCommunicationUp(Association association, int maxInboundStreams, int maxOutboundStreams) {
 			logger.info(" onCommunicationUp");
 
 			serverAssocUp = true;
@@ -376,6 +385,15 @@ public class SctpMultiHomeTransferTest {
 			String rxMssg = new String(data);
 			logger.debug("SERVER received " + rxMssg);
 			serverMessage.add(rxMssg);
+		}
+
+		/* (non-Javadoc)
+		 * @see org.mobicents.protocols.api.AssociationListener#inValidStreamId(org.mobicents.protocols.api.PayloadData)
+		 */
+		@Override
+		public void inValidStreamId(PayloadData payloadData) {
+			// TODO Auto-generated method stub
+			
 		}
 
 	}

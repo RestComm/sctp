@@ -40,6 +40,10 @@ import com.sun.nio.sctp.ShutdownNotification;
 class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 
 	private static final Logger logger = Logger.getLogger(AssociationHandler.class);
+	
+	//Default value is 1 for TCP
+	private volatile int maxInboundStreams = 1;
+	private volatile int maxOutboundStreams = 1;
 
 	/**
 	 * @param asscoitaion
@@ -48,31 +52,40 @@ class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 
 	}
 
+	/**
+	 * @return the maxInboundStreams
+	 */
+	public int getMaxInboundStreams() {
+		return maxInboundStreams;
+	}
+
+	/**
+	 * @return the maxOutboundStreams
+	 */
+	public int getMaxOutboundStreams() {
+		return maxOutboundStreams;
+	}
+
 	@Override
 	public HandlerResult handleNotification(AssociationChangeNotification not, AssociationImpl associtaion) {
 		switch (not.event()) {
 		case COMM_UP:
-			int outbound = 1;
-			int inbound = 1;
 			if (not.association() != null) {
-				outbound = not.association().maxOutboundStreams();
-				inbound = not.association().maxInboundStreams();
+				this.maxOutboundStreams = not.association().maxOutboundStreams();
+				this.maxInboundStreams = not.association().maxInboundStreams();
 			}
 
 			if (logger.isInfoEnabled()) {
 				logger.info(String.format("New association setup for Association=%s with %d outbound streams, and %d inbound streams.\n",
-						associtaion.getName(), outbound, inbound));
+						associtaion.getName(), this.maxOutboundStreams, this.maxInboundStreams));
 			}
 
-			// Recreate SLS table. Minimum of two is correct?
-			associtaion.createSLSTable(Math.min(inbound, outbound) - 1);
-
-			associtaion.createworkerThreadTable(Math.max(inbound, outbound));
+			associtaion.createworkerThreadTable(Math.max(this.maxInboundStreams, this.maxOutboundStreams));
 
 			// TODO assign Thread's ?
 			try {
 				associtaion.up = true;
-				associtaion.getAssociationListener().onCommunicationUp(associtaion);
+				associtaion.getAssociationListener().onCommunicationUp(associtaion, this.maxInboundStreams, this.maxOutboundStreams);
 			} catch (Exception e) {
 				logger.error(String.format("Exception while calling onCommunicationUp on AssociationListener for Association=%s", associtaion.getName()), e);
 			}

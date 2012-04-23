@@ -40,8 +40,18 @@ public interface AssociationListener {
 	 * {@link Association}
 	 * 
 	 * @param association
+	 * @param maxInboundStreams
+	 *            Returns the maximum number of inbound streams that this
+	 *            association supports. Data received on this association will
+	 *            be on stream number s, where 0 <= s < maxInboundStreams(). For
+	 *            TCP socket this value is always 1
+	 * @param maxOutboundStreams
+	 *            Returns the maximum number of outbound streams that this
+	 *            association supports. Data sent on this association must be on
+	 *            stream number s, where 0 <= s < maxOutboundStreams(). For TCP
+	 *            socket this value is always 1
 	 */
-	public void onCommunicationUp(Association association);
+	public void onCommunicationUp(Association association, int maxInboundStreams, int maxOutboundStreams);
 
 	/**
 	 * Invoked when underlying socket is shutdown and connection is ended with
@@ -77,5 +87,19 @@ public interface AssociationListener {
 	 * @param payloadData
 	 */
 	public void onPayload(Association association, PayloadData payloadData);
+
+	/**
+	 * <p>
+	 * The stream id set in outgoing {@link PayloadData} is invalid. This packe
+	 * will be dropped after calling the listener.
+	 * </p>
+	 * <p>
+	 * This callback is on same Thread as {@link SelectorThread}. Do not delay
+	 * the process here as it will hold all other IO.
+	 * </p>
+	 * 
+	 * @param payloadData
+	 */
+	public void inValidStreamId(PayloadData payloadData);
 
 }
