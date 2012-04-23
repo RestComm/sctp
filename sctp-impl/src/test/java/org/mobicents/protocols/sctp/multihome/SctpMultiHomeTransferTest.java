@@ -32,6 +32,7 @@ import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.PayloadData;
 import org.mobicents.protocols.sctp.AssociationImpl;
 import org.mobicents.protocols.sctp.ManagementImpl;
+import org.mobicents.protocols.sctp.SctpTransferTest;
 import org.mobicents.protocols.sctp.ServerImpl;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -58,7 +59,7 @@ public class SctpMultiHomeTransferTest {
 	private static final String SERVER_HOST = "127.0.0.1";
 	private static final String SERVER_HOST1 = "10.2.50.212";
 
-	private static final int SERVER_PORT = 2347;
+	private static final int SERVER_PORT = 2350;
 
 	private static final String SERVER_ASSOCIATION_NAME = "serverAssociation";
 	private static final String CLIENT_ASSOCIATION_NAME = "clientAssociation";
@@ -66,7 +67,7 @@ public class SctpMultiHomeTransferTest {
 	private static final String CLIENT_HOST = "127.0.0.1";
 	private static final String CLIENT_HOST1 = "10.2.50.212";
 
-	private static final int CLIENT_PORT = 2348;
+	private static final int CLIENT_PORT = 2351;
 
 	private final String CLIENT_MESSAGE = "Client says Hi";
 	private final String SERVER_MESSAGE = "Server says Hi";
@@ -134,6 +135,10 @@ public class SctpMultiHomeTransferTest {
 	@Test(groups = { "functional", "sctp-multihome" })
 	public void testDataTransferSctp() throws Exception {
 
+		// Testing only is sctp is enabled
+		if (!SctpTransferTest.checkSctpEnabled())
+			return;
+		
 		this.setUp(IpChannelType.SCTP);
 
 		this.management.startServer(SERVER_NAME);
