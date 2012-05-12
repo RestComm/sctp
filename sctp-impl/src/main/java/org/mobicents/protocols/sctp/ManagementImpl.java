@@ -267,6 +267,21 @@ public class ManagementImpl implements Management {
 		this.selectorThread.setStarted(false);
 		this.socketSelector.wakeup(); // Wakeup selector so SelectorThread dies
 
+		// waiting till stopping associations
+		for (int i1 = 0; i1 < 20; i1++) {
+			boolean assConnected = false;
+			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+				Association associationTemp = n.getValue();
+				if (associationTemp.isConnected()) {
+					assConnected = true;
+					break;
+				}
+			}
+			if (!assConnected)
+				break;
+			Thread.sleep(100);
+		}
+		
 		// Graceful shutdown for each of Executors
 		if (this.executorServices != null) {
 			for (int i = 0; i < this.executorServices.length; i++) {

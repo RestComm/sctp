@@ -24,13 +24,17 @@ package org.mobicents.protocols.sctp;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
+import org.mobicents.protocols.api.AssociationListener;
 import org.mobicents.protocols.api.IpChannelType;
+import org.mobicents.protocols.api.PayloadData;
 import org.mobicents.protocols.api.Server;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -45,6 +49,10 @@ public class ManagementTest {
 	private static final String SERVER_NAME = "testserver";
 	private static final String SERVER_HOST = "127.0.0.1";
 	private static final int SERVER_PORT = 2349;
+	private static final String CLIENT_HOST = "127.0.0.1";
+	private static final int CLIENT_PORT = 2352;
+	private static final String SERVER_ASSOCIATION_NAME = "serverAssociation";
+	private static final String CLIENT_ASSOCIATION_NAME = "clientAssociation";
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
@@ -186,5 +194,134 @@ public class ManagementTest {
 
 		management.stop();
 	}
+	
 
+	@Test(groups = { "functional", "sctp" })
+	public void testStopAssociationSctp() throws Exception {
+		
+		if (SctpTransferTest.checkSctpEnabled())
+			this.testStopAssociationByProtocol(IpChannelType.SCTP);
+	}
+
+	@Test(groups = { "functional", "tcp" })
+	public void testStopAssociationTcp() throws Exception {
+
+		this.testStopAssociationByProtocol(IpChannelType.TCP);
+	}
+
+	private void testStopAssociationByProtocol(IpChannelType ipChannelType) throws Exception {
+
+		ManagementImpl management = new ManagementImpl("ManagementTest");
+		management.setSingleThread(true);
+		management.setConnectDelay(10000);// Try connecting every 10 secs
+		management.start();
+		management.removeAllResourses();
+
+		management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, null);
+		Association serverAssociation = management.addServerAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_NAME, SERVER_ASSOCIATION_NAME, ipChannelType);
+		Association clientAssociation = management.addAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_HOST, SERVER_PORT, CLIENT_ASSOCIATION_NAME, ipChannelType, null);
+
+		management.startServer(SERVER_NAME);
+
+
+		serverAssociation.setAssociationListener(new ServerAssociationListener());
+		management.startAssociation(SERVER_ASSOCIATION_NAME);
+		clientAssociation.setAssociationListener(new ClientAssociationListener());
+		management.startAssociation(CLIENT_ASSOCIATION_NAME);
+
+		for (int i1 = 0; i1 < 40; i1++) {
+			if (serverAssociation.isConnected())
+				break;
+			Thread.sleep(1000 * 5);
+		}
+		Thread.sleep(1000 * 1);
+
+		assertTrue(serverAssociation.isConnected());
+		assertTrue(clientAssociation.isConnected());
+
+		management.stop();
+
+		assertFalse(serverAssociation.isConnected());
+		assertFalse(clientAssociation.isConnected());
+
+	}
+
+	private class ClientAssociationListener implements AssociationListener {
+
+		@Override
+		public void onCommunicationUp(Association association, int maxInboundStreams, int maxOutboundStreams) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void onCommunicationShutdown(Association association) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void onCommunicationLost(Association association) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void onCommunicationRestart(Association association) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void onPayload(Association association, PayloadData payloadData) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void inValidStreamId(PayloadData payloadData) {
+			// TODO Auto-generated method stub
+			
+		}
+	}
+
+	private class ServerAssociationListener implements AssociationListener {
+
+		@Override
+		public void onCommunicationUp(Association association, int maxInboundStreams, int maxOutboundStreams) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void onCommunicationShutdown(Association association) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void onCommunicationLost(Association association) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void onCommunicationRestart(Association association) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void onPayload(Association association, PayloadData payloadData) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void inValidStreamId(PayloadData payloadData) {
+			// TODO Auto-generated method stub
+			
+		}
+	}
 }
+
