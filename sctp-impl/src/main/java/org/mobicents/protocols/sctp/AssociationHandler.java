@@ -163,7 +163,7 @@ class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 	
 	@Override
 	public  HandlerResult handleNotification(PeerAddressChangeNotification notification, AssociationImpl associtaion) {
-		associtaion.peerSocketAddress = notification.address();
+		//associtaion.peerSocketAddress = notification.address();
 		if(logger.isEnabledFor(Priority.WARN)){
 			logger.warn(String.format("Peer Address changed to=%s for Association=%s", notification.address(), associtaion.getName()));
 		}

@@ -57,7 +57,7 @@ import org.testng.annotations.Test;
 public class SctpMultiHomeTransferTest {
 	private static final String SERVER_NAME = "testserver";
 	private static final String SERVER_HOST = "127.0.0.1";
-	private static final String SERVER_HOST1 = "10.2.50.212";
+	private static final String SERVER_HOST1 = "10.2.50.194";
 
 	private static final int SERVER_PORT = 2350;
 
@@ -65,7 +65,7 @@ public class SctpMultiHomeTransferTest {
 	private static final String CLIENT_ASSOCIATION_NAME = "clientAssociation";
 
 	private static final String CLIENT_HOST = "127.0.0.1";
-	private static final String CLIENT_HOST1 = "10.2.50.212";
+	private static final String CLIENT_HOST1 = "10.2.50.194";
 
 	private static final int CLIENT_PORT = 2351;
 
