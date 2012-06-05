@@ -16,11 +16,6 @@
 
 	<properties>
 		<log4j.version>1.2.8</log4j.version>
-
-		<!-- OTHER MOBICENTS COMPONENTS VERSIONS -->
-		<mobicents.tools.mavenplugin.eclipse.version>
-			1.0.0.BETA2
-		</mobicents.tools.mavenplugin.eclipse.version>
 		<javolution.version>5.5.1</javolution.version>
 		<commons.version>1.0.0.CR1</commons.version>
 		<testng.version>6.2</testng.version>
