@@ -20,7 +20,7 @@
 		<commons.version>1.0.0.CR1</commons.version>
 		<testng.version>6.2</testng.version>
 		<compiler.plugin.version>2.0.2</compiler.plugin.version>
-		<compile.source>1.5</compile.source>
+		<compile.source>1.7</compile.source>
 
 	</properties>
 	<modules>
