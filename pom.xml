@@ -74,6 +74,7 @@
 			<id>release</id>
 			<modules>
 				<module>docs</module>
+				<module>release</module>
 			</modules>
 		</profile>
 		<profile>
