@@ -19,6 +19,7 @@
  * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
+
 package org.mobicents.protocols.api;
 
 import java.util.List;
@@ -69,6 +70,20 @@ public interface Management {
 	 * @param persistDir
 	 */
 	public void setPersistDir(String persistDir);
+
+	/**
+	 * Adding ManagementEventListener.
+	 * This listener is notified when adding/removing servers and associations 
+	 * @param listener
+	 */
+	public void addManagementEventListener(ManagementEventListener listener);
+
+	/**
+	 * Removing ManagementEventListener.
+	 * This listener is notified when adding/removing servers and associations 
+	 * @param listener
+	 */
+	public void removeManagementEventListener(ManagementEventListener listener);
 
 	/**
 	 * Start the management. No management operation can be executed unless

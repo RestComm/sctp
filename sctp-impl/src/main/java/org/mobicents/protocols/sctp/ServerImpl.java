@@ -111,7 +111,8 @@ public class ServerImpl implements Server {
 	}
 
 	protected void stop() throws Exception {
-		for (FastList.Node<String> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+		FastList<String> tempAssociations = associations;
+		for (FastList.Node<String> n = tempAssociations.head(), end = tempAssociations.tail(); (n = n.getNext()) != end;) {
 			String assocName = n.getValue();
 			Association associationTemp = this.management.getAssociation(assocName);
 			if (associationTemp.isStarted()) {

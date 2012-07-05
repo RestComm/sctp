@@ -18,6 +18,21 @@
 					</simplelist>
 				</revdescription>
 			</revision>
+
+			<revision>
+				<revnumber>1.1</revnumber>
+				<date>Thu Jul 05 2012</date>
+				<author>
+					<firstname>Serg</firstname>
+					<surname>Vetyutnev</surname>
+				</author>
+				<revdescription>
+					<simplelist>
+						<member>Adding ManagementEventListener.</member>
+					</simplelist>
+				</revdescription>
+			</revision>
+
 		</revhistory>
 	</simpara>
 </appendix>

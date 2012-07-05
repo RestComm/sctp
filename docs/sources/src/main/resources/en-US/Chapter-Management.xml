@@ -74,6 +74,20 @@ public interface Management {
 	public void setPersistDir(String persistDir);
 
 	/**
+	 * Adding ManagementEventListener.
+	 * This listener is notified when adding/removing servers and associations 
+	 * @param listener
+	 */
+	public void addManagementEventListener(ManagementEventListener listener);
+
+	/**
+	 * Removing ManagementEventListener.
+	 * This listener is notified when adding/removing servers and associations 
+	 * @param listener
+	 */
+	public void removeManagementEventListener(ManagementEventListener listener);
+
+	/**
 	 * Start the management. No management operation can be executed unless
 	 * {@link Management} is started. If {@link Server} and {@link Association}
 	 * were defined previously, Management should recreate those {@link Server}
@@ -350,6 +364,28 @@ public interface Management {
 			<variablelist>
 				<varlistentry>
 					<term>
+						<literal>public void addManagementEventListener(ManagementEventListener listener)</literal>
+					</term>
+					<listitem>
+						<para>
+							Adding a listener for management events (adding/removing servers and associations).
+						</para>
+					</listitem>
+				</varlistentry>
+
+				<varlistentry>
+					<term>
+						<literal>public void removeManagementEventListener(ManagementEventListener listener)</literal>
+					</term>
+					<listitem>
+						<para>
+							Removing a listener for management events (adding/removing servers and associations).
+						</para>
+					</listitem>
+				</varlistentry>
+
+				<varlistentry>
+					<term>
 						<literal>public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
 			String[] extraHostAddresses)</literal>
 					</term>
@@ -536,7 +572,7 @@ public interface Management {
 					</term>
 					<listitem>
 						<para>
-							Returns the unmodifiable lis of servers. 
+							Returns the unmodifiable list of servers. 
 						</para>
 					</listitem>
 				</varlistentry>		

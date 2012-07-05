@@ -30,7 +30,6 @@ import static org.junit.Assert.fail;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationListener;
 import org.mobicents.protocols.api.IpChannelType;
@@ -103,6 +102,7 @@ public class ManagementTest {
 
 		String[] arr = new String[]{"127.0.0.2", "127.0.0.3"};
 		Server server = management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, arr);
+
 		management.startServer(SERVER_NAME);
 
 		assertTrue(server.isStarted());

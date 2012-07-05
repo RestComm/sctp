@@ -35,19 +35,18 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
 import javolution.text.TextBuilder;
 import javolution.util.FastList;
 import javolution.util.FastMap;
 import javolution.xml.XMLObjectReader;
 import javolution.xml.XMLObjectWriter;
 import javolution.xml.stream.XMLStreamException;
-
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationType;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.Management;
+import org.mobicents.protocols.api.ManagementEventListener;
 import org.mobicents.protocols.api.Server;
 
 /**
@@ -101,6 +100,8 @@ public class ManagementImpl implements Management {
 
 	private ExecutorService[] executorServices = null;
 
+	private FastList<ManagementEventListener> managementEventListeners = new FastList<ManagementEventListener>();
+	
 	private volatile boolean started = false;
 
 	public ManagementImpl(String name) throws IOException {
@@ -194,42 +195,68 @@ public class ManagementImpl implements Management {
 		this.singleThread = singleThread;
 	}
 
+	public void addManagementEventListener(ManagementEventListener listener) {
+		synchronized (this) {
+			if (this.managementEventListeners.contains(listener))
+				return;
+			
+			FastList<ManagementEventListener> newManagementEventListeners = new FastList<ManagementEventListener>();
+			newManagementEventListeners.addAll(this.managementEventListeners);
+			newManagementEventListeners.add(listener);
+			this.managementEventListeners = newManagementEventListeners;
+		}
+	}
+
+	public void removeManagementEventListener(ManagementEventListener listener) {
+		synchronized (this) {
+			if (!this.managementEventListeners.contains(listener))
+				return;
+			
+			FastList<ManagementEventListener> newManagementEventListeners = new FastList<ManagementEventListener>();
+			newManagementEventListeners.addAll(this.managementEventListeners);
+			newManagementEventListeners.remove(listener);
+			this.managementEventListeners = newManagementEventListeners;
+		}
+	}
+
 	public void start() throws Exception {
-		this.persistFile.clear();
+		
+		synchronized (this) {
+			this.persistFile.clear();
 
-		if (persistDir != null) {
-			this.persistFile.append(persistDir).append(File.separator).append(this.name).append("_")
-					.append(PERSIST_FILE_NAME);
-		} else {
-			persistFile.append(System.getProperty(SCTP_PERSIST_DIR_KEY, System.getProperty(USER_DIR_KEY)))
-					.append(File.separator).append(this.name).append("_").append(PERSIST_FILE_NAME);
-		}
-
-		logger.info(String.format("SCTP configuration file path %s", persistFile.toString()));
-
-		try {
-			this.load();
-		} catch (FileNotFoundException e) {
-			logger.warn(String.format("Failed to load the SCTP configuration file. \n%s", e.getMessage()));
-		}
-
-		if (!this.singleThread) {
-			// If not single thread model we create worker threads
-			this.executorServices = new ExecutorService[this.workerThreads];
-			for (int i = 0; i < this.workerThreads; i++) {
-				this.executorServices[i] = Executors.newSingleThreadExecutor();
+			if (persistDir != null) {
+				this.persistFile.append(persistDir).append(File.separator).append(this.name).append("_").append(PERSIST_FILE_NAME);
+			} else {
+				persistFile.append(System.getProperty(SCTP_PERSIST_DIR_KEY, System.getProperty(USER_DIR_KEY))).append(File.separator).append(this.name)
+						.append("_").append(PERSIST_FILE_NAME);
 			}
-		}
-		this.selectorThread = new SelectorThread(this.socketSelector, this);
-		this.selectorThread.setStarted(true);
 
-		(new Thread(this.selectorThread)).start();
+			logger.info(String.format("SCTP configuration file path %s", persistFile.toString()));
 
-		this.started = true;
+			try {
+				this.load();
+			} catch (FileNotFoundException e) {
+				logger.warn(String.format("Failed to load the SCTP configuration file. \n%s", e.getMessage()));
+			}
 
-		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Started SCTP Management=%s WorkerThreads=%d SingleThread=%s", this.name,
-					(this.singleThread ? 0 : this.workerThreads), this.singleThread));
+			if (!this.singleThread) {
+				// If not single thread model we create worker threads
+				this.executorServices = new ExecutorService[this.workerThreads];
+				for (int i = 0; i < this.workerThreads; i++) {
+					this.executorServices[i] = Executors.newSingleThreadExecutor();
+				}
+			}
+			this.selectorThread = new SelectorThread(this.socketSelector, this);
+			this.selectorThread.setStarted(true);
+
+			(new Thread(this.selectorThread)).start();
+
+			this.started = true;
+
+			if (logger.isInfoEnabled()) {
+				logger.info(String.format("Started SCTP Management=%s WorkerThreads=%d SingleThread=%s", this.name,
+						(this.singleThread ? 0 : this.workerThreads), this.singleThread));
+			}
 		}
 	}
 
@@ -239,7 +266,8 @@ public class ManagementImpl implements Management {
 		this.store();
 
 		// Stop all associations
-		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n
+		FastMap<String, Association> associationsTemp = this.associations;
+		for (FastMap.Entry<String, Association> n = associationsTemp.head(), end = associationsTemp.tail(); (n = n
 				.getNext()) != end;) {
 			Association associationTemp = n.getValue();
 			if (associationTemp.isStarted()) {
@@ -247,7 +275,8 @@ public class ManagementImpl implements Management {
 			}
 		}
 
-		for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+		FastList<Server> tempServers = servers;
+		for (FastList.Node<Server> n = tempServers.head(), end = tempServers.tail(); (n = n.getNext()) != end;) {
 			Server serverTemp = n.getValue();
 			if (serverTemp.isStarted()) {
 				try {
@@ -352,42 +381,48 @@ public class ManagementImpl implements Management {
 
 	public void removeAllResourses() throws Exception {
 
-		if (!this.started) {
-			throw new Exception(String.format("Management=%s not started", this.name));
-		}
+		synchronized (this) {
+			if (!this.started) {
+				throw new Exception(String.format("Management=%s not started", this.name));
+			}
 
-		if (this.associations.size() == 0 && this.servers.size() == 0)
-			// no resources allocated - nothing to do
-			return;
+			if (this.associations.size() == 0 && this.servers.size() == 0)
+				// no resources allocated - nothing to do
+				return;
 
-		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Removing allocated resources: Servers=%d, Associations=%d", this.servers.size(),
-					this.associations.size()));
-		}
+			if (logger.isInfoEnabled()) {
+				logger.info(String.format("Removing allocated resources: Servers=%d, Associations=%d", this.servers.size(), this.associations.size()));
+			}
 
-		// Remove all associations
-		ArrayList<String> lst = new ArrayList<String>();
-		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n
-				.getNext()) != end;) {
-			lst.add(n.getKey());
-		}
-		for (String n : lst) {
-			this.stopAssociation(n);
-			this.removeAssociation(n);
-		}
+			synchronized (this) {
+				// Remove all associations
+				ArrayList<String> lst = new ArrayList<String>();
+				for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+					lst.add(n.getKey());
+				}
+				for (String n : lst) {
+					this.stopAssociation(n);
+					this.removeAssociation(n);
+				}
 
-		// Remove all servers
-		lst.clear();
-		for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
-			lst.add(n.getValue().getName());
-		}
-		for (String n : lst) {
-			this.stopServer(n);
-			this.removeServer(n);
-		}
+				// Remove all servers
+				lst.clear();
+				for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+					lst.add(n.getValue().getName());
+				}
+				for (String n : lst) {
+					this.stopServer(n);
+					this.removeServer(n);
+				}
 
-		// We store the cleared state
-		this.store();
+				// We store the cleared state
+				this.store();
+			}
+
+			for (ManagementEventListener lstr : managementEventListeners) {
+				lstr.onRemoveAllResourses();
+			}
+		}
 	}
 
 	public ServerImpl addServer(String serverName, String hostAddress, int port) throws Exception {
@@ -413,29 +448,40 @@ public class ManagementImpl implements Management {
 			throw new Exception("Server host port cannot be less than 1");
 		}
 
-		for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
-			Server serverTemp = n.getValue();
-			if (serverName.equals(serverTemp.getName())) {
-				throw new Exception(String.format("Server name=%s already exist", serverName));
+		synchronized (this) {
+			for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+				Server serverTemp = n.getValue();
+				if (serverName.equals(serverTemp.getName())) {
+					throw new Exception(String.format("Server name=%s already exist", serverName));
+				}
+
+				if (hostAddress.equals(serverTemp.getHostAddress()) && port == serverTemp.getHostport()) {
+					throw new Exception(String.format("Server name=%s is already bound to %s:%d", serverTemp.getName(), serverTemp.getHostAddress(),
+							serverTemp.getHostport()));
+				}
 			}
 
-			if (hostAddress.equals(serverTemp.getHostAddress()) && port == serverTemp.getHostport()) {
-				throw new Exception(String.format("Server name=%s is already bound to %s:%d", serverTemp.getName(),
-						serverTemp.getHostAddress(), serverTemp.getHostport()));
+			ServerImpl server = new ServerImpl(serverName, hostAddress, port, ipChannelType, extraHostAddresses);
+			server.setManagement(this);
+
+			FastList<Server> newServers = new FastList<Server>();
+			newServers.addAll(this.servers);
+			newServers.add(server);
+			this.servers = newServers;
+//			this.servers.add(server);
+
+			this.store();
+
+			for (ManagementEventListener lstr : managementEventListeners) {
+				lstr.onServerAdded(server);
 			}
+
+			if (logger.isInfoEnabled()) {
+				logger.info(String.format("Created Server=%s", server.getName()));
+			}
+
+			return server;
 		}
-
-		ServerImpl server = new ServerImpl(serverName, hostAddress, port, ipChannelType, extraHostAddresses);
-		server.setManagement(this);
-
-		this.servers.add(server);
-
-		this.store();
-		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Created Server=%s", server.getName()));
-		}
-
-		return server;
 	}
 
 	public void removeServer(String serverName) throws Exception {
@@ -448,26 +494,36 @@ public class ManagementImpl implements Management {
 			throw new Exception("Server name cannot be null");
 		}
 
-		Server removeServer = null;
-		for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
-			Server serverTemp = n.getValue();
+		synchronized (this) {
+			Server removeServer = null;
+			for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+				Server serverTemp = n.getValue();
 
-			if (serverName.equals(serverTemp.getName())) {
-				if (serverTemp.isStarted()) {
-					throw new Exception(String.format("Server=%s is started. Stop the server before removing",
-							serverName));
+				if (serverName.equals(serverTemp.getName())) {
+					if (serverTemp.isStarted()) {
+						throw new Exception(String.format("Server=%s is started. Stop the server before removing", serverName));
+					}
+					removeServer = serverTemp;
+					break;
 				}
-				removeServer = serverTemp;
-				break;
+			}
+
+			if (removeServer == null) {
+				throw new Exception(String.format("No Server found with name=%s", serverName));
+			}
+
+			FastList<Server> newServers = new FastList<Server>();
+			newServers.addAll(this.servers);
+			newServers.remove(removeServer);
+			this.servers = newServers;
+			//this.servers.remove(removeServer);
+
+			this.store();
+
+			for (ManagementEventListener lstr : managementEventListeners) {
+				lstr.onServerRemoved(removeServer);
 			}
 		}
-
-		if (removeServer == null) {
-			throw new Exception(String.format("No Server found with name=%s", serverName));
-		}
-
-		this.servers.remove(removeServer);
-		this.store();
 	}
 
 	public void startServer(String serverName) throws Exception {
@@ -480,7 +536,8 @@ public class ManagementImpl implements Management {
 			throw new Exception("Server name cannot be null");
 		}
 
-		for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+		FastList<Server> tempServers = servers;
+		for (FastList.Node<Server> n = tempServers.head(), end = tempServers.tail(); (n = n.getNext()) != end;) {
 			Server serverTemp = n.getValue();
 
 			if (serverName.equals(serverTemp.getName())) {
@@ -506,7 +563,8 @@ public class ManagementImpl implements Management {
 			throw new Exception("Server name cannot be null");
 		}
 
-		for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+		FastList<Server> tempServers = servers;
+		for (FastList.Node<Server> n = tempServers.head(), end = tempServers.tail(); (n = n.getNext()) != end;) {
 			Server serverTemp = n.getValue();
 
 			if (serverName.equals(serverTemp.getName())) {
@@ -547,49 +605,63 @@ public class ManagementImpl implements Management {
 			throw new Exception("Association name cannot be null");
 		}
 
-		if (this.associations.get(assocName) != null) {
-			throw new Exception(String.format("Already has association=%s", assocName));
-		}
-
-		Server server = null;
-
-		for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
-			Server serverTemp = n.getValue();
-			if (serverTemp.getName().equals(serverName)) {
-				server = serverTemp;
+		synchronized (this) {
+			if (this.associations.get(assocName) != null) {
+				throw new Exception(String.format("Already has association=%s", assocName));
 			}
-		}
 
-		if (server == null) {
-			throw new Exception(String.format("No Server found for name=%s", serverName));
-		}
+			Server server = null;
 
-		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n
-				.getNext()) != end;) {
-			Association associationTemp = n.getValue();
-
-			if (peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
-				throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d",
-						associationTemp.getName(), peerAddress, peerPort));
+			for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+				Server serverTemp = n.getValue();
+				if (serverTemp.getName().equals(serverName)) {
+					server = serverTemp;
+				}
 			}
+
+			if (server == null) {
+				throw new Exception(String.format("No Server found for name=%s", serverName));
+			}
+
+			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+				Association associationTemp = n.getValue();
+
+				if (peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
+					throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d", associationTemp.getName(),
+							peerAddress, peerPort));
+				}
+			}
+
+			if (server.getIpChannelType() != ipChannelType)
+				throw new Exception(String.format("Server and Accociation has different IP channel type"));
+
+			AssociationImpl association = new AssociationImpl(peerAddress, peerPort, serverName, assocName, ipChannelType);
+			association.setManagement(this);
+
+			AssociationMap<String, Association> newAssociations = new AssociationMap<String, Association>();
+			newAssociations.putAll(this.associations);
+			newAssociations.put(assocName, association);
+			this.associations = newAssociations;
+//			this.associations.put(assocName, association);
+
+			FastList<String> newAssociations2 = new FastList<String>();
+			newAssociations2.addAll(((ServerImpl) server).associations);
+			newAssociations2.add(assocName);
+			((ServerImpl) server).associations = newAssociations2;
+			//((ServerImpl) server).associations.add(assocName);
+
+			this.store();
+
+			for (ManagementEventListener lstr : managementEventListeners) {
+				lstr.onAssociationAdded(association);
+			}
+
+			if (logger.isInfoEnabled()) {
+				logger.info(String.format("Added Associoation=%s of type=%s", association.getName(), association.getAssociationType()));
+			}
+
+			return association;
 		}
-
-		if (server.getIpChannelType() != ipChannelType)
-			throw new Exception(String.format("Server and Accociation has different IP channel type"));
-
-		AssociationImpl association = new AssociationImpl(peerAddress, peerPort, serverName, assocName, ipChannelType);
-		association.setManagement(this);
-		this.associations.put(assocName, association);
-		((ServerImpl) server).associations.add(assocName);
-
-		this.store();
-
-		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Added Associoation=%s of type=%s", association.getName(),
-					association.getAssociationType()));
-		}
-
-		return association;
 	}
 
 	public AssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort,
@@ -624,39 +696,47 @@ public class ManagementImpl implements Management {
 			throw new Exception("Association name cannot be null");
 		}
 
-		for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n
-				.getNext()) != end;) {
-			Association associationTemp = n.getValue();
+		synchronized (this) {
+			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+				Association associationTemp = n.getValue();
 
-			if (assocName.equals(associationTemp.getName())) {
-				throw new Exception(String.format("Already has association=%s", associationTemp.getName()));
+				if (assocName.equals(associationTemp.getName())) {
+					throw new Exception(String.format("Already has association=%s", associationTemp.getName()));
+				}
+
+				if (peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
+					throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d", associationTemp.getName(),
+							peerAddress, peerPort));
+				}
+
+				if (hostAddress.equals(associationTemp.getHostAddress()) && associationTemp.getHostPort() == hostPort) {
+					throw new Exception(String.format("Already has association=%s with same host address=%s and port=%d", associationTemp.getName(),
+							hostAddress, hostPort));
+				}
+
 			}
 
-			if (peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
-				throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d",
-						associationTemp.getName(), peerAddress, peerPort));
+			AssociationImpl association = new AssociationImpl(hostAddress, hostPort, peerAddress, peerPort, assocName, ipChannelType, extraHostAddresses);
+			association.setManagement(this);
+
+			AssociationMap<String, Association> newAssociations = new AssociationMap<String, Association>();
+			newAssociations.putAll(this.associations);
+			newAssociations.put(assocName, association);
+			this.associations = newAssociations;
+//			associations.put(assocName, association);
+
+			this.store();
+
+			for (ManagementEventListener lstr : managementEventListeners) {
+				lstr.onAssociationAdded(association);
 			}
 
-			if (hostAddress.equals(associationTemp.getHostAddress()) && associationTemp.getHostPort() == hostPort) {
-				throw new Exception(String.format("Already has association=%s with same host address=%s and port=%d",
-						associationTemp.getName(), hostAddress, hostPort));
+			if (logger.isInfoEnabled()) {
+				logger.info(String.format("Added Associoation=%s of type=%s", association.getName(), association.getAssociationType()));
 			}
 
+			return association;
 		}
-
-		AssociationImpl association = new AssociationImpl(hostAddress, hostPort, peerAddress, peerPort, assocName,
-				ipChannelType, extraHostAddresses);
-		association.setManagement(this);
-		associations.put(assocName, association);
-
-		this.store();
-
-		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Added Associoation=%s of type=%s", association.getName(),
-					association.getAssociationType()));
-		}
-
-		return association;
 	}
 
 	public Association getAssociation(String assocName) throws Exception {
@@ -729,29 +809,44 @@ public class ManagementImpl implements Management {
 			throw new Exception("Association name cannot be null");
 		}
 
-		Association association = this.associations.get(assocName);
+		synchronized (this) {
+			Association association = this.associations.get(assocName);
 
-		if (association == null) {
-			throw new Exception(String.format("No Association found for name=%s", assocName));
-		}
+			if (association == null) {
+				throw new Exception(String.format("No Association found for name=%s", assocName));
+			}
 
-		if (association.isStarted()) {
-			throw new Exception(String.format("Association name=%s is started. Stop before removing", assocName));
-		}
+			if (association.isStarted()) {
+				throw new Exception(String.format("Association name=%s is started. Stop before removing", assocName));
+			}
 
-		this.associations.remove(assocName);
+			AssociationMap<String, Association> newAssociations = new AssociationMap<String, Association>();
+			newAssociations.putAll(this.associations);
+			newAssociations.remove(assocName);
+			this.associations = newAssociations;
+//			this.associations.remove(assocName);
 
-		if (((AssociationImpl) association).getAssociationType() == AssociationType.SERVER) {
-			for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
-				Server serverTemp = n.getValue();
-				if (serverTemp.getName().equals(association.getServerName())) {
-					((ServerImpl) serverTemp).associations.remove(assocName);
-					break;
+			if (((AssociationImpl) association).getAssociationType() == AssociationType.SERVER) {
+				for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+					Server serverTemp = n.getValue();
+					if (serverTemp.getName().equals(association.getServerName())) {
+						FastList<String> newAssociations2 = new FastList<String>();
+						newAssociations2.addAll(((ServerImpl) serverTemp).associations);
+						newAssociations2.remove(assocName);
+						((ServerImpl) serverTemp).associations = newAssociations2;
+//						((ServerImpl) serverTemp).associations.remove(assocName);
+
+						break;
+					}
 				}
 			}
-		}
 
-		this.store();
+			this.store();
+
+			for (ManagementEventListener lstr : managementEventListeners) {
+				lstr.onAssociationRemoved(association);
+			}
+		}
 	}
 
 	/**
