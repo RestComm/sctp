@@ -420,7 +420,7 @@ public class ManagementImpl implements Management {
 			}
 
 			for (ManagementEventListener lstr : managementEventListeners) {
-				lstr.onRemoveAllResourses();
+				lstr.onRemoveAllResources();
 			}
 		}
 	}

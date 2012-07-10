@@ -37,6 +37,6 @@ public interface ManagementEventListener {
 
 	public void onAssociationRemoved(Association association);
 
-	public void onRemoveAllResourses();
+	public void onRemoveAllResources();
 
 }
