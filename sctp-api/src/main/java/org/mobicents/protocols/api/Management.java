@@ -123,6 +123,10 @@ public interface Management {
 	 *            port that this server will bind to
 	 * @param ipChannelType
 	 *            IP channel type: SCTP or TCP
+	 * @param acceptAnonymousConnections
+	 *            true: this Server accepts Anonymous connections, false: no
+	 * @param maxConcurrentConnectionsCount
+	 *            A count of concurrent connections that can accept a Server. 0 means an unlimited count.
 	 * @param extraHostAddresses
 	 *            When SCTP multi-homing configuration extra IP addresses can be put here
 	 *            If multi-homing absence this parameter can be null 
@@ -131,7 +135,8 @@ public interface Management {
 	 *             Exception if management not started or server name already
 	 *             taken or some other server already has same ip:port
 	 */
-	public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, String[] extraHostAddresses) throws Exception;
+	public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, boolean acceptAnonymousConnections,
+			int maxConcurrentConnectionsCount, String[] extraHostAddresses) throws Exception;
 
 	/**
 	 * Add new {@link Server}. IP channel type is SCTP.

@@ -37,7 +37,42 @@ public interface Server {
 	 * @return
 	 */
 	public IpChannelType getIpChannelType();
-	
+
+	/**
+	 * Return if this Server accepts Anonymous connections 
+	 * 
+	 * @return
+	 */
+	public boolean isAcceptAnonymousConnections();
+
+	/**
+	 * Return the count of concurrent connections that can accept a Server. 0 means an unlimited count.  
+	 * 
+	 * @return
+	 */
+	public int getMaxConcurrentConnectionsCount();
+
+	/**
+	 * Set the count of concurrent connections that can accept a Server. 0 means an unlimited count.  
+	 * 
+	 * @return
+	 */
+	public void setMaxConcurrentConnectionsCount(int val);
+
+	/**
+	* The AssociationListener set for this Association
+	* 
+	* @return
+	*/
+	public ServerListener getServerListener();
+
+	/**
+	 * The {@link AssociationListener} to be registered for this Association
+	 * 
+	 * @param associationListener
+	 */
+	public void setServerListener(ServerListener serverListener);
+
 	/**
 	 * Get name of this Server. Should be unique in a management instance
 	 * 
@@ -75,6 +110,7 @@ public interface Server {
 
 	/**
 	 * {@link Association} configured for this Server
+	 * Anonymous associations are not present in this list
 	 * 
 	 * @return
 	 */

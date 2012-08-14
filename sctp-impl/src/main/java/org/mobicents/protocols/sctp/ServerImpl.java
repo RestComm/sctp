@@ -38,6 +38,7 @@ import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.Server;
+import org.mobicents.protocols.api.ServerListener;
 
 import com.sun.nio.sctp.SctpServerChannel;
 
@@ -68,15 +69,20 @@ public class ServerImpl implements Server {
 	private int hostport;
 	private volatile boolean started = false;
 	private IpChannelType ipChannelType;
+	private boolean acceptAnonymousConnections;
+	private int maxConcurrentConnectionsCount;
 	private String[] extraHostAddresses;
 
 	private ManagementImpl management = null;
 
 	protected FastList<String> associations = new FastList<String>();
+//	protected FastList<String> anonymAssociations = new FastList<String>();
 
 	// The channel on which we'll accept connections
 	private SctpServerChannel serverChannelSctp;
 	private ServerSocketChannel serverChannelTcp;
+
+	private ServerListener serverListener = null;
 
 	/**
 	 * 
@@ -91,13 +97,15 @@ public class ServerImpl implements Server {
 	 * @param port
 	 * @throws IOException
 	 */
-	public ServerImpl(String name, String hostAddress, int hostport, IpChannelType ipChannelType,
-			String[] extraHostAddresses) throws IOException {
+	public ServerImpl(String name, String hostAddress, int hostport, IpChannelType ipChannelType, boolean acceptAnonymousConnections,
+			int maxConcurrentConnectionsCount, String[] extraHostAddresses) throws IOException {
 		super();
 		this.name = name;
 		this.hostAddress = hostAddress;
 		this.hostport = hostport;
 		this.ipChannelType = ipChannelType;
+		this.acceptAnonymousConnections = acceptAnonymousConnections;
+		this.maxConcurrentConnectionsCount = maxConcurrentConnectionsCount;
 		this.extraHostAddresses = extraHostAddresses;
 	}
 
@@ -121,6 +129,8 @@ public class ServerImpl implements Server {
 			}
 		}
 
+		// TODO: stop all anonymous associations?
+		
 		if (this.getIpChannel() != null) {
 			try {
 				this.getIpChannel().close();
@@ -196,11 +206,31 @@ public class ServerImpl implements Server {
 		return this.ipChannelType;
 	}
 
+	public boolean isAcceptAnonymousConnections() {
+		return acceptAnonymousConnections;
+	}
+
+	public int getMaxConcurrentConnectionsCount() {
+		return maxConcurrentConnectionsCount;
+	}
+
+	public void setMaxConcurrentConnectionsCount(int val) {
+		maxConcurrentConnectionsCount = val;
+	}
+
 	protected AbstractSelectableChannel getIpChannel() {
 		if (this.ipChannelType == IpChannelType.SCTP)
 			return this.serverChannelSctp;
 		else
 			return this.serverChannelTcp;
+	}
+
+	public ServerListener getServerListener() {
+		return serverListener;
+	}
+
+	public void setServerListener(ServerListener serverListener) {
+		this.serverListener = serverListener;
 	}
 
 	/**
@@ -258,7 +288,7 @@ public class ServerImpl implements Server {
 
 		sb.append("Server [name=").append(this.name).append(", started=").append(this.started).append(", hostAddress=")
 				.append(this.hostAddress).append(", hostPort=").append(hostport).append(", ipChannelType=")
-				.append(ipChannelType).append(", associations=[");
+				.append(ipChannelType).append(", associations(anonymous does not included)=[");
 
 		for (FastList.Node<String> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
 			sb.append(n.getValue());

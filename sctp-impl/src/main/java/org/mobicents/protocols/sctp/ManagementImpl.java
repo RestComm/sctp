@@ -74,7 +74,7 @@ public class ManagementImpl implements Management {
 
 	protected String persistDir = null;
 
-	private FastList<Server> servers = new FastList<Server>();
+	protected FastList<Server> servers = new FastList<Server>();
 	protected AssociationMap<String, Association> associations = new AssociationMap<String, Association>();
 
 	private FastList<ChangeRequest> pendingChanges = new FastList<ChangeRequest>();
@@ -426,11 +426,11 @@ public class ManagementImpl implements Management {
 	}
 
 	public ServerImpl addServer(String serverName, String hostAddress, int port) throws Exception {
-		return addServer(serverName, hostAddress, port, IpChannelType.SCTP, null);
+		return addServer(serverName, hostAddress, port, IpChannelType.SCTP, false, 0, null);
 	}
 
-	public ServerImpl addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType,
-			String[] extraHostAddresses) throws Exception {
+	public ServerImpl addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, boolean acceptAnonymousConnections,
+			int maxConcurrentConnectionsCount, String[] extraHostAddresses) throws Exception {
 
 		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
@@ -461,7 +461,8 @@ public class ManagementImpl implements Management {
 				}
 			}
 
-			ServerImpl server = new ServerImpl(serverName, hostAddress, port, ipChannelType, extraHostAddresses);
+			ServerImpl server = new ServerImpl(serverName, hostAddress, port, ipChannelType, acceptAnonymousConnections, maxConcurrentConnectionsCount,
+					extraHostAddresses);
 			server.setManagement(this);
 
 			FastList<Server> newServers = new FastList<Server>();

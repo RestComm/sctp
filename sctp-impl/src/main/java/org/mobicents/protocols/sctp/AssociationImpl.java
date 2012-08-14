@@ -133,20 +133,22 @@ public class AssociationImpl implements Association {
 	}
 
 	/**
-	 * 
+	 * Creating a CLIENT Association 
 	 * 
 	 * @param hostAddress
-	 * @param hostport
+	 * @param hostPort
 	 * @param peerAddress
 	 * @param peerPort
 	 * @param assocName
+	 * @param ipChannelType
+	 * @param extraHostAddresses
 	 * @throws IOException
 	 */
-	public AssociationImpl(String hostAddress, int hostport, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
+	public AssociationImpl(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
 			String[] extraHostAddresses) throws IOException {
 		this();
 		this.hostAddress = hostAddress;
-		this.hostPort = hostport;
+		this.hostPort = hostPort;
 		this.peerAddress = peerAddress;
 		this.peerPort = peerPort;
 		this.name = assocName;
@@ -158,10 +160,13 @@ public class AssociationImpl implements Association {
 	}
 
 	/**
+	 * Creating a SERVER Association
+	 * 
 	 * @param peerAddress
 	 * @param peerPort
 	 * @param serverName
 	 * @param assocName
+	 * @param ipChannelType
 	 */
 	public AssociationImpl(String peerAddress, int peerPort, String serverName, String assocName, IpChannelType ipChannelType) {
 		this();
@@ -172,6 +177,30 @@ public class AssociationImpl implements Association {
 		this.ipChannelType = ipChannelType;
 
 		this.type = AssociationType.SERVER;
+
+	}
+
+	/**
+	 * Creating an ANONYMOUS_SERVER Association
+	 * 
+	 * @param hostAddress
+	 * @param hostPort
+	 * @param peerAddress
+	 * @param peerPort
+	 * @param serverName
+	 * @param assocName
+	 * @param ipChannelType
+	 */
+	protected AssociationImpl(String hostAddress, int hostPort, String peerAddress, int peerPort, String serverName, IpChannelType ipChannelType) {
+		this();
+		this.hostAddress = hostAddress;
+		this.hostPort = hostPort;
+		this.peerAddress = peerAddress;
+		this.peerPort = peerPort;
+		this.serverName = serverName;
+		this.ipChannelType = ipChannelType;
+
+		this.type = AssociationType.ANONYMOUS_SERVER;
 
 	}
 

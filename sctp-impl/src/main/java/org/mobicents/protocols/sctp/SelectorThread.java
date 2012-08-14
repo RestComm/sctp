@@ -42,6 +42,7 @@ import javolution.util.FastMap;
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.IpChannelType;
+import org.mobicents.protocols.api.Server;
 
 import com.sun.nio.sctp.AssociationChangeNotification;
 import com.sun.nio.sctp.AssociationChangeNotification.AssocChangeEvent;
@@ -184,9 +185,10 @@ public class SelectorThread implements Runnable {
 		// Accept the connection and make it non-blocking
 		SctpChannel socketChannel = serverSocketChannel.accept();
 
-		Set<SocketAddress> socAddresses = socketChannel.getRemoteAddresses();
+		Set<SocketAddress> peerAddresses = socketChannel.getRemoteAddresses();
+		Set<SocketAddress> localAddresses = serverSocketChannel.getAllLocalAddresses();
 
-		this.doAccept(socketChannel, socAddresses);
+		this.doAccept(socketChannel, peerAddresses, localAddresses);
 	}
 
 	private void acceptTcp(SelectionKey key) throws IOException {
@@ -198,20 +200,43 @@ public class SelectorThread implements Runnable {
 		// Accept the connection and make it non-blocking
 		SocketChannel socketChannel = serverSocketChannel.accept();
 
-		SocketAddress sockAdd = socketChannel.getRemoteAddress();
-		Set<SocketAddress> socAddresses = new HashSet<SocketAddress>();
-		socAddresses.add(sockAdd);
+		Set<SocketAddress> peerAddresses = new HashSet<SocketAddress>();
+		peerAddresses.add(socketChannel.getRemoteAddress());
+		Set<SocketAddress> localAddresses = new HashSet<SocketAddress>();
+		localAddresses.add(serverSocketChannel.getLocalAddress());
 
-		this.doAccept(socketChannel, socAddresses);
+		this.doAccept(socketChannel, peerAddresses, localAddresses);
 	}
 
-	private void doAccept(AbstractSelectableChannel socketChannel, Set<SocketAddress> socAddresses) throws IOException, ClosedChannelException {
+	private void doAccept(AbstractSelectableChannel socketChannel, Set<SocketAddress> peerAddresses, Set<SocketAddress> localAddresses) throws IOException, ClosedChannelException {
 
 		boolean provisioned = false;
 		int port = 0;
 		InetAddress inetAddress = null;
 
-		for (SocketAddress sockAdd : socAddresses) {
+		// server selection
+		for(Server srv : this.management.servers) {
+			for (SocketAddress localAdd : localAddresses) {
+				inetAddress = ((InetSocketAddress) localAdd).getAddress();
+				port = ((InetSocketAddress) localAdd).getPort();
+
+				boolean srvFound = false;
+				if ((port == srv.getHostport()) && (inetAddress.getHostAddress().equals(srv.getHostAddress()))) {
+					srvFound = true;
+				} else {
+					// ........................
+				}
+				
+				// .......................
+			}
+		}
+		
+		
+		
+		
+		// ............................
+		
+		for (SocketAddress sockAdd : peerAddresses) {
 
 			inetAddress = ((InetSocketAddress) sockAdd).getAddress();
 			port = ((InetSocketAddress) sockAdd).getPort();
@@ -223,6 +248,9 @@ public class SelectorThread implements Runnable {
 
 			for (FastMap.Entry<String, Association> n = associations.head(), end = associations.tail(); (n = n.getNext()) != end && !provisioned;) {
 				AssociationImpl association = (AssociationImpl)n.getValue();
+
+				// ..................................
+
 				// compare port and ip of remote with provisioned
 				if ((port == association.getPeerPort()) && (inetAddress.getHostAddress().equals(association.getPeerAddress()))) {
 					provisioned = true;
