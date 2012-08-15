@@ -303,6 +303,7 @@ public class SelectorThread implements Runnable {
 					}
 
 					if (!anonymAssociation.isStarted()) {
+						// connection is rejected
 						logger.info(String.format("Rejected anonymous %s", anonymAssociation));
 						try {
 							socketChannel.close();
