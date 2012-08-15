@@ -82,8 +82,6 @@ public class ServerImpl implements Server {
 	private SctpServerChannel serverChannelSctp;
 	private ServerSocketChannel serverChannelTcp;
 
-	private ServerListener serverListener = null;
-
 	/**
 	 * 
 	 */
@@ -223,14 +221,6 @@ public class ServerImpl implements Server {
 			return this.serverChannelSctp;
 		else
 			return this.serverChannelTcp;
-	}
-
-	public ServerListener getServerListener() {
-		return serverListener;
-	}
-
-	public void setServerListener(ServerListener serverListener) {
-		this.serverListener = serverListener;
 	}
 
 	/**

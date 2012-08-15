@@ -60,20 +60,6 @@ public interface Server {
 	public void setMaxConcurrentConnectionsCount(int val);
 
 	/**
-	* The AssociationListener set for this Association
-	* 
-	* @return
-	*/
-	public ServerListener getServerListener();
-
-	/**
-	 * The {@link AssociationListener} to be registered for this Association
-	 * 
-	 * @param associationListener
-	 */
-	public void setServerListener(ServerListener serverListener);
-
-	/**
 	 * Get name of this Server. Should be unique in a management instance
 	 * 
 	 * @return

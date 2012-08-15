@@ -141,4 +141,17 @@ public interface Association {
 	 */
 	public void send(PayloadData payloadData) throws Exception;
 
+	public void acceptAnonymousAssociation(AssociationListener associationListener) throws Exception;
+
+	public void rejectAnonymousAssociation();
+
+	/**
+	 * Stop the anonymous association. The connection will be closed and we will not reuse this association
+	 * This can be applied only for anonymous association, other associations must be stopped by 
+	 * Management.stopAssociation(String assocName) 
+	 * 
+	 * @throws Exception
+	 */
+	public void stopAnonymousAssociation() throws Exception;
+
 }

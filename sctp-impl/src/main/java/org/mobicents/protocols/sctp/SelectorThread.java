@@ -186,9 +186,8 @@ public class SelectorThread implements Runnable {
 		SctpChannel socketChannel = serverSocketChannel.accept();
 
 		Set<SocketAddress> peerAddresses = socketChannel.getRemoteAddresses();
-		Set<SocketAddress> localAddresses = serverSocketChannel.getAllLocalAddresses();
 
-		this.doAccept(socketChannel, peerAddresses, localAddresses);
+		this.doAccept(serverSocketChannel, socketChannel, peerAddresses);
 	}
 
 	private void acceptTcp(SelectionKey key) throws IOException {
@@ -202,91 +201,134 @@ public class SelectorThread implements Runnable {
 
 		Set<SocketAddress> peerAddresses = new HashSet<SocketAddress>();
 		peerAddresses.add(socketChannel.getRemoteAddress());
-		Set<SocketAddress> localAddresses = new HashSet<SocketAddress>();
-		localAddresses.add(serverSocketChannel.getLocalAddress());
 
-		this.doAccept(socketChannel, peerAddresses, localAddresses);
+		this.doAccept(serverSocketChannel, socketChannel, peerAddresses);
 	}
 
-	private void doAccept(AbstractSelectableChannel socketChannel, Set<SocketAddress> peerAddresses, Set<SocketAddress> localAddresses) throws IOException, ClosedChannelException {
+	private void doAccept(AbstractSelectableChannel serverSocketChannel, AbstractSelectableChannel socketChannel, Set<SocketAddress> peerAddresses)
+			throws IOException, ClosedChannelException {
 
 		boolean provisioned = false;
 		int port = 0;
 		InetAddress inetAddress = null;
+		int firstPort = 0;
+		InetAddress firstInetAddress = null;
 
 		// server selection
-		for(Server srv : this.management.servers) {
-			for (SocketAddress localAdd : localAddresses) {
-				inetAddress = ((InetSocketAddress) localAdd).getAddress();
-				port = ((InetSocketAddress) localAdd).getPort();
+		for (Server srv : this.management.servers) {
+			ServerImpl srvv = (ServerImpl) srv;
+			if (srvv.getIpChannel() == serverSocketChannel) { // we have found a server
+				for (SocketAddress sockAdd : peerAddresses) {
 
-				boolean srvFound = false;
-				if ((port == srv.getHostport()) && (inetAddress.getHostAddress().equals(srv.getHostAddress()))) {
-					srvFound = true;
-				} else {
-					// ........................
-				}
-				
-				// .......................
-			}
-		}
-		
-		
-		
-		
-		// ............................
-		
-		for (SocketAddress sockAdd : peerAddresses) {
-
-			inetAddress = ((InetSocketAddress) sockAdd).getAddress();
-			port = ((InetSocketAddress) sockAdd).getPort();
-
-			// Iterate through all the servers and corresponding associate to
-			// check if incoming connection request matches with any provisioned
-			// ip:port
-			FastMap<String, Association> associations = this.management.associations;
-
-			for (FastMap.Entry<String, Association> n = associations.head(), end = associations.tail(); (n = n.getNext()) != end && !provisioned;) {
-				AssociationImpl association = (AssociationImpl)n.getValue();
-
-				// ..................................
-
-				// compare port and ip of remote with provisioned
-				if ((port == association.getPeerPort()) && (inetAddress.getHostAddress().equals(association.getPeerAddress()))) {
-					provisioned = true;
-
-					if (!association.isStarted()) {
-						logger.error(String.format("Received connect request for Association=%s but not started yet. Droping the connection! ",
-								association.getName()));
-						socketChannel.close();
-						break;
+					inetAddress = ((InetSocketAddress) sockAdd).getAddress();
+					port = ((InetSocketAddress) sockAdd).getPort();
+					if (firstInetAddress == null) {
+						firstInetAddress = inetAddress;
+						firstPort = port;
 					}
 
-					((AssociationImpl) association).setSocketChannel(socketChannel);
+					// Iterate through all corresponding associate to
+					// check if incoming connection request matches with any provisioned
+					// ip:port
+					FastMap<String, Association> associations = this.management.associations;
 
-					// Accept the connection and make it non-blocking
+					for (FastMap.Entry<String, Association> n = associations.head(), end = associations.tail(); (n = n.getNext()) != end && !provisioned;) {
+						AssociationImpl association = (AssociationImpl)n.getValue();
+						
+						// check if an association binds to the found server
+						if (srv.getName().equals(association.getServerName())) {
+
+							// compare port and ip of remote with provisioned
+							if ((port == association.getPeerPort()) && (inetAddress.getHostAddress().equals(association.getPeerAddress()))) {
+								provisioned = true;
+
+								if (!association.isStarted()) {
+									logger.error(String.format("Received connect request for Association=%s but not started yet. Droping the connection! ",
+											association.getName()));
+									socketChannel.close();
+									break;
+								}
+
+								((AssociationImpl) association).setSocketChannel(socketChannel);
+
+								// Accept the connection and make it non-blocking
+								socketChannel.configureBlocking(false);
+
+								// Register the new SocketChannel with our Selector,
+								// indicating we'd like to be notified when there's data
+								// waiting to be read
+								SelectionKey key1 = socketChannel.register(this.selector, SelectionKey.OP_READ);
+								key1.attach(association);
+
+								if (logger.isInfoEnabled()) {
+									logger.info(String.format("Connected %s", association));
+								}
+
+								if (association.getIpChannelType() == IpChannelType.TCP) {
+									AssocChangeEvent ace = AssocChangeEvent.COMM_UP;
+									AssociationChangeNotification2 acn = new AssociationChangeNotification2(ace);
+									association.associationHandler.handleNotification(acn, association);
+								}
+
+								break;
+							}
+						}
+					}
+
+					if (provisioned)
+						break;
+				}// for (SocketAddress sockAdd : socAddresses)
+
+				if (!provisioned && srv.isAcceptAnonymousConnections() && this.management.getServerListener() != null) {
+					// the server accepts anonymous connections
+
+					provisioned = true;
+					
+					AssociationImpl anonymAssociation = new AssociationImpl(firstInetAddress.getHostAddress(), firstPort, srv.getName(), srv.getIpChannelType());
+					anonymAssociation.setSocketChannel(socketChannel);
+
+					// Accept the connection and make it
+					// non-blocking
 					socketChannel.configureBlocking(false);
+
+					try {
+						this.management.getServerListener().onNewRemoteConnection(srv, anonymAssociation);
+					} catch (Throwable e) {
+						logger.warn(String.format("Exception when invoking ServerListener.onNewRemoteConnection() Ass=%s", anonymAssociation), e);
+						try {
+							socketChannel.close();
+						} catch (Exception ee) {
+						}
+						return;
+					}
+
+					if (!anonymAssociation.isStarted()) {
+						logger.info(String.format("Rejected anonymous %s", anonymAssociation));
+						try {
+							socketChannel.close();
+						} catch (Exception ee) {
+						}
+						return;
+					}
 
 					// Register the new SocketChannel with our Selector,
 					// indicating we'd like to be notified when there's data
 					// waiting to be read
 					SelectionKey key1 = socketChannel.register(this.selector, SelectionKey.OP_READ);
-					key1.attach(association);
+					key1.attach(anonymAssociation);
 
 					if (logger.isInfoEnabled()) {
-						logger.info(String.format("Connected %s", association));
+						logger.info(String.format("Connected anonymous %s", anonymAssociation));
 					}
 
-					if (association.getIpChannelType() == IpChannelType.TCP) {
+					if (anonymAssociation.getIpChannelType() == IpChannelType.TCP) {
 						AssocChangeEvent ace = AssocChangeEvent.COMM_UP;
 						AssociationChangeNotification2 acn = new AssociationChangeNotification2(ace);
-						association.associationHandler.handleNotification(acn, association);
+						anonymAssociation.associationHandler.handleNotification(acn, anonymAssociation);
 					}
-
-					break;
 				}
 			}
-		}// for (SocketAddress sockAdd : socAddresses)
+		}		
 
 		if (!provisioned) {
 			// There is no corresponding Associate provisioned. Lets close the
@@ -303,6 +345,9 @@ public class SelectorThread implements Runnable {
 			this.finishConnectionSctp(key);
 		else
 			this.finishConnectionTcp(key);
+
+		// TODO: may be add anonymAssociation to the anonymAssociationList;
+		// ...........................
 	}
 
 	private void finishConnectionSctp(SelectionKey key) throws IOException {

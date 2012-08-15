@@ -191,10 +191,8 @@ public class AssociationImpl implements Association {
 	 * @param assocName
 	 * @param ipChannelType
 	 */
-	protected AssociationImpl(String hostAddress, int hostPort, String peerAddress, int peerPort, String serverName, IpChannelType ipChannelType) {
+	protected AssociationImpl(String peerAddress, int peerPort, String serverName, IpChannelType ipChannelType) {
 		this();
-		this.hostAddress = hostAddress;
-		this.hostPort = hostPort;
 		this.peerAddress = peerAddress;
 		this.peerPort = peerPort;
 		this.serverName = serverName;
@@ -238,6 +236,28 @@ public class AssociationImpl implements Association {
 			// changes
 			this.management.getSocketSelector().wakeup();
 		}
+	}
+
+	public void acceptAnonymousAssociation(AssociationListener associationListener) throws Exception {
+		this.associationListener = associationListener;
+
+		if (this.getAssociationType() != AssociationType.ANONYMOUS_SERVER) {
+			throw new UnsupportedOperationException("Association.acceptAnonymousAssociation() can be applied only for anonymous associations");
+		}
+
+		this.start();
+	}
+
+	public void rejectAnonymousAssociation() {
+	}
+
+	public void stopAnonymousAssociation() throws Exception {
+
+		if (this.getAssociationType() != AssociationType.ANONYMOUS_SERVER) {
+			throw new UnsupportedOperationException("Association.stopAnonymousAssociation() can be applied only for anonymous associations");
+		}
+
+		this.stop();
 	}
 
 	public IpChannelType getIpChannelType() {

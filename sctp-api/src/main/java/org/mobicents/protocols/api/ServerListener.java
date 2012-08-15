@@ -29,6 +29,6 @@ package org.mobicents.protocols.api;
  */
 public interface ServerListener {
 
-	public void onNewRemoteConnection(Server server, Association association, String peerAddress, int peerPort);
+	public void onNewRemoteConnection(Server server, Association association);
 
 }

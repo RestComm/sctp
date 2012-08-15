@@ -48,6 +48,7 @@ import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.Management;
 import org.mobicents.protocols.api.ManagementEventListener;
 import org.mobicents.protocols.api.Server;
+import org.mobicents.protocols.api.ServerListener;
 
 /**
  * @author amit bhayani
@@ -101,6 +102,8 @@ public class ManagementImpl implements Management {
 	private ExecutorService[] executorServices = null;
 
 	private FastList<ManagementEventListener> managementEventListeners = new FastList<ManagementEventListener>();
+
+	private ServerListener serverListener = null;
 	
 	private volatile boolean started = false;
 
@@ -193,6 +196,14 @@ public class ManagementImpl implements Management {
 	 */
 	public void setSingleThread(boolean singleThread) {
 		this.singleThread = singleThread;
+	}
+
+	public ServerListener getServerListener() {
+		return serverListener;
+	}
+
+	public void setServerListener(ServerListener serverListener) {
+		this.serverListener = serverListener;
 	}
 
 	public void addManagementEventListener(ManagementEventListener listener) {

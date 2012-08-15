@@ -72,6 +72,20 @@ public interface Management {
 	public void setPersistDir(String persistDir);
 
 	/**
+	* The AssociationListener set for this Association
+	* 
+	* @return
+	*/
+	public ServerListener getServerListener();
+
+	/**
+	 * The {@link AssociationListener} to be registered for this Association
+	 * 
+	 * @param associationListener
+	 */
+	public void setServerListener(ServerListener serverListener);
+
+	/**
 	 * Adding ManagementEventListener.
 	 * This listener is notified when adding/removing servers and associations 
 	 * @param listener
