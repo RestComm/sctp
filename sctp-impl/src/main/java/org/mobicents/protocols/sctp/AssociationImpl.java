@@ -306,6 +306,14 @@ public class AssociationImpl implements Association {
 		return started && up;
 	}
 
+	protected void markAssociationUp() {
+		this.up = true;
+	}
+
+	protected void markAssociationDown() {
+		this.up = false;
+	}
+
 	/**
 	 * @return the hostAddress
 	 */
@@ -619,7 +627,7 @@ public class AssociationImpl implements Association {
 		}
 
 		try {
-			this.up = false;
+			this.markAssociationDown();
 			this.associationListener.onCommunicationShutdown(this);
 		} catch (Exception e) {
 			logger.error(String.format("Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", this.name), e);

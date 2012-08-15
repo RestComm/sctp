@@ -84,7 +84,7 @@ class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 
 			// TODO assign Thread's ?
 			try {
-				associtaion.up = true;
+				associtaion.markAssociationUp();
 				associtaion.getAssociationListener().onCommunicationUp(associtaion, this.maxInboundStreams, this.maxOutboundStreams);
 			} catch (Exception e) {
 				logger.error(String.format("Exception while calling onCommunicationUp on AssociationListener for Association=%s", associtaion.getName()), e);
@@ -102,7 +102,7 @@ class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 
 			associtaion.scheduleConnect();
 			try {
-				associtaion.up = false;
+				associtaion.markAssociationDown();
 				associtaion.getAssociationListener().onCommunicationLost(associtaion);
 			} catch (Exception e) {
 				logger.error(String.format("Exception while calling onCommunicationLost on AssociationListener for Association=%s", associtaion.getName()), e);
@@ -122,7 +122,7 @@ class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 				logger.info(String.format("Shutdown for Association=%s", associtaion.getName()));
 			}
 			try {
-				associtaion.up = false;
+				associtaion.markAssociationDown();
 				associtaion.getAssociationListener().onCommunicationShutdown(associtaion);
 			} catch (Exception e) {
 				logger.error(String.format("Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", associtaion.getName()),
@@ -146,7 +146,7 @@ class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 		// TODO assign Thread's ?
 
 		try {
-			associtaion.up = false;
+			associtaion.markAssociationDown();
 			associtaion.getAssociationListener().onCommunicationShutdown(associtaion);
 		} catch (Exception e) {
 			logger.error(String.format("Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", associtaion.getName()), e);

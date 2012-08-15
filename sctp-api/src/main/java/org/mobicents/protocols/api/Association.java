@@ -141,8 +141,19 @@ public interface Association {
 	 */
 	public void send(PayloadData payloadData) throws Exception;
 
+	/**
+	 * Use this method only for accepting anonymous connections
+	 * from the ServerListener.onNewRemoteConnection() invoking
+	 * 
+	 * @param associationListener
+	 * @throws Exception
+	 */
 	public void acceptAnonymousAssociation(AssociationListener associationListener) throws Exception;
 
+	/**
+	 * Use this method only for rejecting anonymous connections
+	 * from the ServerListener.onNewRemoteConnection() invoking
+	 */
 	public void rejectAnonymousAssociation();
 
 	/**

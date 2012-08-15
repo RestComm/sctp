@@ -101,7 +101,7 @@ public class ManagementTest {
 		management.removeAllResourses();
 
 		String[] arr = new String[]{"127.0.0.2", "127.0.0.3"};
-		Server server = management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, arr);
+		Server server = management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, false, 0, arr);
 
 		management.startServer(SERVER_NAME);
 
@@ -217,7 +217,7 @@ public class ManagementTest {
 		management.start();
 		management.removeAllResourses();
 
-		management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, null);
+		management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, false, 0, null);
 		Association serverAssociation = management.addServerAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_NAME, SERVER_ASSOCIATION_NAME, ipChannelType);
 		Association clientAssociation = management.addAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_HOST, SERVER_PORT, CLIENT_ASSOCIATION_NAME, ipChannelType, null);
 
