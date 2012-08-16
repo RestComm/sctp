@@ -266,6 +266,7 @@ public interface Management {
 	 * 
 	 * @param hostAddress
 	 * @param hostPort
+	 * 		If hostPort==0 this mean the local port will be any vacant port
 	 * @param peerAddress
 	 * @param peerPort
 	 * @param assocName

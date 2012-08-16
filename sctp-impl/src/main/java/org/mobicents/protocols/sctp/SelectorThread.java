@@ -112,9 +112,14 @@ public class SelectorThread implements Runnable {
 							key1.attach(change.getAssociation());
 							break;
 						case ChangeRequest.CONNECT:
-							if (change.getExecutionTime() <= System.currentTimeMillis()) {
+							if (!change.getAssociation().isStarted()) {
+								// if Association is stopped - remove pending connection requests  
 								pendingChanges.remove(change);
-								change.getAssociation().initiateConnection();
+							} else {
+								if (change.getExecutionTime() <= System.currentTimeMillis()) {
+									pendingChanges.remove(change);
+									change.getAssociation().initiateConnection();
+								}
 							}
 							break;
 						case ChangeRequest.CLOSE:
@@ -282,9 +287,21 @@ public class SelectorThread implements Runnable {
 				if (!provisioned && srv.isAcceptAnonymousConnections() && this.management.getServerListener() != null) {
 					// the server accepts anonymous connections
 
+					// checking for limit of concurrent connections
+					if (srvv.getMaxConcurrentConnectionsCount() > 0 && srvv.anonymAssociations.size() >= srvv.getMaxConcurrentConnectionsCount()) {
+						logger.warn(String.format("Incoming anonymous connection is rejected because of too many active connections to Server=%s", srv));
+						try {
+							socketChannel.close();
+						} catch (Exception ee) {
+						}
+						return;
+					}
+					
 					provisioned = true;
 					
-					AssociationImpl anonymAssociation = new AssociationImpl(firstInetAddress.getHostAddress(), firstPort, srv.getName(), srv.getIpChannelType());
+					AssociationImpl anonymAssociation = new AssociationImpl(firstInetAddress.getHostAddress(), firstPort, srv.getName(),
+							srv.getIpChannelType(), srvv);
+					anonymAssociation.setManagement(this.management);
 					anonymAssociation.setSocketChannel(socketChannel);
 
 					// Accept the connection and make it
@@ -319,7 +336,7 @@ public class SelectorThread implements Runnable {
 					key1.attach(anonymAssociation);
 
 					if (logger.isInfoEnabled()) {
-						logger.info(String.format("Connected anonymous %s", anonymAssociation));
+						logger.info(String.format("Accepted anonymous %s", anonymAssociation));
 					}
 
 					if (anonymAssociation.getIpChannelType() == IpChannelType.TCP) {
@@ -329,7 +346,10 @@ public class SelectorThread implements Runnable {
 					}
 				}
 			}
-		}		
+
+			if (provisioned)
+				break;
+		}
 
 		if (!provisioned) {
 			// There is no corresponding Associate provisioned. Lets close the
@@ -346,9 +366,6 @@ public class SelectorThread implements Runnable {
 			this.finishConnectionSctp(key);
 		else
 			this.finishConnectionTcp(key);
-
-		// TODO: may be add anonymAssociation to the anonymAssociationList;
-		// ...........................
 	}
 
 	private void finishConnectionSctp(SelectionKey key) throws IOException {
@@ -366,7 +383,7 @@ public class SelectorThread implements Runnable {
 			}
 
 			if (logger.isInfoEnabled()) {
-				logger.info(String.format("Asscoiation=%s connected to=%s", association.getName(), socketChannel.getRemoteAddresses()));
+				logger.info(String.format("Association=%s connected to=%s", association.getName(), socketChannel.getRemoteAddresses()));
 			}
 
 			// Register an interest in writing on this channel
@@ -392,7 +409,7 @@ public class SelectorThread implements Runnable {
 			}
 
 			if (logger.isInfoEnabled()) {
-				logger.info(String.format("Asscoiation=%s connected to=%s", association.getName(), socketChannel.getRemoteAddress()));
+				logger.info(String.format("Association=%s connected to=%s", association.getName(), socketChannel.getRemoteAddress()));
 			}
 
 			// Register an interest in writing on this channel

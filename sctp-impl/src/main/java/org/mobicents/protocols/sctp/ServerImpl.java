@@ -76,7 +76,7 @@ public class ServerImpl implements Server {
 	private ManagementImpl management = null;
 
 	protected FastList<String> associations = new FastList<String>();
-//	protected FastList<String> anonymAssociations = new FastList<String>();
+	protected FastList<Association> anonymAssociations = new FastList<Association>();
 
 	// The channel on which we'll accept connections
 	private SctpServerChannel serverChannelSctp;
@@ -127,8 +127,11 @@ public class ServerImpl implements Server {
 			}
 		}
 
-		// TODO: stop all anonymous associations?
-		
+		synchronized (this.anonymAssociations) {
+			// TODO: stop all anonymous associations?
+			this.anonymAssociations.clear();
+		}
+
 		if (this.getIpChannel() != null) {
 			try {
 				this.getIpChannel().close();
@@ -216,6 +219,11 @@ public class ServerImpl implements Server {
 		maxConcurrentConnectionsCount = val;
 	}
 
+	// TODO: should we share an access to the anonymAssociations list 
+//	public FastList<Association> getAnonymAssociations() {
+//		return this.anonymAssociations;
+//	}
+	
 	protected AbstractSelectableChannel getIpChannel() {
 		if (this.ipChannelType == IpChannelType.SCTP)
 			return this.serverChannelSctp;

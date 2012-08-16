@@ -77,6 +77,7 @@ public class AssociationImpl implements Association {
 	private String name;
 	private IpChannelType ipChannelType;
 	private String[] extraHostAddresses;
+	private ServerImpl server; // this is filled only for anonymous Associations
 
 	private AssociationType type;
 
@@ -191,12 +192,13 @@ public class AssociationImpl implements Association {
 	 * @param assocName
 	 * @param ipChannelType
 	 */
-	protected AssociationImpl(String peerAddress, int peerPort, String serverName, IpChannelType ipChannelType) {
+	protected AssociationImpl(String peerAddress, int peerPort, String serverName, IpChannelType ipChannelType, ServerImpl server) {
 		this();
 		this.peerAddress = peerAddress;
 		this.peerPort = peerPort;
 		this.serverName = serverName;
 		this.ipChannelType = ipChannelType;
+		this.server = server;
 
 		this.type = AssociationType.ANONYMOUS_SERVER;
 
@@ -214,7 +216,9 @@ public class AssociationImpl implements Association {
 		this.started = true;
 
 		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Started Association=%s", this));
+			if (this.type != AssociationType.ANONYMOUS_SERVER) {
+				logger.info(String.format("Started Association=%s", this));
+			}
 		}
 	}
 
@@ -307,11 +311,22 @@ public class AssociationImpl implements Association {
 	}
 
 	protected void markAssociationUp() {
+		if (this.server != null) {
+			synchronized (this.server.anonymAssociations) {
+				this.server.anonymAssociations.add(this);
+			}
+		}
+
 		this.up = true;
 	}
 
 	protected void markAssociationDown() {
 		this.up = false;
+		if (this.server != null) {
+			synchronized (this.server.anonymAssociations) {
+				this.server.anonymAssociations.remove(this);
+			}
+		}
 	}
 
 	/**

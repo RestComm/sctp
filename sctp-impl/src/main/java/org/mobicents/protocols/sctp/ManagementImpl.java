@@ -692,8 +692,8 @@ public class ManagementImpl implements Management {
 			throw new Exception("Host address cannot be null");
 		}
 
-		if (hostPort < 1) {
-			throw new Exception("Host port cannot be less than 1");
+		if (hostPort < 0) {
+			throw new Exception("Host port cannot be less than 0");
 		}
 
 		if (peerAddress == null) {
