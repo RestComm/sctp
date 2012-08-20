@@ -102,4 +102,10 @@ public interface Server {
 	 */
 	public List<String> getAssociations();
 
+	/**
+	 * Returns an unmodifiable list of anonymous associations that are connected at the moment 
+	 * @return
+	 */
+	public List<Association> getAnonymAssociations();
+
 }

@@ -153,7 +153,28 @@ public interface Management {
 			int maxConcurrentConnectionsCount, String[] extraHostAddresses) throws Exception;
 
 	/**
-	 * Add new {@link Server}. IP channel type is SCTP.
+	 * Add new {@link Server}. Server can not accept anonymous connections.
+	 * 
+	 * @param serverName
+	 *            name of the Server. Should be unique name
+	 * @param hostAddress
+	 *            IP address that this server will bind to
+	 * @param port
+	 *            port that this server will bind to
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
+	 * @param extraHostAddresses
+	 *            When SCTP multi-homing configuration extra IP addresses can be put here
+	 *            If multi-homing absence this parameter can be null 
+	 * @return new Server instance
+	 * @throws Exception
+	 *             Exception if management not started or server name already
+	 *             taken or some other server already has same ip:port
+	 */
+	public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, String[] extraHostAddresses) throws Exception;
+
+	/**
+	 * Add new {@link Server}. IP channel type is SCTP. Server can not accept anonymous connections.
 	 * 
 	 * @param serverName
 	 *            name of the Server. Should be unique name

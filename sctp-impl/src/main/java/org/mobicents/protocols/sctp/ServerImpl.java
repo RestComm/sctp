@@ -128,7 +128,10 @@ public class ServerImpl implements Server {
 		}
 
 		synchronized (this.anonymAssociations) {
-			// TODO: stop all anonymous associations?
+			// stopping all anonymous associations
+			for (Association ass : this.anonymAssociations) {
+				ass.stopAnonymousAssociation();
+			}
 			this.anonymAssociations.clear();
 		}
 
@@ -219,10 +222,9 @@ public class ServerImpl implements Server {
 		maxConcurrentConnectionsCount = val;
 	}
 
-	// TODO: should we share an access to the anonymAssociations list 
-//	public FastList<Association> getAnonymAssociations() {
-//		return this.anonymAssociations;
-//	}
+	public List<Association> getAnonymAssociations() {
+		return this.anonymAssociations.unmodifiable();
+	}
 	
 	protected AbstractSelectableChannel getIpChannel() {
 		if (this.ipChannelType == IpChannelType.SCTP)

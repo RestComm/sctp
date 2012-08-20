@@ -440,6 +440,10 @@ public class ManagementImpl implements Management {
 		return addServer(serverName, hostAddress, port, IpChannelType.SCTP, false, 0, null);
 	}
 
+	public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, String[] extraHostAddresses) throws Exception {
+		return addServer(serverName, hostAddress, port, ipChannelType, false, 0, extraHostAddresses);
+	}
+
 	public ServerImpl addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, boolean acceptAnonymousConnections,
 			int maxConcurrentConnectionsCount, String[] extraHostAddresses) throws Exception {
 
