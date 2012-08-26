@@ -116,6 +116,12 @@ public interface Management {
 	 * @throws Exception
 	 */
 	public void stop() throws Exception;
+	
+	/**
+	 * returns true if Management is started
+	 * @return
+	 */
+	public boolean isStarted();
 
 	/**
 	 * This method stops and removes all registered servers and associations
