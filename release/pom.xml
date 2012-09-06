@@ -10,6 +10,7 @@
 	</parent>
 	
 	<artifactId>sctp-release</artifactId>
+  <version>1.0.0.CR4</version>
 	<name>Mobicents :: Release :: ${pom.artifactId}</name>
 	<profiles>
 		<profile>
