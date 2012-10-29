@@ -202,6 +202,10 @@ public class ManagementImpl implements Management {
 		return serverListener;
 	}
 
+	protected FastList<ManagementEventListener> getManagementEventListeners() {
+		return managementEventListeners;
+	}
+
 	public void setServerListener(ServerListener serverListener) {
 		this.serverListener = serverListener;
 	}

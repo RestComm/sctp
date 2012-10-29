@@ -43,6 +43,7 @@ import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationListener;
 import org.mobicents.protocols.api.AssociationType;
 import org.mobicents.protocols.api.IpChannelType;
+import org.mobicents.protocols.api.ManagementEventListener;
 import org.mobicents.protocols.api.PayloadData;
 
 import com.sun.nio.sctp.MessageInfo;
@@ -220,6 +221,10 @@ public class AssociationImpl implements Association {
 				logger.info(String.format("Started Association=%s", this));
 			}
 		}
+
+		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
+			lstr.onAssociationStarted(this);
+		}
 	}
 
 	/**
@@ -228,6 +233,9 @@ public class AssociationImpl implements Association {
 	 */
 	protected void stop() throws Exception {
 		this.started = false;
+		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
+			lstr.onAssociationStopped(this);
+		}
 
 		if (this.getSocketChannel() != null && this.getSocketChannel().isOpen()) {
 			FastList<ChangeRequest> pendingChanges = this.management.getPendingChanges();
@@ -318,10 +326,17 @@ public class AssociationImpl implements Association {
 		}
 
 		this.up = true;
+		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
+			lstr.onAssociationUp(this);
+		}
 	}
 
 	protected void markAssociationDown() {
 		this.up = false;
+		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
+			lstr.onAssociationDown(this);
+		}
+
 		if (this.server != null) {
 			synchronized (this.server.anonymAssociations) {
 				this.server.anonymAssociations.remove(this);
