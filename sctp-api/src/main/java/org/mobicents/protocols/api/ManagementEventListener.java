@@ -29,6 +29,12 @@ package org.mobicents.protocols.api;
  */
 public interface ManagementEventListener {
 
+	public void onServiceStarted();
+
+	public void onServiceStopped();
+
+	public void onRemoveAllResources();
+
 	public void onServerAdded(Server server);
 
 	public void onServerRemoved(Server serverName);
@@ -36,8 +42,6 @@ public interface ManagementEventListener {
 	public void onAssociationAdded(Association association);
 
 	public void onAssociationRemoved(Association association);
-
-	public void onRemoveAllResources();
 
 	public void onAssociationStarted(Association association);
 

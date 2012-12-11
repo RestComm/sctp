@@ -1,23 +1,23 @@
 /*
- * JBoss, Home of Professional Open Source
- * Copyright 2011, Red Hat, Inc. and/or its affiliates, and individual
- * contributors as indicated by the @authors tag. All rights reserved.
- * See the copyright.txt in the distribution for a full listing
- * of individual contributors.
- * 
- * This copyrighted material is made available to anyone wishing to use,
- * modify, copy, or redistribute it subject to the terms and conditions
- * of the GNU General Public License, v. 2.0.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
- * General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License,
- * v. 2.0 along with this distribution; if not, write to the Free 
- * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
+ * TeleStax, Open Source Cloud Communications  Copyright 2012. 
+ * and individual contributors
+ * by the @authors tag. See the copyright.txt in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
 package org.mobicents.protocols.sctp;
@@ -223,7 +223,11 @@ public class AssociationImpl implements Association {
 		}
 
 		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
-			lstr.onAssociationStarted(this);
+			try {
+				lstr.onAssociationStarted(this);
+			} catch (Throwable ee) {
+				logger.error("Exception while invoking onAssociationStarted", ee);
+			}
 		}
 	}
 
@@ -234,7 +238,11 @@ public class AssociationImpl implements Association {
 	protected void stop() throws Exception {
 		this.started = false;
 		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
-			lstr.onAssociationStopped(this);
+			try {
+				lstr.onAssociationStopped(this);
+			} catch (Throwable ee) {
+				logger.error("Exception while invoking onAssociationStopped", ee);
+			}
 		}
 
 		if (this.getSocketChannel() != null && this.getSocketChannel().isOpen()) {
@@ -318,6 +326,11 @@ public class AssociationImpl implements Association {
 		return started && up;
 	}
 
+	@Override
+	public boolean isUp() {
+		return up;
+	}
+
 	protected void markAssociationUp() {
 		if (this.server != null) {
 			synchronized (this.server.anonymAssociations) {
@@ -327,14 +340,22 @@ public class AssociationImpl implements Association {
 
 		this.up = true;
 		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
-			lstr.onAssociationUp(this);
+			try {
+				lstr.onAssociationUp(this);
+			} catch (Throwable ee) {
+				logger.error("Exception while invoking onAssociationUp", ee);
+			}
 		}
 	}
 
 	protected void markAssociationDown() {
 		this.up = false;
 		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
-			lstr.onAssociationDown(this);
+			try {
+				lstr.onAssociationDown(this);
+			} catch (Throwable ee) {
+				logger.error("Exception while invoking onAssociationDown", ee);
+			}
 		}
 
 		if (this.server != null) {
