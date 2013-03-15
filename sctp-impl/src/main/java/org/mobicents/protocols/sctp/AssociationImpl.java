@@ -135,7 +135,7 @@ public class AssociationImpl implements Association {
 	}
 
 	/**
-	 * Creating a CLIENT Association 
+	 * Creating a CLIENT Association
 	 * 
 	 * @param hostAddress
 	 * @param hostPort
@@ -146,8 +146,8 @@ public class AssociationImpl implements Association {
 	 * @param extraHostAddresses
 	 * @throws IOException
 	 */
-	public AssociationImpl(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
-			String[] extraHostAddresses) throws IOException {
+	public AssociationImpl(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName,
+			IpChannelType ipChannelType, String[] extraHostAddresses) throws IOException {
 		this();
 		this.hostAddress = hostAddress;
 		this.hostPort = hostPort;
@@ -170,7 +170,8 @@ public class AssociationImpl implements Association {
 	 * @param assocName
 	 * @param ipChannelType
 	 */
-	public AssociationImpl(String peerAddress, int peerPort, String serverName, String assocName, IpChannelType ipChannelType) {
+	public AssociationImpl(String peerAddress, int peerPort, String serverName, String assocName,
+			IpChannelType ipChannelType) {
 		this();
 		this.peerAddress = peerAddress;
 		this.peerPort = peerPort;
@@ -193,7 +194,8 @@ public class AssociationImpl implements Association {
 	 * @param assocName
 	 * @param ipChannelType
 	 */
-	protected AssociationImpl(String peerAddress, int peerPort, String serverName, IpChannelType ipChannelType, ServerImpl server) {
+	protected AssociationImpl(String peerAddress, int peerPort, String serverName, IpChannelType ipChannelType,
+			ServerImpl server) {
 		this();
 		this.peerAddress = peerAddress;
 		this.peerPort = peerPort;
@@ -262,7 +264,8 @@ public class AssociationImpl implements Association {
 		this.associationListener = associationListener;
 
 		if (this.getAssociationType() != AssociationType.ANONYMOUS_SERVER) {
-			throw new UnsupportedOperationException("Association.acceptAnonymousAssociation() can be applied only for anonymous associations");
+			throw new UnsupportedOperationException(
+					"Association.acceptAnonymousAssociation() can be applied only for anonymous associations");
 		}
 
 		this.start();
@@ -274,7 +277,8 @@ public class AssociationImpl implements Association {
 	public void stopAnonymousAssociation() throws Exception {
 
 		if (this.getAssociationType() != AssociationType.ANONYMOUS_SERVER) {
-			throw new UnsupportedOperationException("Association.stopAnonymousAssociation() can be applied only for anonymous associations");
+			throw new UnsupportedOperationException(
+					"Association.stopAnonymousAssociation() can be applied only for anonymous associations");
 		}
 
 		this.stop();
@@ -438,7 +442,8 @@ public class AssociationImpl implements Association {
 		synchronized (pendingChanges) {
 
 			// Indicate we want the interest ops set changed
-			pendingChanges.add(new ChangeRequest(this.getSocketChannel(), this, ChangeRequest.CHANGEOPS, SelectionKey.OP_WRITE));
+			pendingChanges.add(new ChangeRequest(this.getSocketChannel(), this, ChangeRequest.CHANGEOPS,
+					SelectionKey.OP_WRITE));
 
 			// And queue the data we want written
 			// TODO Do we need to synchronize ConcurrentLinkedQueue ?
@@ -453,10 +458,14 @@ public class AssociationImpl implements Association {
 
 	private void checkSocketIsOpen() throws Exception {
 		if (this.ipChannelType == IpChannelType.SCTP) {
-			if (!this.started || this.socketChannelSctp == null || !this.socketChannelSctp.isOpen() || this.socketChannelSctp.association() == null)
-				throw new Exception(String.format("Underlying sctp channel doesn't open or doesn't have association for Association=%s", this.name));
+			if (!this.started || this.socketChannelSctp == null || !this.socketChannelSctp.isOpen()
+					|| this.socketChannelSctp.association() == null)
+				throw new Exception(String.format(
+						"Underlying sctp channel doesn't open or doesn't have association for Association=%s",
+						this.name));
 		} else {
-			if (!this.started || this.socketChannelTcp == null || !this.socketChannelTcp.isOpen() || !this.socketChannelTcp.isConnected())
+			if (!this.started || this.socketChannelTcp == null || !this.socketChannelTcp.isOpen()
+					|| !this.socketChannelTcp.isConnected())
 				throw new Exception(String.format("Underlying tcp channel doesn't open for Association=%s", this.name));
 		}
 	}
@@ -482,15 +491,18 @@ public class AssociationImpl implements Association {
 				try {
 					this.associationListener.onPayload(this, payload);
 				} catch (Exception e) {
-					logger.error(String.format("Error while calling Listener for Association=%s.Payload=%s", this.name, payload), e);
+					logger.error(String.format("Error while calling Listener for Association=%s.Payload=%s", this.name,
+							payload), e);
 				}
 			} else {
 				Worker worker = new Worker(this, this.associationListener, payload);
 
-				System.out.println("payload.getStreamNumber()=" + payload.getStreamNumber() + " this.workerThreadTable[payload.getStreamNumber()]"
+				System.out.println("payload.getStreamNumber()=" + payload.getStreamNumber()
+						+ " this.workerThreadTable[payload.getStreamNumber()]"
 						+ this.workerThreadTable[payload.getStreamNumber()]);
 
-				ExecutorService executorService = this.management.getExecutorService(this.workerThreadTable[payload.getStreamNumber()]);
+				ExecutorService executorService = this.management.getExecutorService(this.workerThreadTable[payload
+						.getStreamNumber()]);
 				try {
 					executorService.execute(worker);
 				} catch (RejectedExecutionException e) {
@@ -503,8 +515,9 @@ public class AssociationImpl implements Association {
 			}
 		} catch (IOException e) {
 			this.ioErrors++;
-			logger.error(
-					String.format("IOException while trying to read from underlying socket for Association=%s IOError count=%d", this.name, this.ioErrors), e);
+			logger.error(String.format(
+					"IOException while trying to read from underlying socket for Association=%s IOError count=%d",
+					this.name, this.ioErrors), e);
 
 			if (this.ioErrors > this.management.getMaxIOErrors()) {
 				// Close this socket
@@ -530,7 +543,8 @@ public class AssociationImpl implements Association {
 
 		int len = messageInfo.bytes();
 		if (len == -1) {
-			logger.error(String.format("Rx -1 while trying to read from underlying socket for Association=%s ", this.name));
+			logger.error(String.format("Rx -1 while trying to read from underlying socket for Association=%s ",
+					this.name));
 			this.close();
 			this.scheduleConnect();
 			return null;
@@ -541,8 +555,8 @@ public class AssociationImpl implements Association {
 		rxBuffer.get(data);
 		rxBuffer.clear();
 
-		PayloadData payload = new PayloadData(len, data, messageInfo.isComplete(), messageInfo.isUnordered(), messageInfo.payloadProtocolID(),
-				messageInfo.streamNumber());
+		PayloadData payload = new PayloadData(len, data, messageInfo.isComplete(), messageInfo.isUnordered(),
+				messageInfo.payloadProtocolID(), messageInfo.streamNumber());
 
 		return payload;
 	}
@@ -552,7 +566,8 @@ public class AssociationImpl implements Association {
 		rxBuffer.clear();
 		int len = this.socketChannelTcp.read(rxBuffer);
 		if (len == -1) {
-			logger.warn(String.format("Rx -1 while trying to read from underlying socket for Association=%s ", this.name));
+			logger.warn(String.format("Rx -1 while trying to read from underlying socket for Association=%s ",
+					this.name));
 			this.close();
 			this.scheduleConnect();
 			return null;
@@ -640,8 +655,9 @@ public class AssociationImpl implements Association {
 
 		} catch (IOException e) {
 			this.ioErrors++;
-			logger.error(String.format("IOException while trying to write to underlying socket for Association=%s IOError count=%d", this.name, this.ioErrors),
-					e);
+			logger.error(String.format(
+					"IOException while trying to write to underlying socket for Association=%s IOError count=%d",
+					this.name, this.ioErrors), e);
 
 			if (this.ioErrors > this.management.getMaxIOErrors()) {
 				// Close this socket
@@ -681,8 +697,17 @@ public class AssociationImpl implements Association {
 			this.markAssociationDown();
 			this.associationListener.onCommunicationShutdown(this);
 		} catch (Exception e) {
-			logger.error(String.format("Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", this.name), e);
+			logger.error(String.format(
+					"Exception while calling onCommunicationShutdown on AssociationListener for Association=%s",
+					this.name), e);
 		}
+
+		// Finally clear the txQueue
+		if (this.txQueue.size() > 0) {
+			logger.warn(String.format("Clearig txQueue for Association=%s. %d messages still pending will be cleared",
+					this.name, this.txQueue.size()));
+		}
+		this.txQueue.clear();
 	}
 
 	protected void scheduleConnect() {
@@ -691,7 +716,8 @@ public class AssociationImpl implements Association {
 			// procedure
 			FastList<ChangeRequest> pendingChanges = this.management.getPendingChanges();
 			synchronized (pendingChanges) {
-				pendingChanges.add(new ChangeRequest(this, ChangeRequest.CONNECT, System.currentTimeMillis() + this.management.getConnectDelay()));
+				pendingChanges.add(new ChangeRequest(this, ChangeRequest.CONNECT, System.currentTimeMillis()
+						+ this.management.getConnectDelay()));
 			}
 		}
 	}
@@ -707,7 +733,10 @@ public class AssociationImpl implements Association {
 			try {
 				this.getSocketChannel().close();
 			} catch (Exception e) {
-				logger.error(String.format("Exception while trying to close existing sctp socket and initiate new socket for Association=%s", this.name), e);
+				logger.error(
+						String.format(
+								"Exception while trying to close existing sctp socket and initiate new socket for Association=%s",
+								this.name), e);
 			}
 		}
 
@@ -731,7 +760,8 @@ public class AssociationImpl implements Association {
 		// is ready to complete connection establishment.
 		FastList<ChangeRequest> pendingChanges = this.management.getPendingChanges();
 		synchronized (pendingChanges) {
-			pendingChanges.add(new ChangeRequest(this.getSocketChannel(), this, ChangeRequest.REGISTER, SelectionKey.OP_CONNECT));
+			pendingChanges.add(new ChangeRequest(this.getSocketChannel(), this, ChangeRequest.REGISTER,
+					SelectionKey.OP_CONNECT));
 		}
 
 		// Finally, wake up our selecting thread so it can make the required
@@ -784,9 +814,11 @@ public class AssociationImpl implements Association {
 	public String toString() {
 
 		StringBuilder sb = new StringBuilder();
-		sb.append("Association [name=").append(this.name).append(", associationType=").append(this.type).append(", ipChannelType=").append(this.ipChannelType)
-				.append(", hostAddress=").append(this.hostAddress).append(", hostPort=").append(this.hostPort).append(", peerAddress=")
-				.append(this.peerAddress).append(", peerPort=").append(this.peerPort).append(", serverName=").append(this.serverName);
+		sb.append("Association [name=").append(this.name).append(", associationType=").append(this.type)
+				.append(", ipChannelType=").append(this.ipChannelType).append(", hostAddress=")
+				.append(this.hostAddress).append(", hostPort=").append(this.hostPort).append(", peerAddress=")
+				.append(this.peerAddress).append(", peerPort=").append(this.peerPort).append(", serverName=")
+				.append(this.serverName);
 
 		sb.append(", extraHostAddress=[");
 
@@ -806,11 +838,13 @@ public class AssociationImpl implements Association {
 	/**
 	 * XML Serialization/Deserialization
 	 */
-	protected static final XMLFormat<AssociationImpl> ASSOCIATION_XML = new XMLFormat<AssociationImpl>(AssociationImpl.class) {
+	protected static final XMLFormat<AssociationImpl> ASSOCIATION_XML = new XMLFormat<AssociationImpl>(
+			AssociationImpl.class) {
 
 		@SuppressWarnings("unchecked")
 		@Override
-		public void read(javolution.xml.XMLFormat.InputElement xml, AssociationImpl association) throws XMLStreamException {
+		public void read(javolution.xml.XMLFormat.InputElement xml, AssociationImpl association)
+				throws XMLStreamException {
 			association.name = xml.getAttribute(NAME, "");
 			association.type = AssociationType.getAssociationType(xml.getAttribute(ASSOCIATION_TYPE, ""));
 			association.hostAddress = xml.getAttribute(HOST_ADDRESS, "");
@@ -820,7 +854,8 @@ public class AssociationImpl implements Association {
 			association.peerPort = xml.getAttribute(PEER_PORT, 0);
 
 			association.serverName = xml.getAttribute(SERVER_NAME, "");
-			association.ipChannelType = IpChannelType.getInstance(xml.getAttribute(IPCHANNEL_TYPE, IpChannelType.SCTP.getCode()));
+			association.ipChannelType = IpChannelType.getInstance(xml.getAttribute(IPCHANNEL_TYPE,
+					IpChannelType.SCTP.getCode()));
 			if (association.ipChannelType == null)
 				association.ipChannelType = IpChannelType.SCTP;
 
@@ -834,7 +869,8 @@ public class AssociationImpl implements Association {
 		}
 
 		@Override
-		public void write(AssociationImpl association, javolution.xml.XMLFormat.OutputElement xml) throws XMLStreamException {
+		public void write(AssociationImpl association, javolution.xml.XMLFormat.OutputElement xml)
+				throws XMLStreamException {
 			xml.setAttribute(NAME, association.name);
 			xml.setAttribute(ASSOCIATION_TYPE, association.type.getType());
 			xml.setAttribute(HOST_ADDRESS, association.hostAddress);
@@ -846,7 +882,8 @@ public class AssociationImpl implements Association {
 			xml.setAttribute(SERVER_NAME, association.serverName);
 			xml.setAttribute(IPCHANNEL_TYPE, association.ipChannelType.getCode());
 
-			xml.setAttribute(EXTRA_HOST_ADDRESS_SIZE, association.extraHostAddresses != null ? association.extraHostAddresses.length : 0);
+			xml.setAttribute(EXTRA_HOST_ADDRESS_SIZE,
+					association.extraHostAddresses != null ? association.extraHostAddresses.length : 0);
 			if (association.extraHostAddresses != null) {
 				for (String s : association.extraHostAddresses) {
 					xml.add(s, EXTRA_HOST_ADDRESS, String.class);
