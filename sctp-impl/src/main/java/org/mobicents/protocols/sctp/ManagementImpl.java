@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -821,7 +822,9 @@ public class ManagementImpl implements Management {
 	 * @return the associations
 	 */
 	public Map<String, Association> getAssociations() {
-		return associations.unmodifiable();
+		Map<String, Association> routeTmp = new HashMap<String, Association>();
+		routeTmp.putAll(this.associations);
+		return routeTmp;
 	}
 
 	public void startAssociation(String assocName) throws Exception {
