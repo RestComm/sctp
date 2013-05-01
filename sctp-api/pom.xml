@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.mobicents.protocols.sctp</groupId>
 		<artifactId>sctp-parent</artifactId>
-		<version>1.3.0-SNAPSHOT</version>
+		<version>1.3.0.FINAL</version>
 	</parent>
 
 	<artifactId>sctp-api</artifactId>
