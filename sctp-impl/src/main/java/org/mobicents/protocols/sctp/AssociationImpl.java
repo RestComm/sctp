@@ -497,9 +497,9 @@ public class AssociationImpl implements Association {
 			} else {
 				Worker worker = new Worker(this, this.associationListener, payload);
 
-				System.out.println("payload.getStreamNumber()=" + payload.getStreamNumber()
-						+ " this.workerThreadTable[payload.getStreamNumber()]"
-						+ this.workerThreadTable[payload.getStreamNumber()]);
+//				System.out.println("payload.getStreamNumber()=" + payload.getStreamNumber()
+//						+ " this.workerThreadTable[payload.getStreamNumber()]"
+//						+ this.workerThreadTable[payload.getStreamNumber()]);
 
 				ExecutorService executorService = this.management.getExecutorService(this.workerThreadTable[payload
 						.getStreamNumber()]);
