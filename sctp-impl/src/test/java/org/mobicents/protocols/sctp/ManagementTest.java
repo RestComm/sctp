@@ -119,7 +119,24 @@ public class ManagementTest {
 		server = servers.get(0);
 		assertTrue(server.isStarted());
 
+		// Add association
+		management.addServerAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_NAME, SERVER_ASSOCIATION_NAME, ipChannelType);
+
+		assertEquals(management.getAssociations().size(), 1);
+		
 		management.stopServer(SERVER_NAME);
+		
+		// Try to delete and it should throw error
+		try {
+			management.removeServer(SERVER_NAME);
+			fail("Expected Exception");
+		} catch (Exception e) {
+			assertEquals("Server=testserver has Associations. Remove all those Associations before removing Server", e.getMessage());
+		}
+		
+		//Try removing Association now
+		// Remove Assoc
+		management.removeAssociation(SERVER_ASSOCIATION_NAME);		
 
 		management.removeServer(SERVER_NAME);
 

@@ -554,11 +554,15 @@ public class ManagementImpl implements Management {
 		synchronized (this) {
 			Server removeServer = null;
 			for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
-				Server serverTemp = n.getValue();
+				ServerImpl serverTemp = (ServerImpl)n.getValue();
 
 				if (serverName.equals(serverTemp.getName())) {
 					if (serverTemp.isStarted()) {
 						throw new Exception(String.format("Server=%s is started. Stop the server before removing", serverName));
+					}
+					
+					if(serverTemp.anonymAssociations.size() !=0 || serverTemp.associations.size() != 0){
+						throw new Exception(String.format("Server=%s has Associations. Remove all those Associations before removing Server", serverName));
 					}
 					removeServer = serverTemp;
 					break;
