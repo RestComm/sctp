@@ -38,7 +38,6 @@ import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.Server;
-import org.mobicents.protocols.api.ServerListener;
 
 import com.sun.nio.sctp.SctpServerChannel;
 
@@ -59,6 +58,8 @@ public class ServerImpl implements Server {
 
 	private static final String ASSOCIATIONS = "associations";
 	private static final String EXTRA_HOST_ADDRESS = "extraHostAddress";
+    private static final String ACCEPT_ANONYMOUS_CONNECTIONS = "acceptAnonymousConnections";
+    private static final String MAX_CONCURRENT_CONNECTIONS_COUNT = "maxConcurrentConnectionsCount";
 
 	private static final String STARTED = "started";
 
@@ -286,9 +287,10 @@ public class ServerImpl implements Server {
 
 		StringBuilder sb = new StringBuilder();
 
-		sb.append("Server [name=").append(this.name).append(", started=").append(this.started).append(", hostAddress=")
-				.append(this.hostAddress).append(", hostPort=").append(hostport).append(", ipChannelType=")
-				.append(ipChannelType).append(", associations(anonymous does not included)=[");
+        sb.append("Server [name=").append(this.name).append(", started=").append(this.started).append(", hostAddress=").append(this.hostAddress)
+                .append(", hostPort=").append(hostport).append(", ipChannelType=").append(ipChannelType).append(", acceptAnonymousConnections=")
+                .append(this.acceptAnonymousConnections).append(", maxConcurrentConnectionsCount=").append(this.maxConcurrentConnectionsCount)
+                .append(", associations(anonymous does not included)=[");
 
 		for (FastList.Node<String> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
 			sb.append(n.getValue());
@@ -327,6 +329,9 @@ public class ServerImpl implements Server {
 			if (server.ipChannelType == null)
 				throw new XMLStreamException("Bad value for server.ipChannelType");
 
+			server.acceptAnonymousConnections = xml.getAttribute(ACCEPT_ANONYMOUS_CONNECTIONS, false);
+            server.maxConcurrentConnectionsCount = xml.getAttribute(MAX_CONCURRENT_CONNECTIONS_COUNT, 0);
+
 			int extraHostAddressesSize = xml.getAttribute(EXTRA_HOST_ADDRESS_SIZE, 0);
 			server.extraHostAddresses = new String[extraHostAddressesSize];
 			
@@ -344,6 +349,9 @@ public class ServerImpl implements Server {
 			xml.setAttribute(HOST_ADDRESS, server.hostAddress);
 			xml.setAttribute(HOST_PORT, server.hostport);
 			xml.setAttribute(IPCHANNEL_TYPE, server.ipChannelType.getCode());
+            xml.setAttribute(ACCEPT_ANONYMOUS_CONNECTIONS, server.acceptAnonymousConnections);
+            xml.setAttribute(MAX_CONCURRENT_CONNECTIONS_COUNT, server.maxConcurrentConnectionsCount);
+
 			xml.setAttribute(EXTRA_HOST_ADDRESS_SIZE,
 					server.extraHostAddresses != null ? server.extraHostAddresses.length : 0);
 			if (server.extraHostAddresses != null) {

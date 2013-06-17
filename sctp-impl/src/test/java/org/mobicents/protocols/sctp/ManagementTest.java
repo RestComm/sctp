@@ -101,7 +101,7 @@ public class ManagementTest {
 		management.removeAllResourses();
 
 		String[] arr = new String[]{"127.0.0.2", "127.0.0.3"};
-		Server server = management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, false, 0, arr);
+		Server server = management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, true, 5, arr);
 
 		management.startServer(SERVER_NAME);
 

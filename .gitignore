@@ -1,3 +1,5 @@
 target
 /.classpath
 /.project
+/ManagementTest_sctp.xml
+/sctptest.log

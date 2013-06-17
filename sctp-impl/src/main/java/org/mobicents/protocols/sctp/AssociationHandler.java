@@ -157,10 +157,11 @@ class AssociationHandler extends AbstractNotificationHandler<AssociationImpl> {
 
 	@Override
 	public HandlerResult handleNotification(SendFailedNotification notification, AssociationImpl associtaion) {
-		logger.error(String.format("Association=%s SendFailedNotification", associtaion.getName()));
+//        logger.error(String.format("Association=%s SendFailedNotification", associtaion.getName()));
+        logger.error(String.format("Association=" + associtaion.getName() + " SendFailedNotification, errorCode=" + notification.errorCode()));
 		return HandlerResult.RETURN;
 	}
-	
+
 	@Override
 	public  HandlerResult handleNotification(PeerAddressChangeNotification notification, AssociationImpl associtaion) {
 		//associtaion.peerSocketAddress = notification.address();
