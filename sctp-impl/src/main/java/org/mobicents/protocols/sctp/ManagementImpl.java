@@ -65,6 +65,10 @@ public class ManagementImpl implements Management {
 
 	private static final String SERVERS = "servers";
 	private static final String ASSOCIATIONS = "associations";
+	
+    private static final String CONNECT_DELAY_PROP = "connectdelay";
+    private static final String SINGLE_THREAD_PROP = "singlethread";
+    private static final String WORKER_THREADS_PROP = "workerthreads";
 
 	private final TextBuilder persistFile = TextBuilder.newInstance();
 
@@ -90,7 +94,7 @@ public class ManagementImpl implements Management {
 
 	private int workerThreads = DEFAULT_IO_THREADS;
 
-	private boolean singleThread = false;
+	private boolean singleThread = true;
 
 	private int workerThreadCount = 0;
 
@@ -98,7 +102,7 @@ public class ManagementImpl implements Management {
 	// closed and attempt will be made to open again
 	private int maxIOErrors = 3;
 
-	private int connectDelay = 30000;
+	private int connectDelay = 5000;
 
 	private ExecutorService[] executorServices = null;
 
@@ -145,6 +149,8 @@ public class ManagementImpl implements Management {
 	 */
 	public void setConnectDelay(int connectDelay) {
 		this.connectDelay = connectDelay;
+		
+		this.store();
 	}
 
 	/**
@@ -164,6 +170,7 @@ public class ManagementImpl implements Management {
 		}
 		this.workerThreads = workerThreads;
 
+		this.store();
 	}
 
 	/**
@@ -197,6 +204,8 @@ public class ManagementImpl implements Management {
 	 */
 	public void setSingleThread(boolean singleThread) {
 		this.singleThread = singleThread;
+		
+		this.store();
 	}
 
 	public ServerListener getServerListener() {
@@ -381,6 +390,16 @@ public class ManagementImpl implements Management {
 		try {
 			reader = XMLObjectReader.newInstance(new FileInputStream(persistFile.toString()));
 			reader.setBinding(binding);
+
+            try {
+                this.connectDelay = reader.read(CONNECT_DELAY_PROP, Integer.class);
+                this.workerThreads = reader.read(WORKER_THREADS_PROP, Integer.class);
+                this.singleThread = reader.read(SINGLE_THREAD_PROP, Boolean.class);
+            } catch (java.lang.NullPointerException npe) {
+                // ignore.
+                // For backward compatibility we can ignore if these values are not defined
+            }			
+
 			this.servers = reader.read(SERVERS, FastList.class);
 
 			for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
@@ -414,6 +433,11 @@ public class ManagementImpl implements Management {
 			// Enables cross-references.
 			// writer.setReferenceResolver(new XMLReferenceResolver());
 			writer.setIndentation(TAB_INDENT);
+
+            writer.write(this.connectDelay, CONNECT_DELAY_PROP, Integer.class);
+            writer.write(this.workerThreads, WORKER_THREADS_PROP, Integer.class);
+            writer.write(this.singleThread, SINGLE_THREAD_PROP, Boolean.class);
+
 			writer.write(this.servers, SERVERS, FastList.class);
 			writer.write(this.associations, ASSOCIATIONS, AssociationMap.class);
 
