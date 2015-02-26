@@ -3,6 +3,7 @@ package org.mobicents.protocols.sctp.multiclient;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 
@@ -81,6 +82,19 @@ public class MultiChannelController {
 			ret.registerAssociation(assocImpl);
 		}
 		return ret;
+	}
+	
+	protected void stopAllMultiplexers() {
+		for (List<OneToManyAssocMultiplexer> mList: multiplexers.values()) {
+			for (OneToManyAssocMultiplexer multiplexer: mList) {
+				try {
+					multiplexer.stop();
+				} catch (IOException e) {
+					logger.warn(e);;
+				}
+			}
+		}
+		multiplexers.clear();
 	}
 	
 }

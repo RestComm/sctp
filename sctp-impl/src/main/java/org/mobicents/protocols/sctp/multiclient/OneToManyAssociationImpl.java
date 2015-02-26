@@ -311,6 +311,8 @@ public class OneToManyAssociationImpl implements Association {
 				logger.error("Exception while invoking onAssociationStopped", ee);
 			}
 		}
+		
+		
 /*TODO lifecycle management
 		if (this.getSocketChannel() != null && this.getSocketChannel().isOpen()) {
 			FastList<ChangeRequest> pendingChanges = this.management.getPendingChanges();

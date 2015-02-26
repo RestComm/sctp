@@ -74,6 +74,7 @@ public class MultiManagementImpl implements Management {
 
 	private static final Logger logger = Logger.getLogger(MultiManagementImpl.class);
 
+	private static final String DISABLE_CONFIG_PERSISTANCE_KEY = "ss7.disableDefaultConfigPersistance";
 	private static final String SCTP_PERSIST_DIR_KEY = "sctp.persist.dir";
 	private static final String USER_DIR_KEY = "user.dir";
 	private static final String PERSIST_FILE_NAME = "sctp.xml";
@@ -323,14 +324,15 @@ public class MultiManagementImpl implements Management {
 		// We store the original state first
 		this.store();
 
+		multiChannelController.stopAllMultiplexers();
 		// Stop all associations
-		FastMap<String, Association> associationsTemp = this.associations;
+		/*FastMap<String, Association> associationsTemp = this.associations;
 		for (FastMap.Entry<String, Association> n = associationsTemp.head(), end = associationsTemp.tail(); (n = n.getNext()) != end;) {
 			Association associationTemp = n.getValue();
 			if (associationTemp.isStarted()) {
 				((OneToManyAssociationImpl) associationTemp).stop();
 			}
-		}
+		}*/
 
 		if (this.executorServices != null) {
 			for (int i = 0; i < this.executorServices.length; i++) {
@@ -378,9 +380,16 @@ public class MultiManagementImpl implements Management {
 	public boolean isStarted(){
 		return this.started;
 	}
-
+	private boolean isConfigPersistanceDisabled() {
+		String disableConfigPersistanceString = System.getProperty(DISABLE_CONFIG_PERSISTANCE_KEY, "false");
+		return Boolean.valueOf(disableConfigPersistanceString);
+	}
+	
 	@SuppressWarnings("unchecked")
 	public void load() throws FileNotFoundException {
+		if (isConfigPersistanceDisabled()) {
+			return;
+		}
 		XMLObjectReader reader = null;
 		try {
 			reader = XMLObjectReader.newInstance(new FileInputStream(persistFile.toString()));
@@ -409,6 +418,9 @@ public class MultiManagementImpl implements Management {
 	}
 
 	public void store() {
+		if (isConfigPersistanceDisabled()) {
+			return;
+		}
 		try {
 			XMLObjectWriter writer = XMLObjectWriter.newInstance(new FileOutputStream(persistFile.toString()));
 			writer.setBinding(binding);
@@ -444,6 +456,7 @@ public class MultiManagementImpl implements Management {
 			}
 
 			synchronized (this) {
+								
 				// Remove all associations
 				ArrayList<String> lst = new ArrayList<String>();
 				for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
@@ -592,7 +605,8 @@ public class MultiManagementImpl implements Management {
 	}
 
 	public void stopAssociation(String assocName) throws Exception {
-		if (!this.started) {
+		throw new UnsupportedOperationException("MultiManagement.stopAssociation is not a supported feature!");
+		/*if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
 
@@ -607,7 +621,7 @@ public class MultiManagementImpl implements Management {
 		}
 
 		((OneToManyAssociationImpl) association).stop();
-		this.store();
+		this.store();*/
 	}
 
 	public void removeAssociation(String assocName) throws Exception {
