@@ -1,6 +1,7 @@
 package org.mobicents.protocols.sctp.multiclient;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -159,6 +160,9 @@ public class OneToManyAssocMultiplexer {
 		socketMultiChannel = SctpMultiChannel.open();
 		socketMultiChannel.configureBlocking(false);
 		socketMultiChannel.bind(new InetSocketAddress(this.hostAddressInfo.getPrimaryHostAddress(), this.hostAddressInfo.getHostPort()));
+		if (this.hostAddressInfo.getSecondaryHostAddress() != null && !this.hostAddressInfo.getSecondaryHostAddress().isEmpty()) {
+			socketMultiChannel.bindAddress(InetAddress.getByName(this.hostAddressInfo.getSecondaryHostAddress()));
+		}
 		started.set(true);	
 		if (logger.isDebugEnabled()) {					
 			logger.debug("New socketMultiChanel is created: "+socketMultiChannel+" supported options: "+socketMultiChannel.validOps()+":"+socketMultiChannel.supportedOptions());
