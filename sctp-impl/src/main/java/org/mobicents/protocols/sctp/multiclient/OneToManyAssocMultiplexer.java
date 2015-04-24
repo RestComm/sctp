@@ -6,10 +6,10 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -39,7 +39,7 @@ public class OneToManyAssocMultiplexer {
 	// Queue holds payloads to be transmitted
 	private ConcurrentLinkedQueueSwapper<SctpMessage> txQueueSwapper = new ConcurrentLinkedQueueSwapper(new ConcurrentLinkedQueue<SctpMessage>());
 	
-	private ArrayList<OneToManyAssociationImpl> pendingAssocs = new ArrayList<OneToManyAssociationImpl>();
+	private CopyOnWriteArrayList<OneToManyAssociationImpl> pendingAssocs = new CopyOnWriteArrayList<OneToManyAssociationImpl>();
 	private ConcurrentHashMap<Integer,OneToManyAssociationImpl> connectedAssocs = new ConcurrentHashMap<Integer, OneToManyAssociationImpl>();
 	
 	protected final MultiAssociationHandler associationHandler = new MultiAssociationHandler();
@@ -110,9 +110,28 @@ public class OneToManyAssocMultiplexer {
 		if (!started.get()) {
 			throw new IllegalStateException("OneToManyAssocMultiplexer is stoped!");
 		}
-		synchronized (pendingAssocs) {
-			pendingAssocs.add(association);
-		}		
+		
+		pendingAssocs.add(association);
+	}
+	
+	protected void start() throws IOException {
+		if (!started.compareAndSet(false, true)) {
+			return;
+		}
+		socketMultiChannel = SctpMultiChannel.open();
+		socketMultiChannel.configureBlocking(false);
+		socketMultiChannel.bind(new InetSocketAddress(this.hostAddressInfo.getPrimaryHostAddress(), this.hostAddressInfo.getHostPort()));
+		if (this.hostAddressInfo.getSecondaryHostAddress() != null && !this.hostAddressInfo.getSecondaryHostAddress().isEmpty()) {
+			socketMultiChannel.bindAddress(InetAddress.getByName(this.hostAddressInfo.getSecondaryHostAddress()));
+		}
+		if (logger.isDebugEnabled()) {					
+			logger.debug("New socketMultiChanel is created: "+socketMultiChannel+" supported options: "+socketMultiChannel.validOps()+":"+socketMultiChannel.supportedOptions());
+		}
+		FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
+		synchronized (pendingChanges) {
+			pendingChanges.add(new MultiChangeRequest(this.socketMultiChannel, this, null, MultiChangeRequest.REGISTER,
+					SelectionKey.OP_WRITE|SelectionKey.OP_READ));
+		}	
 	}
 	
 	protected void assignSctpAssocIdToAssociation(Integer id, OneToManyAssociationImpl association) {
@@ -122,7 +141,10 @@ public class OneToManyAssocMultiplexer {
 		if (id == null || association ==  null) {
 			return;
 		}
+		logger.debug("BUG_TRACE - assignSctpAssocIdToAssociation - 1: pendingAssocs.size=" + pendingAssocs.size() + " connectedAssocs.size=" + connectedAssocs.size());
 		connectedAssocs.put(id, association);
+		pendingAssocs.remove(association);
+		logger.debug("BUG_TRACE - assignSctpAssocIdToAssociation - 2: pendingAssocs.size=" + pendingAssocs.size() + " connectedAssocs.size=" + connectedAssocs.size());
 		association.assignSctpAssociationId(id);
 	}
 	
@@ -169,7 +191,7 @@ public class OneToManyAssocMultiplexer {
 		}
 		FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
 		synchronized (pendingChanges) {
-			pendingChanges.add(new MultiChangeRequest(this.socketMultiChannel, this, MultiChangeRequest.REGISTER,
+			pendingChanges.add(new MultiChangeRequest(this.socketMultiChannel, this, null, MultiChangeRequest.REGISTER,
 					SelectionKey.OP_WRITE|SelectionKey.OP_READ));
 		}		
 	}
@@ -202,7 +224,7 @@ public class OneToManyAssocMultiplexer {
 		synchronized (pendingChanges) {
 
 			// Indicate we want the interest ops set changed
-			pendingChanges.add(new MultiChangeRequest(this.getSocketMultiChannel(), this, MultiChangeRequest.ADD_OPS,
+			pendingChanges.add(new MultiChangeRequest(this.getSocketMultiChannel(), this, null, MultiChangeRequest.ADD_OPS,
 					SelectionKey.OP_WRITE));
 			
 			this.txQueueSwapper.add(new SctpMessage(payloadData, messageInfo, sender));
@@ -302,6 +324,8 @@ public class OneToManyAssocMultiplexer {
 			doReadSctp();
 		} catch (IOException e) {
 				logger.error("Unable to read from socketMultiChannek, hostAddressInfo: "+this.hostAddressInfo, e);
+		} catch (Exception ex) {
+			logger.error("Unexpected exception: unnable to read from socketMultiChannek, hostAddressInfo: "+this.hostAddressInfo, ex);
 		}
 	}
 	
@@ -344,10 +368,33 @@ public class OneToManyAssocMultiplexer {
 		this.socketMultiChannel.close();
 	}
 	
+	protected synchronized void stopAssociation(OneToManyAssociationImpl assocImpl) throws IOException {
+		logger.debug("BUG_TRACE 1");
+		if (!started.get()) {
+			logger.debug("BUG_TRACE 2_1");
+			return;
+		}
+		logger.debug("BUG_TRACE 2_2");
+		if (connectedAssocs.remove(assocImpl.getAssocInfo().getPeerInfo().getSctpAssocId()) == null) {
+			logger.debug("BUG_TRACE 3_1");
+			pendingAssocs.remove(assocImpl);
+		} else {
+			logger.debug("BUG_TRACE 3_2");
+		}
+		
+		logger.debug("BUG_TRACE 4: pendingAssocs.size=" + pendingAssocs.size() + " connectedAssocs.size=" + connectedAssocs.size());
+		
+		if (pendingAssocs.isEmpty() && connectedAssocs.isEmpty()) {
+			started.set(false);
+			logger.debug("All associations of the multiplexer instance is stopped");
+			this.socketMultiChannel.close();
+		}
+	}
+	
 	static class SctpMessage {
-		private PayloadData payloadData;
-		private MessageInfo messageInfo;
-		private OneToManyAssociationImpl senderAssoc;
+		private final PayloadData payloadData;
+		private final MessageInfo messageInfo;
+		private final OneToManyAssociationImpl senderAssoc;
 		private SctpMessage(PayloadData payloadData, MessageInfo messageInfo,
 				OneToManyAssociationImpl senderAssoc) {
 			super();

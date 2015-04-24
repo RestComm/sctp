@@ -605,8 +605,7 @@ public class MultiManagementImpl implements Management {
 	}
 
 	public void stopAssociation(String assocName) throws Exception {
-		throw new UnsupportedOperationException("MultiManagement.stopAssociation is not a supported feature!");
-		/*if (!this.started) {
+		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
 		}
 
@@ -621,7 +620,7 @@ public class MultiManagementImpl implements Management {
 		}
 
 		((OneToManyAssociationImpl) association).stop();
-		this.store();*/
+		this.store();
 	}
 
 	public void removeAssociation(String assocName) throws Exception {
@@ -648,8 +647,7 @@ public class MultiManagementImpl implements Management {
 			newAssociations.putAll(this.associations);
 			newAssociations.remove(assocName);
 			this.associations = newAssociations;
-			// this.associations.remove(assocName);
-
+		
 			this.store();
 
 			for (ManagementEventListener lstr : managementEventListeners) {

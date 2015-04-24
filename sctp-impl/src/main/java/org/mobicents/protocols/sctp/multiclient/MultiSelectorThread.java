@@ -102,27 +102,29 @@ public class MultiSelectorThread implements Runnable {
 						case MultiChangeRequest.REGISTER:
 							pendingChanges.remove(change);
 							SelectionKey key1 = change.getSocketChannel().register(this.selector, change.getOps());
-							key1.attach(change.getAssocMultiplexer());
+							if (change.isMultiAssocRequest()) {
+								key1.attach(change.getAssocMultiplexer());
+							} else {
+								key1.attach(change.getOneToOneAssociation());
+							}
 							AssocChangeEvent ace = AssocChangeEvent.COMM_UP;
 							AssociationChangeNotification2 acn = new AssociationChangeNotification2(ace);
 							change.getAssocMultiplexer().associationHandler.handleNotification(acn, change.getAssocMultiplexer());
 							break;
 						case MultiChangeRequest.CONNECT:
 							pendingChanges.remove(change);
-							/*TODO
-							if (!change.getAssociation().isStarted()) {
-								// if Association is stopped - remove pending connection requests  
-								pendingChanges.remove(change);
-							} else {
-								if (change.getExecutionTime() <= System.currentTimeMillis()) {
-									pendingChanges.remove(change);
-									change.getAssociation().initiateConnection();
+							if (!change.isMultiAssocRequest()) {
+								if (change.getOneToOneAssociation().isStarted()
+										&& change.getExecutionTime() <= System.currentTimeMillis()) {
+										change.getOneToOneAssociation().initiateConnection();
 								}
-							}*/
+							}
 							break;
 						case MultiChangeRequest.CLOSE:
 							pendingChanges.remove(change);
-							//TODO change.getAssociation().close();
+							if (!change.isMultiAssocRequest()) {
+								change.getOneToOneAssociation().close();
+							}
 						}
 					}// end of while
 				}
@@ -222,13 +224,23 @@ public class MultiSelectorThread implements Runnable {
 	}*/
 
 	private void read(SelectionKey key) throws IOException {
-		OneToManyAssocMultiplexer multiplexer = (OneToManyAssocMultiplexer) key.attachment();
-		multiplexer.read();
+		if (key.attachment() instanceof OneToManyAssocMultiplexer) {
+			OneToManyAssocMultiplexer multiplexer = (OneToManyAssocMultiplexer) key.attachment();
+			multiplexer.read();
+		} else if (key.attachment() instanceof OneToOneAssociationImpl) {
+			OneToOneAssociationImpl association = (OneToOneAssociationImpl) key.attachment();
+			association.read();
+		}
 	}
 
 	private void write(SelectionKey key) throws IOException {
-		OneToManyAssocMultiplexer multiplexer = (OneToManyAssocMultiplexer) key.attachment();
-		multiplexer.write(key);
+		if (key.attachment() instanceof OneToManyAssocMultiplexer) {
+			OneToManyAssocMultiplexer multiplexer = (OneToManyAssocMultiplexer) key.attachment();
+			multiplexer.write(key);
+		} else if (key.attachment() instanceof OneToOneAssociationImpl) {
+			OneToOneAssociationImpl association = (OneToOneAssociationImpl) key.attachment();
+			association.write(key);
+		}	
 	}
 
 	class AssociationChangeNotification2 extends AssociationChangeNotification {

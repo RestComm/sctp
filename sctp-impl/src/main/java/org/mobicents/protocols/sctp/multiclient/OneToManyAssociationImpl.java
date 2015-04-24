@@ -274,14 +274,15 @@ public class OneToManyAssociationImpl implements Association {
 		return peerAddresses.contains(getAssocInfo().getPeerInfo().getPeerSocketAddress().toString());
 	}
 	
-	protected void start() throws Exception {
-		if (started.getAndSet(true)) {
-			logger.warn("Association: "+this+" has been already STARTED");
-			return;
-		}		
+	protected void start() throws Exception {		
 
 		if (this.associationListener == null) {
 			throw new NullPointerException(String.format("AssociationListener is null for Associatoion=%s", this.name));
+		}
+		
+		if (started.getAndSet(true)) {
+			logger.warn("Association: "+this+" has been already STARTED");
+			return;
 		}
 
 		doInitiateConnectionSctp();
@@ -295,15 +296,13 @@ public class OneToManyAssociationImpl implements Association {
 		}
 	}
 
-	/**
-	 * Stops this Association. If the underlying SctpChannel is open, marks the
-	 * channel for close
-	 */
 	protected void stop() throws Exception {
 		if (!started.getAndSet(false)) {
 			logger.warn("Association: "+this+" has been already STOPPED");
 			return;
 		}
+		logger.debug("BUG_TRACE_1");
+		this.multiplexer.stopAssociation(this);
 		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
 			try {
 				lstr.onAssociationStopped(this);
@@ -312,21 +311,6 @@ public class OneToManyAssociationImpl implements Association {
 			}
 		}
 		
-		
-/*TODO lifecycle management
-		if (this.getSocketChannel() != null && this.getSocketChannel().isOpen()) {
-			FastList<ChangeRequest> pendingChanges = this.management.getPendingChanges();
-			synchronized (pendingChanges) {
-				// Indicate we want the interest ops set changed
-				pendingChanges.add(new ChangeRequest(socketMultiChannel, this, ChangeRequest.CLOSE, -1));
-			}
-
-			// Finally, wake up our selecting thread so it can make the required
-			// changes
-			this.management.getSocketSelector().wakeup();
-		}
-		*/
-
 	}
 
 	public IpChannelType getIpChannelType() {
@@ -549,7 +533,7 @@ public class OneToManyAssociationImpl implements Association {
 				}
 				msgInfo.payloadProtocolID(payloadData.getPayloadProtocolId());
 				msgInfo.complete(payloadData.isComplete());
-				msgInfo.unordered(payloadData.isUnordered());					
+				msgInfo.unordered(payloadData.isUnordered());
 
 				logger.debug("write() - msgInfo: "+msgInfo);
 				txBuffer.flip();
@@ -570,6 +554,10 @@ public class OneToManyAssociationImpl implements Association {
 			logger.error(String.format(
 					"IOException while trying to write to underlying socket for Association=%s IOError count=%d",
 					this.name, this.ioErrors), e);
+			return false;
+		} catch (Exception ex) {
+			logger.error(String.format("Unexpected exception has been caught while trying to write SCTP socketChanel for Association=%s: %s",
+					this.name, ex.getMessage()), ex);
 			return false;
 		}
 	}

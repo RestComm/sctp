@@ -35,25 +35,49 @@ public final class MultiChangeRequest {
 	public static final int CLOSE = 4;
 	public static final int ADD_OPS = 5;
 
-	private int type;
-	private int ops;
-	private AbstractSelectableChannel socketChannel;
-	private OneToManyAssocMultiplexer assocMultiplexer;
+	private final int type;
+	private final int ops;
+	private final AbstractSelectableChannel socketChannel;
+	private final OneToManyAssocMultiplexer assocMultiplexer;
+	private final OneToOneAssociationImpl  oneToOneAssoc;
+	
+	private final boolean multiAssocRequest;
 
 	private long executionTime;
 
-	protected MultiChangeRequest(AbstractSelectableChannel socketChannel, OneToManyAssocMultiplexer assocMultiplexer, int type, int ops) {
+	protected MultiChangeRequest(AbstractSelectableChannel socketChannel, OneToManyAssocMultiplexer assocMultiplexer, OneToOneAssociationImpl oneToOneAssoc, int type, int ops) {
+		if (assocMultiplexer != null && oneToOneAssoc != null) {
+			throw new IllegalArgumentException("MultiChangeRequest can not be instatiated because of ambiougos arguments: both assocMultiplexer and oneToOneAssoc are specified!");
+		}
+		if (assocMultiplexer == null && oneToOneAssoc == null) {
+			throw new IllegalArgumentException("MultiChangeRequest can not be instatiated because of ambiougos arguments: nor assocMultiplexer nor oneToOneAssocc are specified!");
+		}
 		this.type = type;
 		this.ops = ops;
-		this.socketChannel = socketChannel;
-		this.assocMultiplexer = assocMultiplexer;
-		if (socketChannel == null && assocMultiplexer != null) {
-			this.socketChannel = assocMultiplexer.getSocketMultiChannel();
+		
+		if (assocMultiplexer != null) {
+			this.assocMultiplexer = assocMultiplexer;
+			this.oneToOneAssoc = null;
+			this.multiAssocRequest = true;
+			if (socketChannel == null) {
+				this.socketChannel = assocMultiplexer.getSocketMultiChannel();
+			} else {
+				this.socketChannel = socketChannel;
+			}
+		} else {
+			this.oneToOneAssoc = oneToOneAssoc;
+			this.assocMultiplexer = null;
+			this.multiAssocRequest = false;
+			if (socketChannel == null) {
+				this.socketChannel = oneToOneAssoc.getSocketChannel();
+			} else {
+				this.socketChannel = socketChannel;
+			}
 		}
 	}
 
-	protected MultiChangeRequest(OneToManyAssocMultiplexer assocMultiplexer, int type, long executionTime) {
-		this(null, assocMultiplexer, type, -1);
+	protected MultiChangeRequest(OneToManyAssocMultiplexer assocMultiplexer, OneToOneAssociationImpl oneToOneAssoc, int type, long executionTime) {
+		this(null, assocMultiplexer, oneToOneAssoc, type, -1);
 		this.executionTime = executionTime;
 	}
 
@@ -79,12 +103,23 @@ public final class MultiChangeRequest {
 	}
 
 	/**
-	 * @return the association
+	 * @return the one-to-many multiplexer instance
 	 */
 	protected OneToManyAssocMultiplexer getAssocMultiplexer() {
 		return assocMultiplexer;
 	}
 
+	/**
+	 * @return the  one-to-one association
+	 */
+	protected OneToOneAssociationImpl getOneToOneAssociation() {
+		return oneToOneAssoc;
+	}
+	
+	protected boolean isMultiAssocRequest() {
+		return multiAssocRequest;
+	}
+	
 	/**
 	 * @return the executionTime
 	 */
