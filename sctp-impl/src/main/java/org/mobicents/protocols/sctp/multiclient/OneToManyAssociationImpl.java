@@ -5,20 +5,16 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javolution.util.FastList;
 import javolution.xml.XMLFormat;
 import javolution.xml.stream.XMLStreamException;
 
 import org.apache.log4j.Logger;
-import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationListener;
 import org.mobicents.protocols.api.AssociationType;
 import org.mobicents.protocols.api.IpChannelType;
@@ -26,13 +22,12 @@ import org.mobicents.protocols.api.ManagementEventListener;
 import org.mobicents.protocols.api.PayloadData;
 
 import com.sun.nio.sctp.MessageInfo;
-import com.sun.nio.sctp.SctpMultiChannel;
 
 /*
  * This Association implementation is limited to ONE-TO-MANY TYPE CLIENT SCTP association
  */
 
-public class OneToManyAssociationImpl implements Association {
+public class OneToManyAssociationImpl extends ManageableAssociation {
 
 	protected static final Logger logger = Logger.getLogger(OneToManyAssociationImpl.class);
 	
@@ -274,7 +269,7 @@ public class OneToManyAssociationImpl implements Association {
 		return peerAddresses.contains(getAssocInfo().getPeerInfo().getPeerSocketAddress().toString());
 	}
 	
-	protected void start() throws Exception {		
+	public void start() throws Exception {		
 
 		if (this.associationListener == null) {
 			throw new NullPointerException(String.format("AssociationListener is null for Associatoion=%s", this.name));
@@ -296,7 +291,7 @@ public class OneToManyAssociationImpl implements Association {
 		}
 	}
 
-	protected void stop() throws Exception {
+	public void stop() throws Exception {
 		if (!started.getAndSet(false)) {
 			logger.warn("Association: "+this+" has been already STOPPED");
 			return;
@@ -437,7 +432,7 @@ public class OneToManyAssociationImpl implements Association {
 	 * @param management
 	 *            the management to set
 	 */
-	protected void setManagement(MultiManagementImpl management) {
+	public void setManagement(MultiManagementImpl management) {
 		this.management = management;
 	}
 

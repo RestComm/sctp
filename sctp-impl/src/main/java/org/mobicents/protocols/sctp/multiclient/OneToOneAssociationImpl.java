@@ -19,15 +19,12 @@ import javolution.xml.XMLFormat;
 import javolution.xml.stream.XMLStreamException;
 
 import org.apache.log4j.Logger;
-import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationListener;
 import org.mobicents.protocols.api.AssociationType;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.ManagementEventListener;
 import org.mobicents.protocols.api.PayloadData;
-import org.mobicents.protocols.sctp.AssociationImpl;
 import org.mobicents.protocols.sctp.ChangeRequest;
-import org.mobicents.protocols.sctp.Worker;
 
 import com.sun.nio.sctp.MessageInfo;
 import com.sun.nio.sctp.SctpChannel;
@@ -37,7 +34,7 @@ import com.sun.nio.sctp.SctpChannel;
  * @
  * 
  */
-public class OneToOneAssociationImpl implements Association {
+public class OneToOneAssociationImpl extends ManageableAssociation {
 
 	protected static final Logger logger = Logger.getLogger(OneToOneAssociationImpl.class.getName());
 
@@ -404,7 +401,7 @@ public class OneToOneAssociationImpl implements Association {
 	}
 
 	protected void read() {
-
+		logger.debug("read - BUG_TRACE 1");
 		try {
 			PayloadData payload;
 			if (this.ipChannelType == IpChannelType.SCTP)
@@ -513,7 +510,7 @@ public class OneToOneAssociationImpl implements Association {
 	}
 
 	protected void write(SelectionKey key) {
-
+		logger.debug("write - BUG_TRACE 1");
 		try {
 
 			if (txBuffer.hasRemaining()) {
@@ -697,6 +694,12 @@ public class OneToOneAssociationImpl implements Association {
 		// changes
 		this.management.getSocketSelector().wakeup();
 
+	}
+	
+	protected void setBranchChannel(SctpChannel sctpChannel) {
+		this.started.set(true);
+		this.up.set(true);
+		this.socketChannelSctp = sctpChannel;
 	}
 
 	private void doInitiateConnectionSctp() throws IOException {

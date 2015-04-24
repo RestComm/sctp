@@ -22,6 +22,7 @@ import org.mobicents.protocols.sctp.multiclient.OneToManyAssociationImpl.HostAdd
 
 import com.sun.nio.sctp.MessageInfo;
 import com.sun.nio.sctp.SctpMultiChannel;
+import com.sun.nio.sctp.SctpChannel;
 
 public class OneToManyAssocMultiplexer {
 	private static final Logger logger = Logger.getLogger(OneToManyAssocMultiplexer.class);
@@ -337,6 +338,24 @@ public class OneToManyAssocMultiplexer {
 		if (association == null) {
 			association = findPendingAssociation(sctpAssociation);
 			assignSctpAssocIdToAssociation(sctpAssociation.associationID(), association);
+			//BRANCH
+			logger.info("BRANCH");
+			try {
+				SctpChannel sctpChannel = getSocketMultiChannel().branch(sctpAssociation);
+				OneToOneAssociationImpl oneToOneAssoc = new OneToOneAssociationImpl( association.getHostAddress()//hostAddress
+																				    , association.getHostPort() //hostPort 
+																				    , association.getPeerAddress()//peerAddress 
+																				    , association.getPeerPort()//peerPort
+																				    , association.getName()//assocName
+																				    , association.getIpChannelType()//ipChannelType
+																				    , association.getExtraHostAddresses()//extraHostAddresses
+																				    );
+				oneToOneAssoc.setBranchChannel(sctpChannel);
+				((AssociationImplProxy)management.getAssociation(association.getName())).setDelagate(oneToOneAssoc);
+			} catch (Exception ex) {
+				logger.error(ex);
+			}
+			
 		}
 		if (logger.isDebugEnabled()) {
 			logger.debug("resolveAssociationImpl result for sctpAssocId: "+sctpAssociation.associationID()+" is "+association);

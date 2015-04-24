@@ -94,7 +94,7 @@ public class MultiManagementImpl implements Management {
 
 	protected String persistDir = null;
 
-	protected AssociationMap<String, Association> associations = new AssociationMap<String, Association>();
+	protected AssociationMap<String, ManageableAssociation> associations = new AssociationMap<String, ManageableAssociation>();
 
 	private FastList<MultiChangeRequest> pendingChanges = new FastList<MultiChangeRequest>();
 
@@ -346,7 +346,7 @@ public class MultiManagementImpl implements Management {
 		// waiting till stopping associations
 		for (int i1 = 0; i1 < 20; i1++) {
 			boolean assConnected = false;
-			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+			for (FastMap.Entry<String, ManageableAssociation> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
 				Association associationTemp = n.getValue();
 				if (associationTemp.isConnected()) {
 					assConnected = true;
@@ -406,8 +406,8 @@ public class MultiManagementImpl implements Management {
 
 
 			this.associations = reader.read(ASSOCIATIONS, AssociationMap.class);
-			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
-				OneToManyAssociationImpl associationTemp = (OneToManyAssociationImpl) n.getValue();
+			for (FastMap.Entry<String, ManageableAssociation> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+				AssociationImplProxy associationTemp = (AssociationImplProxy) n.getValue();
 				associationTemp.setManagement(this);
 			}
 
@@ -459,7 +459,7 @@ public class MultiManagementImpl implements Management {
 								
 				// Remove all associations
 				ArrayList<String> lst = new ArrayList<String>();
-				for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+				for (FastMap.Entry<String, ManageableAssociation> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
 					lst.add(n.getKey());
 				}
 				for (String n : lst) {
@@ -482,11 +482,11 @@ public class MultiManagementImpl implements Management {
 	}
 
 
-	public OneToManyAssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName) throws Exception {
+	public ManageableAssociation addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName) throws Exception {
 		return addAssociation(hostAddress, hostPort, peerAddress, peerPort, assocName, IpChannelType.SCTP, null);
 	}
 
-	public OneToManyAssociationImpl addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
+	public ManageableAssociation addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
 			String[] extraHostAddresses) throws Exception {
 
 		if (!this.started) {
@@ -514,7 +514,7 @@ public class MultiManagementImpl implements Management {
 		}
 
 		synchronized (this) {
-			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+			for (FastMap.Entry<String, ManageableAssociation> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
 				Association associationTemp = n.getValue();
 
 				if (assocName.equals(associationTemp.getName())) {
@@ -533,15 +533,14 @@ public class MultiManagementImpl implements Management {
 */
 			}
 
-			OneToManyAssociationImpl association = new OneToManyAssociationImpl(hostAddress, hostPort, peerAddress, peerPort, assocName, extraHostAddresses);
+			ManageableAssociation association = new AssociationImplProxy(new OneToManyAssociationImpl(hostAddress, hostPort, peerAddress, peerPort, assocName, extraHostAddresses));
 			association.setManagement(this);
 
-			AssociationMap<String, Association> newAssociations = new AssociationMap<String, Association>();
+			AssociationMap<String, ManageableAssociation> newAssociations = new AssociationMap<String, ManageableAssociation>();
 			newAssociations.putAll(this.associations);
 			newAssociations.put(assocName, association);
 			this.associations = newAssociations;
-			// associations.put(assocName, association);
-
+			
 			this.store();
 
 			for (ManagementEventListener lstr : managementEventListeners) {
@@ -590,17 +589,17 @@ public class MultiManagementImpl implements Management {
 			throw new Exception("Association name cannot be null");
 		}
 
-		Association associationTemp = this.associations.get(assocName);
+		ManageableAssociation association = this.associations.get(assocName);
 
-		if (associationTemp == null) {
+		if (association == null) {
 			throw new Exception(String.format("No Association found for name=%s", assocName));
 		}
 
-		if (associationTemp.isStarted()) {
+		if (association.isStarted()) {
 			throw new Exception(String.format("Association=%s is already started", assocName));
 		}
 
-		((OneToManyAssociationImpl) associationTemp).start();
+		association.start();
 		this.store();
 	}
 
@@ -613,13 +612,13 @@ public class MultiManagementImpl implements Management {
 			throw new Exception("Association name cannot be null");
 		}
 
-		Association association = this.associations.get(assocName);
+		ManageableAssociation association = this.associations.get(assocName);
 
 		if (association == null) {
 			throw new Exception(String.format("No Association found for name=%s", assocName));
 		}
 
-		((OneToManyAssociationImpl) association).stop();
+		association.stop();
 		this.store();
 	}
 
@@ -643,7 +642,7 @@ public class MultiManagementImpl implements Management {
 				throw new Exception(String.format("Association name=%s is started. Stop before removing", assocName));
 			}
 
-			AssociationMap<String, Association> newAssociations = new AssociationMap<String, Association>();
+			AssociationMap<String, ManageableAssociation> newAssociations = new AssociationMap<String, ManageableAssociation>();
 			newAssociations.putAll(this.associations);
 			newAssociations.remove(assocName);
 			this.associations = newAssociations;
