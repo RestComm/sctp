@@ -90,6 +90,7 @@ public class MultiSelectorThread implements Runnable {
 					while (changes.hasNext()) {
 						MultiChangeRequest change = changes.next();
 						SelectionKey key = change.getSocketChannel().keyFor(this.selector);
+						logger.debug("change=" + change + ": key=" + key + " of socketChannel=" + change.getSocketChannel() + " for selector=" + this.selector );
 						switch (change.getType()) {
 						case MultiChangeRequest.CHANGEOPS:
 							pendingChanges.remove(change);							
@@ -102,14 +103,19 @@ public class MultiSelectorThread implements Runnable {
 						case MultiChangeRequest.REGISTER:
 							pendingChanges.remove(change);
 							SelectionKey key1 = change.getSocketChannel().register(this.selector, change.getOps());
-							if (change.isMultiAssocRequest()) {
-								key1.attach(change.getAssocMultiplexer());
-							} else {
-								key1.attach(change.getOneToOneAssociation());
-							}
+							logger.debug("run - BUG_TRACE 1: key=" + key1 + " is registered for channel=" + change.getSocketChannel());
+
 							AssocChangeEvent ace = AssocChangeEvent.COMM_UP;
 							AssociationChangeNotification2 acn = new AssociationChangeNotification2(ace);
-							change.getAssocMultiplexer().associationHandler.handleNotification(acn, change.getAssocMultiplexer());
+							if (change.isMultiAssocRequest()) {
+								key1.attach(change.getAssocMultiplexer());
+								change.getAssocMultiplexer().associationHandler.handleNotification(acn, change.getAssocMultiplexer());
+							} else {
+								key1.attach(change.getOneToOneAssociation());
+								//change.getOneToOneAssociation().associationHandler.handleNotification(acn, change.getOneToOneAssociation());							
+							}
+
+							
 							break;
 						case MultiChangeRequest.CONNECT:
 							pendingChanges.remove(change);

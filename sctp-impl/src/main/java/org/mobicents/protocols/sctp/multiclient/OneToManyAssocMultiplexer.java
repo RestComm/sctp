@@ -330,7 +330,7 @@ public class OneToManyAssocMultiplexer {
 		}
 	}
 	
-	protected OneToManyAssociationImpl resolveAssociationImpl(com.sun.nio.sctp.Association sctpAssociation) {
+	protected ManageableAssociation resolveAssociationImpl(com.sun.nio.sctp.Association sctpAssociation) {
 		if (!started.get()) {
 			return null;
 		}
@@ -342,6 +342,22 @@ public class OneToManyAssocMultiplexer {
 			logger.info("BRANCH");
 			try {
 				SctpChannel sctpChannel = getSocketMultiChannel().branch(sctpAssociation);
+				logger.debug(String.format("resolceAssociationImpl - BUG_TRACE 1: sctpMultiChannel: isBlocking=%s, isOpen=%s, isRegistered=%s, supportedOptions=%s", 
+							 getSocketMultiChannel().isBlocking(),
+							 getSocketMultiChannel().isOpen(),
+							 getSocketMultiChannel().isRegistered(),
+							 getSocketMultiChannel().supportedOptions()));
+				if (sctpChannel.isBlocking()) {
+					sctpChannel.configureBlocking(false);
+				}
+				logger.debug(String.format("resolveAssociationImpl - BUG_TRACE 2: new sctpChannel: isBlocking=%s, isConnectionPending=%s, isOpen=%s, isRegistered=%s, supportedOptions=%s",
+							sctpChannel.isBlocking(),
+							sctpChannel.isConnectionPending(),
+							sctpChannel.isOpen(),
+							sctpChannel.isRegistered(),
+							sctpChannel.supportedOptions()
+							));
+				
 				OneToOneAssociationImpl oneToOneAssoc = new OneToOneAssociationImpl( association.getHostAddress()//hostAddress
 																				    , association.getHostPort() //hostPort 
 																				    , association.getPeerAddress()//peerAddress 
@@ -351,7 +367,17 @@ public class OneToManyAssocMultiplexer {
 																				    , association.getExtraHostAddresses()//extraHostAddresses
 																				    );
 				oneToOneAssoc.setBranchChannel(sctpChannel);
-				((AssociationImplProxy)management.getAssociation(association.getName())).setDelagate(oneToOneAssoc);
+				oneToOneAssoc.setManagement(management);
+				FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
+				synchronized (pendingChanges) {
+					pendingChanges.add(new MultiChangeRequest(sctpChannel, null, oneToOneAssoc, MultiChangeRequest.REGISTER,
+							SelectionKey.OP_WRITE|SelectionKey.OP_READ));
+				}
+				((AssociationImplProxy)management.getAssociation(association.getName())).hotSwapDelegate(oneToOneAssoc);
+				if (logger.isDebugEnabled()) {
+					logger.debug("resolveAssociationImpl result for sctpAssocId: "+sctpAssociation.associationID()+" is "+association);
+				}
+				return oneToOneAssoc;
 			} catch (Exception ex) {
 				logger.error(ex);
 			}

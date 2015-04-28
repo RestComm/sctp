@@ -47,6 +47,7 @@ class MultiAssociationHandler extends AbstractNotificationHandler<OneToManyAssoc
 
 	private static final Logger logger = Logger.getLogger(MultiAssociationHandler.class);
 	
+
 	public MultiAssociationHandler() {
 
 	}
@@ -62,14 +63,27 @@ class MultiAssociationHandler extends AbstractNotificationHandler<OneToManyAssoc
 	 * returns the value of the defaultResult parameter.
 	 */
 	private HandlerResult delegateNotificationHandling(Notification not, HandlerResult defaultResult, OneToManyAssocMultiplexer multiplexer) {
-		OneToManyAssociationImpl association = multiplexer.resolveAssociationImpl(not.association());		
-		if (association == null) {
+		ManageableAssociation mAssociation = multiplexer.resolveAssociationImpl(not.association());
+		
+		if (mAssociation == null) {
 			return defaultResult;
 		}
-		if (logger.isDebugEnabled()) {
-			logger.debug("Notification: "+not+" is being delagated to associationHandler: "+association.associationHandler);
+		if (mAssociation instanceof OneToManyAssociationImpl) {
+
+			OneToManyAssociationImpl association = (OneToManyAssociationImpl) mAssociation;
+			if (logger.isDebugEnabled()) {
+				logger.debug("Notification: "+not+" is being delagated to associationHandler: "+association.associationHandler);
+			}
+			return association.associationHandler.handleNotification(not, association);
+		} else if (mAssociation instanceof OneToOneAssociationImpl) {
+			OneToOneAssociationImpl association = (OneToOneAssociationImpl) mAssociation;
+			if (logger.isDebugEnabled()) {
+				logger.debug("Notification: "+not+" is being delagated to associationHandler: "+association.associationHandler);
+			}
+			return association.associationHandler.handleNotification(not, association);
 		}
-		return association.associationHandler.handleNotification(not, association);
+		logger.warn(String.format("Unexpected super type: %s", mAssociation.getClass()));
+		return defaultResult;
 	}
 	
 	@Override

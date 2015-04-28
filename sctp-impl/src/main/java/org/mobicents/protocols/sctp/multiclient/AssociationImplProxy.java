@@ -6,24 +6,29 @@ import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.PayloadData;
 
 public class AssociationImplProxy extends ManageableAssociation {
-	private ManageableAssociation delagate;
+	private ManageableAssociation delegate;
 
 	public AssociationImplProxy(ManageableAssociation delagate) {
-		this.delagate = delagate;
+		this.delegate = delagate;
+	}
+	
+	public void hotSwapDelegate(ManageableAssociation newDelegate) {
+		newDelegate.setAssociationListener(delegate.getAssociationListener());
+		this.delegate = newDelegate;
 	}
 	
 	/**
 	 * @return the delagate
 	 */
 	protected ManageableAssociation getDelagate() {
-		return delagate;
+		return delegate;
 	}
 
 	/**
 	 * @param delagate the delagate to set
 	 */
 	protected void setDelagate(ManageableAssociation delagate) {
-		this.delagate = delagate;
+		this.delegate = delagate;
 	}
 
 	
@@ -32,7 +37,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.sctp.multiclient.ManageableAssociation#setManagement(org.mobicents.protocols.sctp.multiclient.MultiManagementImpl)
 	 */
 	protected void setManagement(MultiManagementImpl management) {
-		delagate.setManagement(management);
+		delegate.setManagement(management);
 	}
 
 
@@ -42,7 +47,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.sctp.multiclient.ManageableAssociation#start()
 	 */
 	protected void start() throws Exception {
-		delagate.start();
+		delegate.start();
 	}
 
 	/**
@@ -50,7 +55,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.sctp.multiclient.ManageableAssociation#stop()
 	 */
 	protected void stop() throws Exception {
-		delagate.stop();
+		delegate.stop();
 	}
 
 	/**
@@ -58,7 +63,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#getIpChannelType()
 	 */
 	public IpChannelType getIpChannelType() {
-		return delagate.getIpChannelType();
+		return delegate.getIpChannelType();
 	}
 
 	/**
@@ -66,7 +71,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#getAssociationType()
 	 */
 	public AssociationType getAssociationType() {
-		return delagate.getAssociationType();
+		return delegate.getAssociationType();
 	}
 
 	/**
@@ -74,7 +79,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#getName()
 	 */
 	public String getName() {
-		return delagate.getName();
+		return delegate.getName();
 	}
 
 	/**
@@ -82,7 +87,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#isStarted()
 	 */
 	public boolean isStarted() {
-		return delagate.isStarted();
+		return delegate.isStarted();
 	}
 
 	/**
@@ -90,7 +95,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#isConnected()
 	 */
 	public boolean isConnected() {
-		return delagate.isConnected();
+		return delegate.isConnected();
 	}
 
 	/**
@@ -98,7 +103,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#isUp()
 	 */
 	public boolean isUp() {
-		return delagate.isUp();
+		return delegate.isUp();
 	}
 
 	/**
@@ -106,7 +111,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#getAssociationListener()
 	 */
 	public AssociationListener getAssociationListener() {
-		return delagate.getAssociationListener();
+		return delegate.getAssociationListener();
 	}
 
 	/**
@@ -114,7 +119,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#setAssociationListener(org.mobicents.protocols.api.AssociationListener)
 	 */
 	public void setAssociationListener(AssociationListener associationListener) {
-		delagate.setAssociationListener(associationListener);
+		delegate.setAssociationListener(associationListener);
 	}
 
 	/**
@@ -122,7 +127,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#getHostAddress()
 	 */
 	public String getHostAddress() {
-		return delagate.getHostAddress();
+		return delegate.getHostAddress();
 	}
 
 	/**
@@ -130,7 +135,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#getHostPort()
 	 */
 	public int getHostPort() {
-		return delagate.getHostPort();
+		return delegate.getHostPort();
 	}
 
 	/**
@@ -138,7 +143,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#getPeerAddress()
 	 */
 	public String getPeerAddress() {
-		return delagate.getPeerAddress();
+		return delegate.getPeerAddress();
 	}
 
 	/**
@@ -146,7 +151,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#getPeerPort()
 	 */
 	public int getPeerPort() {
-		return delagate.getPeerPort();
+		return delegate.getPeerPort();
 	}
 
 	/**
@@ -154,7 +159,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#getServerName()
 	 */
 	public String getServerName() {
-		return delagate.getServerName();
+		return delegate.getServerName();
 	}
 
 	/**
@@ -162,7 +167,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#getExtraHostAddresses()
 	 */
 	public String[] getExtraHostAddresses() {
-		return delagate.getExtraHostAddresses();
+		return delegate.getExtraHostAddresses();
 	}
 
 	/**
@@ -171,7 +176,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#send(org.mobicents.protocols.api.PayloadData)
 	 */
 	public void send(PayloadData payloadData) throws Exception {
-		delagate.send(payloadData);
+		delegate.send(payloadData);
 	}
 
 	/**
@@ -181,7 +186,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 */
 	public void acceptAnonymousAssociation(
 			AssociationListener associationListener) throws Exception {
-		delagate.acceptAnonymousAssociation(associationListener);
+		delegate.acceptAnonymousAssociation(associationListener);
 	}
 
 	/**
@@ -189,7 +194,7 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#rejectAnonymousAssociation()
 	 */
 	public void rejectAnonymousAssociation() {
-		delagate.rejectAnonymousAssociation();
+		delegate.rejectAnonymousAssociation();
 	}
 
 	/**
@@ -197,6 +202,6 @@ public class AssociationImplProxy extends ManageableAssociation {
 	 * @see org.mobicents.protocols.api.Association#stopAnonymousAssociation()
 	 */
 	public void stopAnonymousAssociation() throws Exception {
-		delagate.stopAnonymousAssociation();
+		delegate.stopAnonymousAssociation();
 	}
 }

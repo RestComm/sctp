@@ -126,4 +126,18 @@ public final class MultiChangeRequest {
 	protected long getExecutionTime() {
 		return executionTime;
 	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "MultiChangeRequest [type=" + type + ", ops=" + ops
+				+ ", socketChannel=" + socketChannel + ", assocMultiplexer="
+				+ assocMultiplexer + ", oneToOneAssoc=" + oneToOneAssoc
+				+ ", multiAssocRequest=" + multiAssocRequest
+				+ ", executionTime=" + executionTime + "]";
+	}
+	
+	
 }

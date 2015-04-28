@@ -252,6 +252,11 @@ public class MultiManagementImpl implements Management {
 		return multiChannelController;
 	}
 
+	
+	public boolean isInBranchingMode() {
+		return true;
+	}
+	
 	public void start() throws Exception {
 
 		if (this.started) {

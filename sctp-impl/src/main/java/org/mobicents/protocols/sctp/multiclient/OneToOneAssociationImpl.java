@@ -26,6 +26,7 @@ import org.mobicents.protocols.api.ManagementEventListener;
 import org.mobicents.protocols.api.PayloadData;
 import org.mobicents.protocols.sctp.ChangeRequest;
 
+import com.sun.nio.sctp.AbstractNotificationHandler;
 import com.sun.nio.sctp.MessageInfo;
 import com.sun.nio.sctp.SctpChannel;
 
@@ -366,33 +367,42 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	}
 
 	public void send(PayloadData payloadData) throws Exception {
-		this.checkSocketIsOpen();
-
-		FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
-		synchronized (pendingChanges) {
-
-			// Indicate we want the interest ops set changed
-			pendingChanges.add(new MultiChangeRequest(this.getSocketChannel(), null, this, ChangeRequest.CHANGEOPS,
-					SelectionKey.OP_WRITE));
-
-			// And queue the data we want written
-			// TODO Do we need to synchronize ConcurrentLinkedQueue ?
-			// synchronized (this.txQueue) {
-			this.txQueue.add(payloadData);
+		logger.debug("send - BUG_TRACE 1 - txQueue.size=" + txQueue.size());
+		try {
+			this.checkSocketIsOpen();
+	
+			FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
+			synchronized (pendingChanges) {
+	
+				// Indicate we want the interest ops set changed
+				pendingChanges.add(new MultiChangeRequest(this.getSocketChannel(), null, this, ChangeRequest.CHANGEOPS,
+						SelectionKey.OP_WRITE));
+				logger.debug("send - BUG_TRACE 2");
+				// And queue the data we want written
+				// TODO Do we need to synchronize ConcurrentLinkedQueue ?
+				// synchronized (this.txQueue) {
+				this.txQueue.add(payloadData);
+			}
+	
+			// Finally, wake up our selecting thread so it can make the required
+			// changes
+			this.management.getSocketSelector().wakeup();
+		} catch (Exception ex) {
+			logger.error("send - BUG_TRACE ex", ex);
 		}
-
-		// Finally, wake up our selecting thread so it can make the required
-		// changes
-		this.management.getSocketSelector().wakeup();
 	}
 
 	private void checkSocketIsOpen() throws Exception {
 		if (this.ipChannelType == IpChannelType.SCTP) {
 			if (!started.get() || this.socketChannelSctp == null || !this.socketChannelSctp.isOpen()
-					|| this.socketChannelSctp.association() == null)
+					|| this.socketChannelSctp.association() == null) {
+				logger.warn(String.format(
+						"Underlying sctp channel doesn't open or doesn't have association for Association=%s",
+						this.name));
 				throw new Exception(String.format(
 						"Underlying sctp channel doesn't open or doesn't have association for Association=%s",
 						this.name));
+			}
 		} else {
 			if (!started.get() || this.socketChannelTcp == null || !this.socketChannelTcp.isOpen()
 					|| !this.socketChannelTcp.isConnected())
@@ -456,7 +466,7 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	}
 
 	private PayloadData doReadSctp() throws IOException {
-
+		logger.debug("doReadSctp - BUG_TRACE 1");
 		rxBuffer.clear();
 		MessageInfo messageInfo = this.socketChannelSctp.receive(rxBuffer, this, this.associationHandler);
 
@@ -637,6 +647,7 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	}
 
 	protected void scheduleConnect() {
+		logger.debug("scheduleConnect - BUG_TRACE 1");
 		if (this.getAssociationType() == AssociationType.CLIENT) {
 			// If Associtaion is of Client type, reinitiate the connection
 			// procedure
