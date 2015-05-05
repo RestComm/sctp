@@ -18,18 +18,21 @@ import javolution.util.FastList;
 
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.PayloadData;
-import org.mobicents.protocols.sctp.multiclient.OneToManyAssociationImpl.HostAddressInfo;
+import org.mobicents.protocols.sctp.multiclient.ManageableAssociation.HostAddressInfo;
+import org.mobicents.protocols.sctp.multiclient.ManageableAssociation.SctpMessage;
 
 import com.sun.nio.sctp.MessageInfo;
-import com.sun.nio.sctp.SctpMultiChannel;
 import com.sun.nio.sctp.SctpChannel;
+import com.sun.nio.sctp.SctpMultiChannel;
 
 public class OneToManyAssocMultiplexer {
 	private static final Logger logger = Logger.getLogger(OneToManyAssocMultiplexer.class);
 	
+	private MultiManagementImpl management;
+	
 	private HostAddressInfo hostAddressInfo;
 	private SctpMultiChannel socketMultiChannel;
-	private MultiManagementImpl management;
+
 	// The buffer into which we'll read data when it's available
 	private ByteBuffer rxBuffer = ByteBuffer.allocateDirect(8192);
 	
@@ -40,8 +43,8 @@ public class OneToManyAssocMultiplexer {
 	// Queue holds payloads to be transmitted
 	private ConcurrentLinkedQueueSwapper<SctpMessage> txQueueSwapper = new ConcurrentLinkedQueueSwapper(new ConcurrentLinkedQueue<SctpMessage>());
 	
-	private CopyOnWriteArrayList<OneToManyAssociationImpl> pendingAssocs = new CopyOnWriteArrayList<OneToManyAssociationImpl>();
-	private ConcurrentHashMap<Integer,OneToManyAssociationImpl> connectedAssocs = new ConcurrentHashMap<Integer, OneToManyAssociationImpl>();
+	private CopyOnWriteArrayList<ManageableAssociation> pendingAssocs = new CopyOnWriteArrayList<ManageableAssociation>();
+	private ConcurrentHashMap<Integer, ManageableAssociation> connectedAssocs = new ConcurrentHashMap<Integer, ManageableAssociation>();
 	
 	protected final MultiAssociationHandler associationHandler = new MultiAssociationHandler();
 	
@@ -107,7 +110,7 @@ public class OneToManyAssocMultiplexer {
 		initMultiChannel();
 	}
 	
-	protected void registerAssociation(OneToManyAssociationImpl association) {
+	protected void registerAssociation(ManageableAssociation association) {
 		if (!started.get()) {
 			throw new IllegalStateException("OneToManyAssocMultiplexer is stoped!");
 		}
@@ -135,21 +138,19 @@ public class OneToManyAssocMultiplexer {
 		}	
 	}
 	
-	protected void assignSctpAssocIdToAssociation(Integer id, OneToManyAssociationImpl association) {
+	protected void assignSctpAssocIdToAssociation(Integer id, ManageableAssociation association) {
 		if (!started.get()) {
 			throw new IllegalStateException("OneToManyAssocMultiplexer is stoped!");
 		}
 		if (id == null || association ==  null) {
 			return;
 		}
-		logger.debug("BUG_TRACE - assignSctpAssocIdToAssociation - 1: pendingAssocs.size=" + pendingAssocs.size() + " connectedAssocs.size=" + connectedAssocs.size());
 		connectedAssocs.put(id, association);
 		pendingAssocs.remove(association);
-		logger.debug("BUG_TRACE - assignSctpAssocIdToAssociation - 2: pendingAssocs.size=" + pendingAssocs.size() + " connectedAssocs.size=" + connectedAssocs.size());
 		association.assignSctpAssociationId(id);
 	}
 	
-	protected OneToManyAssociationImpl findConnectedAssociation(Integer sctpAssocId) {
+	protected ManageableAssociation findConnectedAssociation(Integer sctpAssocId) {
 		return connectedAssocs.get(sctpAssocId);
 	}
 	
@@ -163,14 +164,14 @@ public class OneToManyAssocMultiplexer {
 		return peerAddresses;
 	}
 	
-	protected OneToManyAssociationImpl findPendingAssociation(com.sun.nio.sctp.Association sctpAssociation) {
+	protected ManageableAssociation findPendingAssociation(com.sun.nio.sctp.Association sctpAssociation) {
 		String peerAddresses = extractPeerAddresses(sctpAssociation);
 		if (logger.isDebugEnabled()) {
 			peerAddresses = peerAddresses.isEmpty() ? peerAddresses : peerAddresses.substring(2);
 			logger.debug("Association("+sctpAssociation.associationID()+") connected to "+peerAddresses);
 		}
-		OneToManyAssociationImpl ret=null;
-		for (OneToManyAssociationImpl assocImpl : pendingAssocs) {
+		ManageableAssociation ret=null;
+		for (ManageableAssociation assocImpl : pendingAssocs) {
 			if (assocImpl.isConnectedToPeerAddresses(peerAddresses)) {
 				ret = assocImpl;
 				break;
@@ -204,8 +205,8 @@ public class OneToManyAssocMultiplexer {
 		return socketMultiChannel;
 	}
 	
-	private OneToManyAssociationImpl getAssociationByMessageInfo(MessageInfo msgInfo) {
-		OneToManyAssociationImpl ret = null;
+	private ManageableAssociation getAssociationByMessageInfo(MessageInfo msgInfo) {
+		ManageableAssociation ret = null;
 		//find connected assoc
 		if (msgInfo.association() != null) {
 			ret = findConnectedAssociation(msgInfo.association().associationID());
@@ -217,7 +218,7 @@ public class OneToManyAssocMultiplexer {
 		return ret;
 	}
 	
-	protected void send(PayloadData payloadData, MessageInfo messageInfo, OneToManyAssociationImpl sender) throws IOException {
+	protected void send(PayloadData payloadData, MessageInfo messageInfo, ManageableAssociation sender) throws IOException {
 		if (!started.get()) {
 			return;
 		}
@@ -260,7 +261,7 @@ public class OneToManyAssocMultiplexer {
 			if (skipList.contains(msg.getSenderAssoc().getName())) {
 				retransmitQueue.add(msg);
 			} else {
-				if (!msg.getSenderAssoc().write(msg.getPayloadData())) {
+				if (!msg.getSenderAssoc().writePayload(msg.getPayloadData())) {
 					skipList.add(msg.getSenderAssoc().getName());
 					retransmitQueue.add(msg);
 				}
@@ -309,9 +310,9 @@ public class OneToManyAssocMultiplexer {
 		PayloadData payload = new PayloadData(len, data, messageInfo.isComplete(), messageInfo.isUnordered(),
 				messageInfo.payloadProtocolID(), messageInfo.streamNumber());
 
-		OneToManyAssociationImpl assoc = getAssociationByMessageInfo(messageInfo);
+		ManageableAssociation assoc = getAssociationByMessageInfo(messageInfo);
 		if (assoc != null) {
-			assoc.read(payload);
+			assoc.readPayload(payload);
 		}
 	
 	}
@@ -334,54 +335,37 @@ public class OneToManyAssocMultiplexer {
 		if (!started.get()) {
 			return null;
 		}
-		OneToManyAssociationImpl association = findConnectedAssociation(sctpAssociation.associationID());
+		ManageableAssociation association = findConnectedAssociation(sctpAssociation.associationID());
 		if (association == null) {
 			association = findPendingAssociation(sctpAssociation);
 			assignSctpAssocIdToAssociation(sctpAssociation.associationID(), association);
-			//BRANCH
-			logger.info("BRANCH");
-			try {
-				SctpChannel sctpChannel = getSocketMultiChannel().branch(sctpAssociation);
-				logger.debug(String.format("resolceAssociationImpl - BUG_TRACE 1: sctpMultiChannel: isBlocking=%s, isOpen=%s, isRegistered=%s, supportedOptions=%s", 
-							 getSocketMultiChannel().isBlocking(),
-							 getSocketMultiChannel().isOpen(),
-							 getSocketMultiChannel().isRegistered(),
-							 getSocketMultiChannel().supportedOptions()));
-				if (sctpChannel.isBlocking()) {
-					sctpChannel.configureBlocking(false);
-				}
-				logger.debug(String.format("resolveAssociationImpl - BUG_TRACE 2: new sctpChannel: isBlocking=%s, isConnectionPending=%s, isOpen=%s, isRegistered=%s, supportedOptions=%s",
-							sctpChannel.isBlocking(),
-							sctpChannel.isConnectionPending(),
-							sctpChannel.isOpen(),
-							sctpChannel.isRegistered(),
-							sctpChannel.supportedOptions()
-							));
-				
-				OneToOneAssociationImpl oneToOneAssoc = new OneToOneAssociationImpl( association.getHostAddress()//hostAddress
-																				    , association.getHostPort() //hostPort 
-																				    , association.getPeerAddress()//peerAddress 
-																				    , association.getPeerPort()//peerPort
-																				    , association.getName()//assocName
-																				    , association.getIpChannelType()//ipChannelType
-																				    , association.getExtraHostAddresses()//extraHostAddresses
-																				    );
-				oneToOneAssoc.setBranchChannel(sctpChannel);
-				oneToOneAssoc.setManagement(management);
-				FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
-				synchronized (pendingChanges) {
-					pendingChanges.add(new MultiChangeRequest(sctpChannel, null, oneToOneAssoc, MultiChangeRequest.REGISTER,
-							SelectionKey.OP_WRITE|SelectionKey.OP_READ));
-				}
-				((AssociationImplProxy)management.getAssociation(association.getName())).hotSwapDelegate(oneToOneAssoc);
-				if (logger.isDebugEnabled()) {
-					logger.debug("resolveAssociationImpl result for sctpAssocId: "+sctpAssociation.associationID()+" is "+association);
-				}
-				return oneToOneAssoc;
-			} catch (Exception ex) {
-				logger.error(ex);
-			}
 			
+			if (management.isInBranchingMode()) {
+				//BRANCH
+				logger.info("BRANCH");
+				try {
+					SctpChannel sctpChannel = getSocketMultiChannel().branch(sctpAssociation);
+					if (sctpChannel.isBlocking()) {
+						sctpChannel.configureBlocking(false);
+					}
+					
+					OneToOneAssociationImpl oneToOneAssoc = (OneToOneAssociationImpl) association;
+					oneToOneAssoc.setBranchChannel(sctpChannel);
+					oneToOneAssoc.setManagement(management);
+				
+					FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
+					synchronized (pendingChanges) {
+						pendingChanges.add(new MultiChangeRequest(sctpChannel, null, oneToOneAssoc, MultiChangeRequest.REGISTER,
+								SelectionKey.OP_WRITE|SelectionKey.OP_READ));
+					}
+					if (logger.isDebugEnabled()) {
+						logger.debug("resolveAssociationImpl result for sctpAssocId: "+sctpAssociation.associationID()+" is "+association);
+					}
+					return oneToOneAssoc;
+				} catch (Exception ex) {
+					logger.error(ex);
+				}
+			}
 		}
 		if (logger.isDebugEnabled()) {
 			logger.debug("resolveAssociationImpl result for sctpAssocId: "+sctpAssociation.associationID()+" is "+association);
@@ -394,7 +378,7 @@ public class OneToManyAssocMultiplexer {
 			return;
 		}
 		
-		for (OneToManyAssociationImpl assocImpl: connectedAssocs.values()) {
+		for (ManageableAssociation assocImpl: connectedAssocs.values()) {
 			try {
 				assocImpl.stop();
 			} catch (Exception ex) {
@@ -402,7 +386,7 @@ public class OneToManyAssocMultiplexer {
 			}
 		}
 		connectedAssocs.clear();
-		for (OneToManyAssociationImpl assocImpl: pendingAssocs) {
+		for (ManageableAssociation assocImpl: pendingAssocs) {
 			try {
 				assocImpl.stop();
 			} catch (Exception e) {
@@ -413,54 +397,17 @@ public class OneToManyAssocMultiplexer {
 		this.socketMultiChannel.close();
 	}
 	
-	protected synchronized void stopAssociation(OneToManyAssociationImpl assocImpl) throws IOException {
-		logger.debug("BUG_TRACE 1");
+	protected synchronized void stopAssociation(ManageableAssociation assocImpl) throws IOException {
 		if (!started.get()) {
-			logger.debug("BUG_TRACE 2_1");
 			return;
 		}
-		logger.debug("BUG_TRACE 2_2");
 		if (connectedAssocs.remove(assocImpl.getAssocInfo().getPeerInfo().getSctpAssocId()) == null) {
-			logger.debug("BUG_TRACE 3_1");
 			pendingAssocs.remove(assocImpl);
-		} else {
-			logger.debug("BUG_TRACE 3_2");
 		}
-		
-		logger.debug("BUG_TRACE 4: pendingAssocs.size=" + pendingAssocs.size() + " connectedAssocs.size=" + connectedAssocs.size());
-		
 		if (pendingAssocs.isEmpty() && connectedAssocs.isEmpty()) {
 			started.set(false);
 			logger.debug("All associations of the multiplexer instance is stopped");
 			this.socketMultiChannel.close();
 		}
 	}
-	
-	static class SctpMessage {
-		private final PayloadData payloadData;
-		private final MessageInfo messageInfo;
-		private final OneToManyAssociationImpl senderAssoc;
-		private SctpMessage(PayloadData payloadData, MessageInfo messageInfo,
-				OneToManyAssociationImpl senderAssoc) {
-			super();
-			this.payloadData = payloadData;
-			this.messageInfo = messageInfo;
-			this.senderAssoc = senderAssoc;
-		}
-		private PayloadData getPayloadData() {
-			return payloadData;
-		}
-		private MessageInfo getMessageInfo() {
-			return messageInfo;
-		}
-		private OneToManyAssociationImpl getSenderAssoc() {
-			return senderAssoc;
-		}
-		@Override
-		public String toString() {
-			return "SctpMessage [payloadData=" + payloadData + ", messageInfo="
-					+ messageInfo + ", senderAssoc=" + senderAssoc + "]";
-		}
-	}
-
 }

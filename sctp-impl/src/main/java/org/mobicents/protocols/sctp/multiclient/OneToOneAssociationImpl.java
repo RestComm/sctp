@@ -2,12 +2,8 @@ package org.mobicents.protocols.sctp.multiclient;
 
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -26,7 +22,6 @@ import org.mobicents.protocols.api.ManagementEventListener;
 import org.mobicents.protocols.api.PayloadData;
 import org.mobicents.protocols.sctp.ChangeRequest;
 
-import com.sun.nio.sctp.AbstractNotificationHandler;
 import com.sun.nio.sctp.MessageInfo;
 import com.sun.nio.sctp.SctpChannel;
 
@@ -52,28 +47,11 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	private static final String EXTRA_HOST_ADDRESS = "extraHostAddress";
 	private static final String EXTRA_HOST_ADDRESS_SIZE = "extraHostAddresseSize";
 
-	private String hostAddress;
-	private int hostPort;
-	private String peerAddress;
-	private int peerPort;
-	private String serverName;
-	private String name;
-	private IpChannelType ipChannelType;
-	private String[] extraHostAddresses;
-
 	private AssociationType type;
 
 	private AssociationListener associationListener = null;
 
 	protected final OneToOneAssociationHandler associationHandler = new OneToOneAssociationHandler();
-
-	/**
-	 * This is used only for SCTP This is the socket address for peer which will
-	 * be null initially. If the Association has multihome support and if peer
-	 * address changes, this variable is set to new value so new messages are
-	 * now sent to changed peer address
-	 */
-	protected volatile SocketAddress peerSocketAddress = null;
 
 	// Is the Association been started by management?
 	private AtomicBoolean started = new AtomicBoolean(false);
@@ -84,16 +62,15 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 
 	private ConcurrentLinkedQueue<PayloadData> txQueue = new ConcurrentLinkedQueue<PayloadData>();
 
-	private MultiManagementImpl management;
-
 	private SctpChannel socketChannelSctp;
-	private SocketChannel socketChannelTcp;
 
 	// The buffer into which we'll read data when it's available
 	private ByteBuffer rxBuffer = ByteBuffer.allocateDirect(8192);
 	private ByteBuffer txBuffer = ByteBuffer.allocateDirect(8192);
 
 	private volatile MessageInfo msgInfo;
+	
+	private OneToManyAssocMultiplexer multiplexer;
 
 	/**
 	 * Count of number of IO Errors occured. If this exceeds the maxIOErrors set
@@ -101,19 +78,6 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	 * will be initiated
 	 */
 	private volatile int ioErrors = 0;
-
-	public OneToOneAssociationImpl() {
-		super();
-		// clean transmission buffer
-		txBuffer.clear();
-		txBuffer.rewind();
-		txBuffer.flip();
-
-		// clean receiver buffer
-		rxBuffer.clear();
-		rxBuffer.rewind();
-		rxBuffer.flip();
-	}
 
 	/**
 	 * Creating a CLIENT Association
@@ -127,41 +91,19 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	 * @param extraHostAddresses
 	 * @throws IOException
 	 */
-	public OneToOneAssociationImpl(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName,
-			IpChannelType ipChannelType, String[] extraHostAddresses) throws IOException {
-		this();
-		this.hostAddress = hostAddress;
-		this.hostPort = hostPort;
-		this.peerAddress = peerAddress;
-		this.peerPort = peerPort;
-		this.name = assocName;
-		this.ipChannelType = ipChannelType;
-		this.extraHostAddresses = extraHostAddresses;
+	public OneToOneAssociationImpl(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, String[] extraHostAddresses) throws IOException {
+		super(hostAddress, hostPort, peerAddress, peerPort, assocName, extraHostAddresses);
 
 		this.type = AssociationType.CLIENT;
+		// clean transmission buffer
+		txBuffer.clear();
+		txBuffer.rewind();
+		txBuffer.flip();
 
-	}
-
-	/**
-	 * Creating a SERVER Association
-	 * 
-	 * @param peerAddress
-	 * @param peerPort
-	 * @param serverName
-	 * @param assocName
-	 * @param ipChannelType
-	 */
-	public OneToOneAssociationImpl(String peerAddress, int peerPort, String serverName, String assocName,
-			IpChannelType ipChannelType) {
-		this();
-		this.peerAddress = peerAddress;
-		this.peerPort = peerPort;
-		this.serverName = serverName;
-		this.name = assocName;
-		this.ipChannelType = ipChannelType;
-
-		this.type = AssociationType.SERVER;
-
+		// clean receiver buffer
+		rxBuffer.clear();
+		rxBuffer.rewind();
+		rxBuffer.flip();
 	}
 
 	protected void start() throws Exception {
@@ -176,9 +118,7 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 		}
 
 		
-		if (this.type == AssociationType.CLIENT) {
-			this.scheduleConnect();
-		}
+		scheduleConnect();
 
 		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
 			try {
@@ -349,25 +289,27 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	}
 
 	protected AbstractSelectableChannel getSocketChannel() {
-		if (this.ipChannelType == IpChannelType.SCTP)
-			return this.socketChannelSctp;
-		else
-			return this.socketChannelTcp;
+		return this.socketChannelSctp;
 	}
 
+	protected void reconnect() {
+		try {
+			doInitiateConnectionSctp();
+		} catch(Exception ex) {
+			logger.warn("Error while trying to reconnect association[" + this.getName() + "]: " + ex.getMessage(), ex);
+			scheduleConnect();
+		}
+	}
+	
 	/**
 	 * @param socketChannel
 	 *            the socketChannel to set
 	 */
 	protected void setSocketChannel(AbstractSelectableChannel socketChannel) {
-		if (this.ipChannelType == IpChannelType.SCTP)
 			this.socketChannelSctp = (SctpChannel) socketChannel;
-		else
-			this.socketChannelTcp = (SocketChannel) socketChannel;
 	}
 
 	public void send(PayloadData payloadData) throws Exception {
-		logger.debug("send - BUG_TRACE 1 - txQueue.size=" + txQueue.size());
 		try {
 			this.checkSocketIsOpen();
 	
@@ -377,7 +319,6 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 				// Indicate we want the interest ops set changed
 				pendingChanges.add(new MultiChangeRequest(this.getSocketChannel(), null, this, ChangeRequest.CHANGEOPS,
 						SelectionKey.OP_WRITE));
-				logger.debug("send - BUG_TRACE 2");
 				// And queue the data we want written
 				// TODO Do we need to synchronize ConcurrentLinkedQueue ?
 				// synchronized (this.txQueue) {
@@ -388,36 +329,28 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 			// changes
 			this.management.getSocketSelector().wakeup();
 		} catch (Exception ex) {
-			logger.error("send - BUG_TRACE ex", ex);
+			logger.error("Error while sending payload data: " + ex.getMessage(), ex);
 		}
 	}
 
 	private void checkSocketIsOpen() throws Exception {
-		if (this.ipChannelType == IpChannelType.SCTP) {
-			if (!started.get() || this.socketChannelSctp == null || !this.socketChannelSctp.isOpen()
-					|| this.socketChannelSctp.association() == null) {
-				logger.warn(String.format(
-						"Underlying sctp channel doesn't open or doesn't have association for Association=%s",
-						this.name));
-				throw new Exception(String.format(
-						"Underlying sctp channel doesn't open or doesn't have association for Association=%s",
-						this.name));
-			}
-		} else {
-			if (!started.get() || this.socketChannelTcp == null || !this.socketChannelTcp.isOpen()
-					|| !this.socketChannelTcp.isConnected())
-				throw new Exception(String.format("Underlying tcp channel doesn't open for Association=%s", this.name));
+		if (!started.get() || this.socketChannelSctp == null || !this.socketChannelSctp.isOpen()
+				|| this.socketChannelSctp.association() == null) {
+			logger.warn(String.format(
+					"Underlying sctp channel doesn't open or doesn't have association for Association=%s",
+					this.name));
+			throw new Exception(String.format(
+					"Underlying sctp channel doesn't open or doesn't have association for Association=%s",
+					this.name));
 		}
 	}
 
 	protected void read() {
-		logger.debug("read - BUG_TRACE 1");
 		try {
 			PayloadData payload;
-			if (this.ipChannelType == IpChannelType.SCTP)
-				payload = this.doReadSctp();
-			else
-				payload = this.doReadTcp();
+			
+			payload = this.doReadSctp();
+			
 			if (payload == null)
 				return;
 
@@ -466,7 +399,6 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	}
 
 	private PayloadData doReadSctp() throws IOException {
-		logger.debug("doReadSctp - BUG_TRACE 1");
 		rxBuffer.clear();
 		MessageInfo messageInfo = this.socketChannelSctp.receive(rxBuffer, this, this.associationHandler);
 
@@ -497,30 +429,7 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 		return payload;
 	}
 
-	private PayloadData doReadTcp() throws IOException {
-
-		rxBuffer.clear();
-		int len = this.socketChannelTcp.read(rxBuffer);
-		if (len == -1) {
-			logger.warn(String.format("Rx -1 while trying to read from underlying socket for Association=%s ",
-					this.name));
-			this.close();
-			this.scheduleConnect();
-			return null;
-		}
-
-		rxBuffer.flip();
-		byte[] data = new byte[len];
-		rxBuffer.get(data);
-		rxBuffer.clear();
-
-		PayloadData payload = new PayloadData(len, data, true, false, 0, 0);
-
-		return payload;
-	}
-
 	protected void write(SelectionKey key) {
-		logger.debug("write - BUG_TRACE 1");
 		try {
 
 			if (txBuffer.hasRemaining()) {
@@ -546,27 +455,25 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 					// TODO: BufferOverflowException ?
 					txBuffer.put(payloadData.getData());
 
-					if (this.ipChannelType == IpChannelType.SCTP) {
-						int seqControl = payloadData.getStreamNumber();
+					int seqControl = payloadData.getStreamNumber();
 
-						if (seqControl < 0 || seqControl >= this.associationHandler.getMaxOutboundStreams()) {
-							try {
-								// TODO : calling in same Thread. Is this ok? or
-								// dangerous?
-								this.associationListener.inValidStreamId(payloadData);
-							} catch (Exception e) {
+					if (seqControl < 0 || seqControl >= this.associationHandler.getMaxOutboundStreams()) {
+						try {
+							// TODO : calling in same Thread. Is this ok? or
+							// dangerous?
+							this.associationListener.inValidStreamId(payloadData);
+						} catch (Exception e) {
 
-							}
-							txBuffer.clear();
-							txBuffer.flip();
-							continue;
 						}
-
-						msgInfo = MessageInfo.createOutgoing(this.peerSocketAddress, seqControl);
-						msgInfo.payloadProtocolID(payloadData.getPayloadProtocolId());
-						msgInfo.complete(payloadData.isComplete());
-						msgInfo.unordered(payloadData.isUnordered());
+						txBuffer.clear();
+						txBuffer.flip();
+						continue;
 					}
+
+					msgInfo = MessageInfo.createOutgoing(this.peerSocketAddress, seqControl);
+					msgInfo.payloadProtocolID(payloadData.getPayloadProtocolId());
+					msgInfo.complete(payloadData.isComplete());
+					msgInfo.unordered(payloadData.isUnordered());
 
 					txBuffer.flip();
 
@@ -606,18 +513,11 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	}
 
 	private int doSend() throws IOException {
-		if (this.ipChannelType == IpChannelType.SCTP)
-			return this.doSendSctp();
-		else
-			return this.doSendTcp();
+		return this.doSendSctp();
 	}
 
 	private int doSendSctp() throws IOException {
 		return this.socketChannelSctp.send(txBuffer, msgInfo);
-	}
-
-	private int doSendTcp() throws IOException {
-		return this.socketChannelTcp.write(txBuffer);
 	}
 
 	protected void close() {
@@ -647,10 +547,7 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	}
 
 	protected void scheduleConnect() {
-		logger.debug("scheduleConnect - BUG_TRACE 1");
 		if (this.getAssociationType() == AssociationType.CLIENT) {
-			// If Associtaion is of Client type, reinitiate the connection
-			// procedure
 			FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
 			synchronized (pendingChanges) {
 				pendingChanges.add(new MultiChangeRequest(null, this, MultiChangeRequest.CONNECT, System.currentTimeMillis()
@@ -660,12 +557,9 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	}
 
 	protected void initiateConnection() throws IOException {
-
-		// If Association is stopped, don't try to initiate connect
 		if (!this.started.get()) {
 			return;
 		}
-
 		if (this.getSocketChannel() != null) {
 			try {
 				this.getSocketChannel().close();
@@ -676,14 +570,10 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 								this.name), e);
 			}
 		}
-
 		try {
-			if (this.ipChannelType == IpChannelType.SCTP)
-				this.doInitiateConnectionSctp();
-			else
-				this.doInitiateConnectionTcp();
+			this.doInitiateConnectionSctp();
 		} catch (Exception e) {
-			logger.error("Error while initiating a connection", e);
+			logger.error("Error while initiating a connection: " + e.getMessage(), e);
 			this.scheduleConnect();
 			return;
 		}
@@ -714,33 +604,11 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	}
 
 	private void doInitiateConnectionSctp() throws IOException {
-		// Create a non-blocking socket channel
-		this.socketChannelSctp = SctpChannel.open();
-		this.socketChannelSctp.configureBlocking(false);
-
-		// bind to host address:port
-		this.socketChannelSctp.bind(new InetSocketAddress(this.hostAddress, this.hostPort));
-		if (this.extraHostAddresses != null) {
-			for (String s : extraHostAddresses) {
-				this.socketChannelSctp.bindAddress(InetAddress.getByName(s));
-			}
-		}
-
-		// Kick off connection establishment
-		this.socketChannelSctp.connect(new InetSocketAddress(this.peerAddress, this.peerPort), 32, 32);
-	}
-
-	private void doInitiateConnectionTcp() throws IOException {
-
-		// Create a non-blocking socket channel
-		this.socketChannelTcp = SocketChannel.open();
-		this.socketChannelTcp.configureBlocking(false);
-
-		// bind to host address:port
-		this.socketChannelTcp.bind(new InetSocketAddress(this.hostAddress, this.hostPort));
-
-		// Kick off connection establishment
-		this.socketChannelTcp.connect(new InetSocketAddress(this.peerAddress, this.peerPort));
+		this.multiplexer =  management.getMultiChannelController().register(this);
+		//send init msg
+		byte[] spaceTrash = new byte[]{0x01, 0x00, 0x02, 0x03, 0x00, 0x00, 0x00, 0x18, 0x00, 0x06, 0x00, 0x08, 0x00, 0x00, 0x00, 0x05, 0x00, 0x12, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00};
+		PayloadData payloadData = new PayloadData(spaceTrash.length, spaceTrash, true, false, 0, 0);
+		this.multiplexer.send(payloadData, null, this);
 	}
 
 	protected void createworkerThreadTable(int maximumBooundStream) {
@@ -758,10 +626,10 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("Association [name=").append(this.name).append(", associationType=").append(this.type)
-				.append(", ipChannelType=").append(this.ipChannelType).append(", hostAddress=")
+				.append(", ipChannelType=").append("SCTP").append(", hostAddress=")
 				.append(this.hostAddress).append(", hostPort=").append(this.hostPort).append(", peerAddress=")
 				.append(this.peerAddress).append(", peerPort=").append(this.peerPort).append(", serverName=")
-				.append(this.serverName);
+				.append("");
 
 		sb.append(", extraHostAddress=[");
 
@@ -796,18 +664,13 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 			association.peerAddress = xml.getAttribute(PEER_ADDRESS, "");
 			association.peerPort = xml.getAttribute(PEER_PORT, 0);
 
-			association.serverName = xml.getAttribute(SERVER_NAME, "");
-				association.ipChannelType = IpChannelType.getInstance(xml.getAttribute(IPCHANNEL_TYPE,
-						IpChannelType.SCTP.getCode()));
-				if (association.ipChannelType == null)
-					association.ipChannelType = IpChannelType.SCTP;
 
-				int extraHostAddressesSize = xml.getAttribute(EXTRA_HOST_ADDRESS_SIZE, 0);
-				association.extraHostAddresses = new String[extraHostAddressesSize];
+			int extraHostAddressesSize = xml.getAttribute(EXTRA_HOST_ADDRESS_SIZE, 0);
+			association.extraHostAddresses = new String[extraHostAddressesSize];
 
-				for (int i = 0; i < extraHostAddressesSize; i++) {
-					association.extraHostAddresses[i] = xml.get(EXTRA_HOST_ADDRESS, String.class);
-				}
+			for (int i = 0; i < extraHostAddressesSize; i++) {
+				association.extraHostAddresses[i] = xml.get(EXTRA_HOST_ADDRESS, String.class);
+			}
 
 			}
 
@@ -822,8 +685,8 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 				xml.setAttribute(PEER_ADDRESS, association.peerAddress);
 				xml.setAttribute(PEER_PORT, association.peerPort);
 
-				xml.setAttribute(SERVER_NAME, association.serverName);
-				xml.setAttribute(IPCHANNEL_TYPE, association.ipChannelType.getCode());
+				xml.setAttribute(SERVER_NAME,"");
+				xml.setAttribute(IPCHANNEL_TYPE, IpChannelType.SCTP);
 
 				xml.setAttribute(EXTRA_HOST_ADDRESS_SIZE,
 						association.extraHostAddresses != null ? association.extraHostAddresses.length : 0);
@@ -834,6 +697,111 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 				}
 			}
 		};
+
+		@Override
+		protected void readPayload(PayloadData payload) {
+			if (payload == null) {
+				return;
+			}
+			
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format("Rx : Ass=%s %s", this.name, payload));
+			}
+
+			if (this.management.isSingleThread()) {
+				// If single thread model the listener should be called in the
+				// selector thread itself
+				try {
+					this.associationListener.onPayload(this, payload);
+				} catch (Exception e) {
+					logger.error(String.format("Error while calling Listener for Association=%s.Payload=%s", this.name,
+							payload), e);
+				}
+			} else {
+				MultiWorker worker = new MultiWorker(this, this.associationListener, payload);
+
+				ExecutorService executorService = this.management.getExecutorService(this.workerThreadTable[payload
+						.getStreamNumber()]);
+				try {
+					executorService.execute(worker);
+				} catch (RejectedExecutionException e) {
+					logger.error(String.format("Rejected %s as Executors is shutdown", payload), e);
+				} catch (NullPointerException e) {
+					logger.error(String.format("NullPointerException while submitting %s", payload), e);
+				} catch (Exception e) {
+					logger.error(String.format("Exception while submitting %s", payload), e);
+				}
+			}
+		}
+		
+		@Override
+		protected boolean writePayload(PayloadData payloadData) {
+			try {
+
+				if (txBuffer.hasRemaining()) {
+					multiplexer.getSocketMultiChannel().send(txBuffer, msgInfo);
+				}
+				// TODO Do we need to synchronize ConcurrentLinkedQueue?
+				// synchronized (this.txQueue) {
+				if (!txBuffer.hasRemaining()) {
+					txBuffer.clear();
+					if (logger.isDebugEnabled()) {
+						logger.debug(String.format("Tx : Ass=%s %s", this.name, payloadData));
+					}
+
+					// load ByteBuffer
+					// TODO: BufferOverflowException ?
+					txBuffer.put(payloadData.getData());
+						
+					int seqControl = payloadData.getStreamNumber();
+
+					if (seqControl < 0 || seqControl >= this.associationHandler.getMaxOutboundStreams()) {
+						try {
+							// TODO : calling in same Thread. Is this ok? or
+							// dangerous?
+							this.associationListener.inValidStreamId(payloadData);
+						} catch (Exception e) {
+							logger.warn(e);
+						}
+						txBuffer.clear();
+						txBuffer.flip();
+						return false;
+					}
+
+					msgInfo = MessageInfo.createOutgoing(this.peerSocketAddress, seqControl);
+					
+					msgInfo.payloadProtocolID(payloadData.getPayloadProtocolId());
+					msgInfo.complete(payloadData.isComplete());
+					msgInfo.unordered(payloadData.isUnordered());
+
+					logger.debug("write() - msgInfo: "+msgInfo);
+					txBuffer.flip();
+
+					multiplexer.getSocketMultiChannel().send(txBuffer, msgInfo);
+
+					if (txBuffer.hasRemaining()) {
+						// Couldn't send all data. Lets return now and try to
+						// send
+						// this message in next cycle
+						return true;
+					}
+					return true;
+				}
+				return false;
+			} catch (IOException e) {
+				this.ioErrors++;
+				logger.error(String.format(
+						"IOException while trying to write to underlying socket for Association=%s IOError count=%d",
+						this.name, this.ioErrors), e);
+				return false;
+			} catch (Exception ex) {
+				logger.error(String.format("Unexpected exception has been caught while trying to write SCTP socketChanel for Association=%s: %s",
+						this.name, ex.getMessage()), ex);
+				return false;
+			}
+		}
+		
+		
 		
 		@Override
 		public void acceptAnonymousAssociation(

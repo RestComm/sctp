@@ -75,6 +75,7 @@ public class MultiManagementImpl implements Management {
 	private static final Logger logger = Logger.getLogger(MultiManagementImpl.class);
 
 	private static final String DISABLE_CONFIG_PERSISTANCE_KEY = "ss7.disableDefaultConfigPersistance";
+	private static final String ENABLE_SCTP_ASSOC_BRANCHING = "sctp.enableBranching";
 	private static final String SCTP_PERSIST_DIR_KEY = "sctp.persist.dir";
 	private static final String USER_DIR_KEY = "user.dir";
 	private static final String PERSIST_FILE_NAME = "sctp.xml";
@@ -124,6 +125,8 @@ public class MultiManagementImpl implements Management {
 	private volatile boolean started = false;
 	
 	private final MultiChannelController multiChannelController = new MultiChannelController(this);
+	
+	private boolean enableBranching;
 
 	public MultiManagementImpl(String name) throws IOException {
 		this.name = name;
@@ -131,6 +134,8 @@ public class MultiManagementImpl implements Management {
 		binding.setAlias(OneToManyAssociationImpl.class, "association");
 		binding.setAlias(String.class, "string");
 		this.socketSelector = SelectorProvider.provider().openSelector();
+		String enableBranchingString = System.getProperty(ENABLE_SCTP_ASSOC_BRANCHING, "false");
+		this.enableBranching = Boolean.valueOf(enableBranchingString);
 	}
 
 	/**
@@ -254,7 +259,7 @@ public class MultiManagementImpl implements Management {
 
 	
 	public boolean isInBranchingMode() {
-		return true;
+		return enableBranching;
 	}
 	
 	public void start() throws Exception {
@@ -412,10 +417,8 @@ public class MultiManagementImpl implements Management {
 
 			this.associations = reader.read(ASSOCIATIONS, AssociationMap.class);
 			for (FastMap.Entry<String, ManageableAssociation> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
-				AssociationImplProxy associationTemp = (AssociationImplProxy) n.getValue();
-				associationTemp.setManagement(this);
+				n.getValue().setManagement(this);
 			}
-
 		} catch (XMLStreamException ex) {
 			// this.logger.info(
 			// "Error while re-creating Linksets from persisted file", ex);
@@ -537,8 +540,13 @@ public class MultiManagementImpl implements Management {
 				}
 */
 			}
-
-			ManageableAssociation association = new AssociationImplProxy(new OneToManyAssociationImpl(hostAddress, hostPort, peerAddress, peerPort, assocName, extraHostAddresses));
+			ManageableAssociation association = null;
+			if (isInBranchingMode()) {
+				association = new OneToOneAssociationImpl(hostAddress, hostPort, peerAddress, peerPort, assocName, extraHostAddresses);
+			} else {
+				association = new OneToManyAssociationImpl(hostAddress, hostPort, peerAddress, peerPort, assocName, extraHostAddresses);
+			}
+				
 			association.setManagement(this);
 
 			AssociationMap<String, ManageableAssociation> newAssociations = new AssociationMap<String, ManageableAssociation>();

@@ -33,7 +33,6 @@ import org.apache.log4j.Logger;
 
 import com.sun.nio.sctp.AssociationChangeNotification;
 import com.sun.nio.sctp.AssociationChangeNotification.AssocChangeEvent;
-import com.sun.nio.sctp.SctpChannel;
 
 /**
  * @author amit bhayani
@@ -89,7 +88,7 @@ public class MultiSelectorThread implements Runnable {
 					Iterator<MultiChangeRequest> changes = pendingChanges.iterator();
 					while (changes.hasNext()) {
 						MultiChangeRequest change = changes.next();
-						SelectionKey key = change.getSocketChannel().keyFor(this.selector);
+						SelectionKey key = change.getSocketChannel() == null ? null :  change.getSocketChannel().keyFor(this.selector);
 						logger.debug("change=" + change + ": key=" + key + " of socketChannel=" + change.getSocketChannel() + " for selector=" + this.selector );
 						switch (change.getType()) {
 						case MultiChangeRequest.CHANGEOPS:
@@ -103,36 +102,34 @@ public class MultiSelectorThread implements Runnable {
 						case MultiChangeRequest.REGISTER:
 							pendingChanges.remove(change);
 							SelectionKey key1 = change.getSocketChannel().register(this.selector, change.getOps());
-							logger.debug("run - BUG_TRACE 1: key=" + key1 + " is registered for channel=" + change.getSocketChannel());
-
 							AssocChangeEvent ace = AssocChangeEvent.COMM_UP;
 							AssociationChangeNotification2 acn = new AssociationChangeNotification2(ace);
 							if (change.isMultiAssocRequest()) {
 								key1.attach(change.getAssocMultiplexer());
 								change.getAssocMultiplexer().associationHandler.handleNotification(acn, change.getAssocMultiplexer());
 							} else {
-								key1.attach(change.getOneToOneAssociation());
+								key1.attach(change.getAssociation());
 								//change.getOneToOneAssociation().associationHandler.handleNotification(acn, change.getOneToOneAssociation());							
 							}
-
-							
 							break;
 						case MultiChangeRequest.CONNECT:
-							pendingChanges.remove(change);
-							if (!change.isMultiAssocRequest()) {
-								if (change.getOneToOneAssociation().isStarted()
-										&& change.getExecutionTime() <= System.currentTimeMillis()) {
-										change.getOneToOneAssociation().initiateConnection();
+							//in CONNECT request assocociation is filled in both OneToOne and OneToMany cases
+							if (!change.getAssociation().isStarted()) {
+								pendingChanges.remove(change);
+							} else {
+								if (change.getExecutionTime() <= System.currentTimeMillis()) {
+									pendingChanges.remove(change);
+									change.getAssociation().reconnect();
 								}
 							}
 							break;
 						case MultiChangeRequest.CLOSE:
 							pendingChanges.remove(change);
 							if (!change.isMultiAssocRequest()) {
-								change.getOneToOneAssociation().close();
+								change.getAssociation().close();
 							}
 						}
-					}// end of while
+					}
 				}
 
 				// Wait for an event one of the registered channels

@@ -1,8 +1,5 @@
 package org.mobicents.protocols.sctp.multiclient;
 
-import java.io.IOException;
-import java.net.SocketAddress;
-
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
 
@@ -53,7 +50,6 @@ public class OneToManyAssociationHandler extends AbstractNotificationHandler<One
 		if (arg0 instanceof PeerAddressChangeNotification) {
 			return handleNotification((PeerAddressChangeNotification) arg0, arg1);			
 		}	
-		logger.warn("Polymorphism failure: "+arg0+" arg1: "+arg1);
 		return super.handleNotification(arg0, arg1);		
 	}
 	
@@ -85,15 +81,14 @@ public class OneToManyAssociationHandler extends AbstractNotificationHandler<One
 
 		case CANT_START:
 			logger.error(String.format("Can't start for Association=%s", associtaion.getName()));
+			associtaion.scheduleConnect();
 			return HandlerResult.CONTINUE;
 		case COMM_LOST:
 			logger.warn(String.format("Communication lost for Association=%s", associtaion.getName()));
 
 			// Close the Socket
-			/*TODO mark for delete
-			 * associtaion.close();
-
-			associtaion.scheduleConnect();*/
+			associtaion.close();
+			associtaion.scheduleConnect();
 			try {
 				associtaion.markAssociationDown();
 				associtaion.getAssociationListener().onCommunicationLost(associtaion);

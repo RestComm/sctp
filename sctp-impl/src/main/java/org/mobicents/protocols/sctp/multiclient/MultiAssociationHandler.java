@@ -21,17 +21,12 @@
  */
 package org.mobicents.protocols.sctp.multiclient;
 
-import java.io.IOException;
-import java.net.SocketAddress;
-
-
-
 import org.apache.log4j.Logger;
 
-import com.sun.nio.sctp.Notification;
 import com.sun.nio.sctp.AbstractNotificationHandler;
 import com.sun.nio.sctp.AssociationChangeNotification;
 import com.sun.nio.sctp.HandlerResult;
+import com.sun.nio.sctp.Notification;
 import com.sun.nio.sctp.PeerAddressChangeNotification;
 import com.sun.nio.sctp.SendFailedNotification;
 import com.sun.nio.sctp.ShutdownNotification;

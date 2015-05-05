@@ -50,7 +50,6 @@ public class OneToOneAssociationHandler extends AbstractNotificationHandler<OneT
 		if (arg0 instanceof PeerAddressChangeNotification) {
 			return handleNotification((PeerAddressChangeNotification) arg0, arg1);			
 		}	
-		logger.warn("Polymorphism failure: "+arg0+" arg1: "+arg1);
 		return super.handleNotification(arg0, arg1);		
 	}
 	

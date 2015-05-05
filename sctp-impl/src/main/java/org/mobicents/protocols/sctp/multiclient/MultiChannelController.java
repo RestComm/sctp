@@ -55,7 +55,7 @@ public class MultiChannelController {
 			mList = new ArrayList<OneToManyAssocMultiplexer>();
 			multiplexers.put(hostAddrInfo.getHostPort(), mList);
 		}		
-		mList.add(multiplexer);		
+		mList.add(multiplexer);	
 	}
 
 	/**
@@ -65,7 +65,7 @@ public class MultiChannelController {
 	 * @return - the OneToManyAssocMultiplexer that is associated to the OneToManyAssociationImpl assocImpl
 	 * @throws IOException
 	 */
-	protected OneToManyAssocMultiplexer register(OneToManyAssociationImpl assocImpl) throws IOException {
+	protected OneToManyAssocMultiplexer register(ManageableAssociation assocImpl) throws IOException {
 		if (assocImpl == null || assocImpl.getAssocInfo() == null || assocImpl.getAssocInfo().getHostInfo() == null) {
 			return null;
 		}

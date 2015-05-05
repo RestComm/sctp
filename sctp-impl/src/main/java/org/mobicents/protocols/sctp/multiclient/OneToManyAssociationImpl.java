@@ -1,9 +1,6 @@
 package org.mobicents.protocols.sctp.multiclient;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.Arrays;
@@ -11,6 +8,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javolution.util.FastList;
 import javolution.xml.XMLFormat;
 import javolution.xml.stream.XMLStreamException;
 
@@ -21,7 +19,6 @@ import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.ManagementEventListener;
 import org.mobicents.protocols.api.PayloadData;
 
-import com.sun.nio.sctp.AbstractNotificationHandler;
 import com.sun.nio.sctp.MessageInfo;
 
 /*
@@ -45,12 +42,7 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 	private static final String EXTRA_HOST_ADDRESS = "extraHostAddress";
 	private static final String EXTRA_HOST_ADDRESS_SIZE = "extraHostAddresseSize";
 
-	private String hostAddress;
-	private int hostPort;
-	private String peerAddress;
-	private int peerPort;
-	private String name;
-	private String[] extraHostAddresses;
+
 
 	private AssociationListener associationListener = null;
 	
@@ -59,14 +51,6 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 
 	protected final OneToManyAssociationHandler associationHandler = new OneToManyAssociationHandler();
 
-	/**
-	 * This is used only for SCTP This is the socket address for peer which will
-	 * be null initially. If the Association has multihome support and if peer
-	 * address changes, this variable is set to new value so new messages are
-	 * now sent to changed peer address
-	 */
-	protected volatile SocketAddress peerSocketAddress = null;
-
 	// Is the Association been started by management?
 	private AtomicBoolean started = new AtomicBoolean(false);
 	// Is the Association up (connection is established)
@@ -74,14 +58,11 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 
 	private int workerThreadTable[] = null;
 
-	private MultiManagementImpl management;
-
 	private volatile MessageInfo msgInfo;
 	
 	private volatile com.sun.nio.sctp.Association sctpAssociation;
 	private final IpChannelType ipChannelType = IpChannelType.SCTP;
 	
-	private AssociationInfo assocInfo;
 	private OneToManyAssocMultiplexer multiplexer;
 
 	/**
@@ -92,133 +73,6 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 	//TODO see dev notes
 	private volatile int ioErrors = 0;
 	
-	static class PeerAddressInfo {
-		protected SocketAddress peerSocketAddress;
-		protected int sctpAssocId;
-		
-		public PeerAddressInfo(SocketAddress peerSocketAddress) {
-			super();
-			this.peerSocketAddress = peerSocketAddress;
-		}
-
-		public SocketAddress getPeerSocketAddress() {
-			return peerSocketAddress;
-		}
-
-		public int getSctpAssocId() {
-			return sctpAssocId;
-		}
-
-		protected void setPeerSocketAddress(SocketAddress peerSocketAddress) {
-			this.peerSocketAddress = peerSocketAddress;
-		}
-
-		protected void setSctpAssocId(int sctpAssocId) {
-			this.sctpAssocId = sctpAssocId;
-		}
-
-		@Override
-		public String toString() {
-			return "PeerAddressInfo [peerSocketAddress=" + peerSocketAddress
-					+ ", sctpAssocId=" + sctpAssocId + "]";
-		}
-	}
-	
-	static class HostAddressInfo {
-		private final String primaryHostAddress;
-		private final String secondaryHostAddress;
-		private final int hostPort;
-		
-			
-		public HostAddressInfo(String primaryHostAddress,
-				String secondaryHostAddress, int hostPort) {
-			super();
-			if (primaryHostAddress == null || primaryHostAddress.isEmpty()) {
-				throw new IllegalArgumentException("Constructor HostAddressInfo: primaryHostAddress can not be null!");
-			}
-			this.primaryHostAddress = primaryHostAddress;
-			this.secondaryHostAddress = secondaryHostAddress;
-			this.hostPort = hostPort;
-		}
-		public String getPrimaryHostAddress() {
-			return primaryHostAddress;
-		}
-		
-		public String getSecondaryHostAddress() {
-			return secondaryHostAddress;
-		}
-		
-		public int getHostPort() {
-			return hostPort;
-		}
-				
-		public boolean matches(HostAddressInfo hostAddressInfo) {
-			if (hostAddressInfo == null) {
-				return false;
-			}
-			if (this.hostPort != hostAddressInfo.getHostPort()) {
-				return false;
-			}
-			if (this.equals(hostAddressInfo)) {
-				return true;
-			}
-			if (this.getPrimaryHostAddress().equals(hostAddressInfo.getPrimaryHostAddress())
-					|| this.getPrimaryHostAddress().equals(hostAddressInfo.getSecondaryHostAddress())) {
-				return true;
-			}
-			if (this.getSecondaryHostAddress() != null && !this.getSecondaryHostAddress().isEmpty()) {
-				if (this.getSecondaryHostAddress().equals(hostAddressInfo.getPrimaryHostAddress()) 
-					|| this.getSecondaryHostAddress().equals(hostAddressInfo.getSecondaryHostAddress())) {
-					return true;
-				}
-			}
-			return false;
-		}
-		
-		@Override
-		public String toString() {
-			return "HostAddressInfo [primaryHostAddress=" + primaryHostAddress
-					+ ", secondaryHostAddress=" + secondaryHostAddress
-					+ ", hostPort=" + hostPort + "]";
-		}
-		
-	}
-	static class AssociationInfo {		
-		protected PeerAddressInfo peerInfo;
-		protected HostAddressInfo hostInfo;
-		public PeerAddressInfo getPeerInfo() {
-			return peerInfo;
-		}
-		public HostAddressInfo getHostInfo() {
-			return hostInfo;
-		}
-		@Override
-		public String toString() {
-			return "AssociationInfo [peerInfo=" + peerInfo + ", hostInfo="
-					+ hostInfo + "]";
-		}
-		public AssociationInfo(PeerAddressInfo peerInfo,
-				HostAddressInfo hostInfo) {
-			super();
-			this.peerInfo = peerInfo;
-			this.hostInfo = hostInfo;
-		}
-		protected void setPeerInfo(PeerAddressInfo peerInfo) {
-			this.peerInfo = peerInfo;
-		}
-		protected void setHostInfo(HostAddressInfo hostInfo) {
-			this.hostInfo = hostInfo;
-		}
-
-	}
-	
-	protected OneToManyAssociationImpl() {
-		super();
-		// clean transmission buffer
-		txBuffer.clear();
-		txBuffer.rewind();
-		txBuffer.flip();
-	}
 
 	/**
 	 * Creating a CLIENT Association
@@ -234,41 +88,13 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 	 */
 	public OneToManyAssociationImpl(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName,
 			String[] extraHostAddresses) throws IOException {
-		this();		
-		this.hostAddress = hostAddress;
-		this.hostPort = hostPort;
-		this.peerAddress = peerAddress;
-		this.peerPort = peerPort;
-		this.name = assocName;
-		this.extraHostAddresses = extraHostAddresses;
-		this.peerSocketAddress =  new InetSocketAddress(InetAddress.getByName(peerAddress), peerPort);
-		String secondaryHostAddress = null;
-		if (extraHostAddresses != null && extraHostAddresses.length >= 1) {
-			secondaryHostAddress = extraHostAddresses[0];
-		}
-		this.assocInfo = new AssociationInfo(new PeerAddressInfo(peerSocketAddress),
-											 new HostAddressInfo(hostAddress, secondaryHostAddress, hostPort));		
+		super(hostAddress, hostPort, peerAddress, peerPort, assocName, extraHostAddresses);
+		// clean transmission buffer
+		txBuffer.clear();
+		txBuffer.rewind();
+		txBuffer.flip();
 	}
 	
-	public AssociationInfo getAssocInfo() {
-		return assocInfo;
-	}
-
-	public void setAssocInfo(AssociationInfo assocInfo) {
-		this.assocInfo = assocInfo;
-	}	
-	
-	protected void assignSctpAssociationId(int id) {
-		this.assocInfo.getPeerInfo().setSctpAssocId(id);
-	}
-	
-	protected boolean isConnectedToPeerAddresses(String peerAddresses) {
-		if (logger.isDebugEnabled()) {
-			logger.debug("OneToManyAssociationImpl.isConnectedToPeerAddresses - ownPeerAddress: "+getAssocInfo().getPeerInfo().getPeerSocketAddress().toString()
-					+ "parameter peerAddresses: "+peerAddresses);
-		}
-		return peerAddresses.contains(getAssocInfo().getPeerInfo().getPeerSocketAddress().toString());
-	}
 	
 	public void start() throws Exception {		
 
@@ -281,7 +107,7 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 			return;
 		}
 
-		doInitiateConnectionSctp();
+		scheduleConnect();
 
 		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
 			try {
@@ -297,7 +123,6 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 			logger.warn("Association: "+this+" has been already STOPPED");
 			return;
 		}
-		logger.debug("BUG_TRACE_1");
 		this.multiplexer.stopAssociation(this);
 		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
 			try {
@@ -446,7 +271,7 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 		//
 	}
 
-	public void read(PayloadData payload) {
+	protected void readPayload(PayloadData payload) {
 		if (payload == null) {
 			return;
 		}
@@ -488,7 +313,7 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 		multiplexer.send(payloadData, this.msgInfo, this);
 	}
 
-	protected boolean write(PayloadData payloadData) {
+	protected boolean writePayload(PayloadData payloadData) {
 		try {
 
 			if (txBuffer.hasRemaining()) {
@@ -570,14 +395,20 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 		}	
 	}
 
+	protected void reconnect() {
+		try {
+			doInitiateConnectionSctp();
+		} catch(Exception ex) {
+			logger.warn("Error while trying to reconnect association[" + this.getName() + "]: " + ex.getMessage(), ex);
+			scheduleConnect();
+		}
+	}
 
-	
 	//TODO proper lifecycle management of multiplexed associations
-	protected void close() {/*
-		/*
-		if (this.sctpAssociation != null && this.socketMultiChannel !=null) {
+	protected void close() {
+		if (this.multiplexer !=  null) {
 			try {
-				this.socketMultiChannel.shutdown(this.sctpAssociation);
+				this.multiplexer.stopAssociation(this);
 			} catch (Exception e) {
 				logger.error(String.format("Exception while closing the SctpScoket for Association=%s", this.name), e);
 			}
@@ -591,32 +422,22 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 					"Exception while calling onCommunicationShutdown on AssociationListener for Association=%s",
 					this.name), e);
 		}
-
-		// Finally clear the txQueue
-		if (this.txQueue.size() > 0) {
-			logger.warn(String.format("Clearig txQueue for Association=%s. %d messages still pending will be cleared",
-					this.name, this.txQueue.size()));
-		}
-		this.txQueue.clear();
-		*/
 	}
-/*
-	protected void scheduleConnect() {
-		if (this.getAssociationType() == AssociationType.CLIENT && !useOneToManyConnection) {
-			// If Associtaion is of Client type, reinitiate the connection
-			// procedure
-			FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
-			synchronized (pendingChanges) {
-				pendingChanges.add(new MultiChangeRequest(this, MultiChangeRequest.CONNECT, System.currentTimeMillis()
-						+ this.management.getConnectDelay()));
-			}
-		} else if (this.getAssociationType() == AssociationType.CLIENT && useOneToManyConnection) {
-			FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
-			synchronized (pendingChanges) {
-				pendingChanges.add(new MultiChangeRequest(this.socketMultiChannel, this, MultiChangeRequest.REGISTER, SelectionKey.OP_WRITE));
-			}
+	
+	protected AbstractSelectableChannel getSocketChannel() {
+		if (this.multiplexer == null) {
+			return null;
 		}
-	}*/
+		return this.multiplexer.getSocketMultiChannel();
+	}
+
+	protected void scheduleConnect() {
+		FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
+		synchronized (pendingChanges) {
+			pendingChanges.add(new MultiChangeRequest(null, this, MultiChangeRequest.CONNECT, System.currentTimeMillis()
+						+ this.management.getConnectDelay()));
+		}
+	}
 
 	protected void initiateConnection() throws IOException {
 
