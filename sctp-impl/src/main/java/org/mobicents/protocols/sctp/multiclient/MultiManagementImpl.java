@@ -134,7 +134,7 @@ public class MultiManagementImpl implements Management {
 		binding.setAlias(OneToManyAssociationImpl.class, "association");
 		binding.setAlias(String.class, "string");
 		this.socketSelector = SelectorProvider.provider().openSelector();
-		String enableBranchingString = System.getProperty(ENABLE_SCTP_ASSOC_BRANCHING, "false");
+		String enableBranchingString = System.getProperty(ENABLE_SCTP_ASSOC_BRANCHING, "true");
 		this.enableBranching = Boolean.valueOf(enableBranchingString);
 	}
 

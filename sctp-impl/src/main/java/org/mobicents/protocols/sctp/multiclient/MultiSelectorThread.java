@@ -89,7 +89,10 @@ public class MultiSelectorThread implements Runnable {
 					while (changes.hasNext()) {
 						MultiChangeRequest change = changes.next();
 						SelectionKey key = change.getSocketChannel() == null ? null :  change.getSocketChannel().keyFor(this.selector);
-						logger.debug("change=" + change + ": key=" + key + " of socketChannel=" + change.getSocketChannel() + " for selector=" + this.selector );
+						if (logger.isDebugEnabled()) {
+							logger.debug("change=" + change + ": key=" + key + " of socketChannel=" + change.getSocketChannel() + " for selector=" + this.selector
+								+ " key interesOps=" + (key == null ? "null":key.interestOps()));
+						}
 						switch (change.getType()) {
 						case MultiChangeRequest.CHANGEOPS:
 							pendingChanges.remove(change);							
@@ -179,52 +182,6 @@ public class MultiSelectorThread implements Runnable {
 			logger.info(String.format("SelectorThread for Management=%s stopped.", this.management.getName()));
 		}
 	}
-/*
-	private void finishConnection(SelectionKey key) throws IOException{		
-		this.finishConnectionMultiSctp(key);		
-	}
-/*	
-	private void finishConnectionMultiSctp(SelectionKey key) throws IOException {
-		OneToManyAssociationImpl association = (OneToManyAssociationImpl) key.attachment();
-		if (logger.isInfoEnabled()) {
-			logger.info(String.format("Association=%s connected to=%s", association.getName(), "TODO"));
-		}
-		this.read(key);
-		// Register an interest in writing on this channel
-		key.interestOps(SelectionKey.OP_READ);
-		
-
-		AssocChangeEvent ace = AssocChangeEvent.COMM_UP;
-		AssociationChangeNotification2 acn = new AssociationChangeNotification2(ace);
-		association.associationHandler.handleNotification(acn, association);
-	}
-/*
-	private void finishConnectionSctp(SelectionKey key) throws IOException {
-		
-		OneToManyAssociationImpl association = (OneToManyAssociationImpl) key.attachment();
-		try {
-			
-			SctpChannel socketChannel = (SctpChannel) key.channel();
-
-			if (socketChannel.isConnectionPending()) {
-
-				// TODO Loop? Or may be sleep for while?
-				while (socketChannel.isConnectionPending()) {
-					socketChannel.finishConnect();
-				}
-			}
-
-			if (logger.isInfoEnabled()) {
-				logger.info(String.format("Association=%s connected to=%s", association.getName(), socketChannel.getRemoteAddresses()));
-			}
-
-			// Register an interest in writing on this channel
-			key.interestOps(SelectionKey.OP_READ);
-		} catch (Exception e) {
-			logger.error(String.format("Exception while finishing connection for Association=%s", association.getName()), e);
-			association.scheduleConnect();
-		}
-	}*/
 
 	private void read(SelectionKey key) throws IOException {
 		if (key.attachment() instanceof OneToManyAssocMultiplexer) {

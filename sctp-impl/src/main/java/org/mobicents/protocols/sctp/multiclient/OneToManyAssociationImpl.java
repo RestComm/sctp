@@ -59,10 +59,10 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 	private int workerThreadTable[] = null;
 
 	private volatile MessageInfo msgInfo;
-	
+
 	private volatile com.sun.nio.sctp.Association sctpAssociation;
 	private final IpChannelType ipChannelType = IpChannelType.SCTP;
-	
+
 	private OneToManyAssocMultiplexer multiplexer;
 
 	/**
@@ -94,8 +94,8 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 		txBuffer.rewind();
 		txBuffer.flip();
 	}
-	
-	
+
+
 	public void start() throws Exception {		
 
 		if (this.associationListener == null) {
@@ -106,9 +106,6 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 			logger.warn("Association: "+this+" has been already STARTED");
 			return;
 		}
-
-		scheduleConnect();
-
 		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
 			try {
 				lstr.onAssociationStarted(this);
@@ -116,6 +113,9 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 				logger.error("Exception while invoking onAssociationStarted", ee);
 			}
 		}
+		scheduleConnect();
+
+
 	}
 
 	public void stop() throws Exception {
@@ -123,7 +123,7 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 			logger.warn("Association: "+this+" has been already STOPPED");
 			return;
 		}
-		this.multiplexer.stopAssociation(this);
+
 		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
 			try {
 				lstr.onAssociationStopped(this);
@@ -131,7 +131,15 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 				logger.error("Exception while invoking onAssociationStopped", ee);
 			}
 		}
-		
+
+		try {
+			this.associationListener.onCommunicationShutdown(this);
+		} catch (Exception e) {
+			logger.error(String.format(
+					"Exception while calling onCommunicationShutdown on AssociationListener for Association=%s",
+					this.name), e);
+		}
+
 	}
 
 	public IpChannelType getIpChannelType() {
@@ -404,16 +412,7 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 		}
 	}
 
-	//TODO proper lifecycle management of multiplexed associations
 	protected void close() {
-		if (this.multiplexer !=  null) {
-			try {
-				this.multiplexer.stopAssociation(this);
-			} catch (Exception e) {
-				logger.error(String.format("Exception while closing the SctpScoket for Association=%s", this.name), e);
-			}
-		}
-
 		try {
 			this.markAssociationDown();
 			this.associationListener.onCommunicationShutdown(this);
@@ -432,10 +431,25 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 	}
 
 	protected void scheduleConnect() {
-		FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
-		synchronized (pendingChanges) {
-			pendingChanges.add(new MultiChangeRequest(null, this, MultiChangeRequest.CONNECT, System.currentTimeMillis()
-						+ this.management.getConnectDelay()));
+		if (!started.get()) {
+			logger.info("Association " + name + " is not started, no need to reconnect");
+			return;
+		}
+		if (up.get()) {
+			logger.info("Associoation " + name + " is up, no need to reconnect");
+			try {
+				this.associationListener.onCommunicationUp(this, associationHandler.getMaxInboundStreams(), associationHandler.getMaxOutboundStreams());
+			} catch (Exception e) {
+				logger.error(String.format(
+						"Exception while calling onCommunicationShutdown on AssociationListener for Association=%s",
+						this.name), e);
+			}
+		} else {
+			FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
+			synchronized (pendingChanges) {
+				pendingChanges.add(new MultiChangeRequest(null, this, MultiChangeRequest.CONNECT, System.currentTimeMillis()
+							+ this.management.getConnectDelay()));
+			}
 		}
 	}
 

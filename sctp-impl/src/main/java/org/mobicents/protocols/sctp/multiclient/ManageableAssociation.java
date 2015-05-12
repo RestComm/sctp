@@ -37,9 +37,7 @@ public abstract class ManageableAssociation implements Association {
 	protected abstract void reconnect();
 	protected abstract boolean writePayload(PayloadData payloadData);
 	protected abstract void readPayload(PayloadData payloadData);
-	
-	
-	
+
 	protected ManageableAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName,
 			String[] extraHostAddresses) throws IOException {
 		this.hostAddress = hostAddress;

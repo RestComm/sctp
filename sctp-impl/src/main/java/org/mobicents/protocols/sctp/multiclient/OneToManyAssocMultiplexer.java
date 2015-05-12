@@ -112,7 +112,7 @@ public class OneToManyAssocMultiplexer {
 	
 	protected void registerAssociation(ManageableAssociation association) {
 		if (!started.get()) {
-			throw new IllegalStateException("OneToManyAssocMultiplexer is stoped!");
+			throw new IllegalStateException("OneToManyAssocMultiplexer is stopped!");
 		}
 		
 		pendingAssocs.add(association);
@@ -341,8 +341,9 @@ public class OneToManyAssocMultiplexer {
 			assignSctpAssocIdToAssociation(sctpAssociation.associationID(), association);
 			
 			if (management.isInBranchingMode()) {
-				//BRANCH
-				logger.info("BRANCH");
+				if (logger.isInfoEnabled()) {
+					logger.info("Branching association: " + association.getName());
+				}
 				try {
 					SctpChannel sctpChannel = getSocketMultiChannel().branch(sctpAssociation);
 					if (sctpChannel.isBlocking()) {
@@ -395,19 +396,5 @@ public class OneToManyAssocMultiplexer {
 		}
 		pendingAssocs.clear();
 		this.socketMultiChannel.close();
-	}
-	
-	protected synchronized void stopAssociation(ManageableAssociation assocImpl) throws IOException {
-		if (!started.get()) {
-			return;
-		}
-		if (connectedAssocs.remove(assocImpl.getAssocInfo().getPeerInfo().getSctpAssocId()) == null) {
-			pendingAssocs.remove(assocImpl);
-		}
-		if (pendingAssocs.isEmpty() && connectedAssocs.isEmpty()) {
-			started.set(false);
-			logger.debug("All associations of the multiplexer instance is stopped");
-			this.socketMultiChannel.close();
-		}
 	}
 }

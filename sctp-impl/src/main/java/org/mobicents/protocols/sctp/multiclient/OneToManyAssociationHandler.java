@@ -18,6 +18,7 @@ public class OneToManyAssociationHandler extends AbstractNotificationHandler<One
 	private volatile int maxInboundStreams = 1;
 	private volatile int maxOutboundStreams = 1;
 
+
 	public OneToManyAssociationHandler() {
 
 	}
@@ -35,6 +36,7 @@ public class OneToManyAssociationHandler extends AbstractNotificationHandler<One
 	public int getMaxOutboundStreams() {
 		return maxOutboundStreams;
 	}
+
 	
 	@Override
 	public HandlerResult handleNotification(Notification arg0, 	OneToManyAssociationImpl arg1) {
@@ -158,4 +160,5 @@ public class OneToManyAssociationHandler extends AbstractNotificationHandler<One
 		}
 		return HandlerResult.CONTINUE;
 	}
+
 }
