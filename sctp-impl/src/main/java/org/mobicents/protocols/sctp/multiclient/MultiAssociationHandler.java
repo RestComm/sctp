@@ -84,7 +84,7 @@ class MultiAssociationHandler extends AbstractNotificationHandler<OneToManyAssoc
 	@Override
 	public HandlerResult handleNotification(AssociationChangeNotification not, OneToManyAssocMultiplexer multiplexer) {
 		if (logger.isDebugEnabled()) {
-			logger.debug("handleNotification(AssociationChangeNotification not, OneToManyAssocMultiplexer multiplexer) is called");
+			logger.debug("handleNotification(AssociationChangeNotification=" + not + ", OneToManyAssocMultiplexer=" + multiplexer + ") is called");
 		}
 		if (not.association() == null) {
 			logger.error("Cannot handle AssociationChangeNotification: association method of AssociationChangeNotification: "+not+" returns null value, handler returns CONTINUE");
@@ -110,11 +110,20 @@ class MultiAssociationHandler extends AbstractNotificationHandler<OneToManyAssoc
 		if (logger.isDebugEnabled()) {
 			logger.debug("handleNotification(SendFailedNotification notification, OneToManyAssocMultiplexer multiplexer) is called");
 		}
-		if (notification.association() == null) {
-			logger.error("Cannot handle SendFailedNotification: assoction method of SendFailedNotification: "+notification+" returns null value, handler returns RETURN");
+		ManageableAssociation assoc = multiplexer.findPendingAssociationByAddress(notification.address());
+		if (assoc == null) {
+			logger.warn("Can not handle sendfafiled notification: no pending manageable association found for address=" + notification.address() + " by the multiplexer");
 			return HandlerResult.RETURN;
-		}		
-		return delegateNotificationHandling(notification, HandlerResult.RETURN, multiplexer);
+		}
+		//delegate notification
+		if (assoc instanceof OneToManyAssociationImpl) {
+			OneToManyAssociationImpl oneToManyAssoc = (OneToManyAssociationImpl) assoc;
+			return oneToManyAssoc.associationHandler.handleNotification(notification, oneToManyAssoc);
+		} else if (assoc instanceof OneToOneAssociationImpl) {
+			OneToOneAssociationImpl oneToOneAssoc = (OneToOneAssociationImpl) assoc;
+			return oneToOneAssoc.associationHandler.handleNotification(notification, oneToOneAssoc);
+		}
+		return HandlerResult.RETURN;
 	}
 
 	@Override

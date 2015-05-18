@@ -58,6 +58,11 @@ public class OneToOneAssociationHandler extends AbstractNotificationHandler<OneT
 		
 		switch (not.event()) {
 		case COMM_UP:
+			//in case when comm is go online but the association has been already stopped COMM_UP event is sinked.
+			if (!association.isStarted()) {
+				association.silentlyShutdown();
+				return HandlerResult.CONTINUE;
+			}
 			if (not.association() != null) {
 				this.maxOutboundStreams = not.association().maxOutboundStreams();
 				this.maxInboundStreams = not.association().maxInboundStreams();
@@ -78,7 +83,6 @@ public class OneToOneAssociationHandler extends AbstractNotificationHandler<OneT
 				logger.error(String.format("Exception while calling onCommunicationUp on AssociationListener for Association=%s", association.getName()), e);
 			}
 			return HandlerResult.CONTINUE;
-
 		case CANT_START:
 			logger.error(String.format("Can't start for Association=%s", association.getName()));
 			return HandlerResult.CONTINUE;
@@ -121,7 +125,6 @@ public class OneToOneAssociationHandler extends AbstractNotificationHandler<OneT
 			logger.warn(String.format("Received unkown Event=%s for Association=%s", not.event(), association.getName()));
 			break;
 		}
-
 		return HandlerResult.CONTINUE;
 	}
 
@@ -146,6 +149,7 @@ public class OneToOneAssociationHandler extends AbstractNotificationHandler<OneT
 	@Override
 	public HandlerResult handleNotification(SendFailedNotification notification, OneToOneAssociationImpl associtaion) {
         logger.error(String.format("Association=" + associtaion.getName() + " SendFailedNotification, errorCode=" + notification.errorCode()));
+        associtaion.onSendFailed();
 		return HandlerResult.RETURN;
 	}
 

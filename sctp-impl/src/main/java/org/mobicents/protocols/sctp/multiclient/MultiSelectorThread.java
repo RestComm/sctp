@@ -23,6 +23,7 @@
 package org.mobicents.protocols.sctp.multiclient;
 
 import java.io.IOException;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
@@ -90,8 +91,10 @@ public class MultiSelectorThread implements Runnable {
 						MultiChangeRequest change = changes.next();
 						SelectionKey key = change.getSocketChannel() == null ? null :  change.getSocketChannel().keyFor(this.selector);
 						if (logger.isDebugEnabled()) {
-							logger.debug("change=" + change + ": key=" + key + " of socketChannel=" + change.getSocketChannel() + " for selector=" + this.selector
-								+ " key interesOps=" + (key == null ? "null":key.interestOps()));
+							if (key != null && key.isValid()) {
+								logger.debug("change=" + change + ": key=" + key + " of socketChannel=" + change.getSocketChannel() + " for selector=" + this.selector
+										+ " key interesOps=" + key.interestOps());
+							}
 						}
 						switch (change.getType()) {
 						case MultiChangeRequest.CHANGEOPS:
@@ -105,14 +108,14 @@ public class MultiSelectorThread implements Runnable {
 						case MultiChangeRequest.REGISTER:
 							pendingChanges.remove(change);
 							SelectionKey key1 = change.getSocketChannel().register(this.selector, change.getOps());
-							AssocChangeEvent ace = AssocChangeEvent.COMM_UP;
-							AssociationChangeNotification2 acn = new AssociationChangeNotification2(ace);
+
 							if (change.isMultiAssocRequest()) {
 								key1.attach(change.getAssocMultiplexer());
+								AssocChangeEvent ace = AssocChangeEvent.COMM_UP;
+								AssociationChangeNotification2 acn = new AssociationChangeNotification2(ace);
 								change.getAssocMultiplexer().associationHandler.handleNotification(acn, change.getAssocMultiplexer());
 							} else {
-								key1.attach(change.getAssociation());
-								//change.getOneToOneAssociation().associationHandler.handleNotification(acn, change.getOneToOneAssociation());							
+								key1.attach(change.getAssociation());							
 							}
 							break;
 						case MultiChangeRequest.CONNECT:
@@ -137,8 +140,6 @@ public class MultiSelectorThread implements Runnable {
 
 				// Wait for an event one of the registered channels
 				this.selector.select(500);
-
-				//logger.debug("Done selecting, selected keys size: " + this.selector.selectedKeys().size());
 
 				// Iterate over the set of keys for which events are available
 				Iterator<SelectionKey> selectedKeys = this.selector.selectedKeys().iterator();
@@ -165,7 +166,9 @@ public class MultiSelectorThread implements Runnable {
 						this.write(key);
 					}
 				}
-
+			} catch (CancelledKeyException cke) {
+				//having this exception when closing a channel can be normal, but we log it on WARN level
+				logger.warn("Selecting a cancelled ready key: " + cke.getMessage());
 			} catch (Exception e) {
 				logger.error("Error while selecting the ready keys", e);
 				e.printStackTrace();

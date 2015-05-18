@@ -20,7 +20,6 @@ import org.mobicents.protocols.api.AssociationType;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.ManagementEventListener;
 import org.mobicents.protocols.api.PayloadData;
-import org.mobicents.protocols.sctp.ChangeRequest;
 
 import com.sun.nio.sctp.MessageInfo;
 import com.sun.nio.sctp.SctpChannel;
@@ -317,7 +316,7 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 			synchronized (pendingChanges) {
 	
 				// Indicate we want the interest ops set changed
-				pendingChanges.add(new MultiChangeRequest(this.getSocketChannel(), null, this, ChangeRequest.CHANGEOPS,
+				pendingChanges.add(new MultiChangeRequest(this.getSocketChannel(), null, this, MultiChangeRequest.CHANGEOPS,
 						SelectionKey.OP_WRITE));
 				// And queue the data we want written
 				// TODO Do we need to synchronize ConcurrentLinkedQueue ?
@@ -524,6 +523,9 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 		if (this.getSocketChannel() != null) {
 			try {
 				this.getSocketChannel().close();
+				if (logger.isDebugEnabled()) {
+					logger.debug("close() - socketChannel is closed for association=" + getName());
+				}
 			} catch (Exception e) {
 				logger.error(String.format("Exception while closing the SctpScoket for Association=%s", this.name), e);
 			}
@@ -587,7 +589,7 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 		// is ready to complete connection establishment.
 		FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
 		synchronized (pendingChanges) {
-			pendingChanges.add(new MultiChangeRequest(this.getSocketChannel(), null, this, ChangeRequest.REGISTER,
+			pendingChanges.add(new MultiChangeRequest(this.getSocketChannel(), null, this, MultiChangeRequest.REGISTER,
 					SelectionKey.OP_CONNECT));
 		}
 
@@ -597,10 +599,22 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 
 	}
 	
-	protected void setBranchChannel(SctpChannel sctpChannel) {
-		this.started.set(true);
-		this.up.set(true);
+	protected void branch(SctpChannel sctpChannel, MultiManagementImpl management) {
 		this.socketChannelSctp = sctpChannel;
+		this.management = management;
+		
+		//if association is stopped, channel wont be registered.
+		if (!started.get()) {
+			if (logger.isInfoEnabled()) {
+				logger.info("Branching a stopped association, channel wont be registered to the selector.");
+			}
+		} else {
+			FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
+			synchronized (pendingChanges) {
+				pendingChanges.add(new MultiChangeRequest(sctpChannel, null, this, MultiChangeRequest.REGISTER,
+						SelectionKey.OP_WRITE|SelectionKey.OP_READ));
+			}
+		}
 	}
 
 	private void doInitiateConnectionSctp() throws IOException {
@@ -625,7 +639,8 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	public String toString() {
 
 		StringBuilder sb = new StringBuilder();
-		sb.append("Association [name=").append(this.name).append(", associationType=").append(this.type)
+		sb.append("Association [name=").append(this.name).append(", started=").append(started.get()).append(", up=").append(up)
+				 .append(", associationType=").append(this.type)
 				.append(", ipChannelType=").append("SCTP").append(", hostAddress=")
 				.append(this.hostAddress).append(", hostPort=").append(this.hostPort).append(", peerAddress=")
 				.append(this.peerAddress).append(", peerPort=").append(this.peerPort).append(", serverName=")
@@ -801,7 +816,32 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 			}
 		}
 		
+		protected void onSendFailed() {
+			//if started and down then it means it is a CANT_START event and scheduleConnect must be called.
+			if (started.get() && !up.get()) {
+				logger.warn("Association=" + getName() + " CANT_START, trying to reconnect...");
+				reconnect();
+			}
+		}
 		
+		//called when COMM_UP event arrived after association was stopped.
+		protected void silentlyShutdown() {
+			if (!started.get()) {
+				if (logger.isInfoEnabled()) {
+					logger.info("Association=" + getName() + " has been already stopped when COMM_UP event arrived, closing sctp association without notifying any listeners.");
+				}
+				if (this.getSocketChannel() != null) {
+					try {
+						this.getSocketChannel().close();
+						if (logger.isDebugEnabled()) {
+							logger.debug("close() - socketChannel is closed for association=" + getName());
+						}
+					} catch (Exception e) {
+						logger.error(String.format("Exception while closing the SctpScoket for Association=%s", this.name), e);
+					}
+				}
+			}
+		}
 		
 		@Override
 		public void acceptAnonymousAssociation(

@@ -39,7 +39,7 @@ public class OneToManyAssocMultiplexer {
 	// Is the multiplexer been started by management?
 	private AtomicBoolean started = new AtomicBoolean(false);
 
-		
+
 	// Queue holds payloads to be transmitted
 	private ConcurrentLinkedQueueSwapper<SctpMessage> txQueueSwapper = new ConcurrentLinkedQueueSwapper(new ConcurrentLinkedQueue<SctpMessage>());
 	
@@ -50,7 +50,7 @@ public class OneToManyAssocMultiplexer {
 	
 	/*
 	 * Support fast and save queue operations like:
-	 * 		
+	 * 	
 	 */
 	static class ConcurrentLinkedQueueSwapper<T> {
 		private ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -59,17 +59,17 @@ public class OneToManyAssocMultiplexer {
 		public ConcurrentLinkedQueueSwapper(ConcurrentLinkedQueue<T> queue) {
 			this.queue = queue;
 		}
-		
+
 		public void add(T e) {
 			lock.readLock().lock();
 			queue.add(e);
 			lock.readLock().unlock();
 		}
-		
+
 		public boolean isEmpty() {
 			return queue.isEmpty();
 		}
-		
+
 		public ConcurrentLinkedQueue<T> swap(ConcurrentLinkedQueue<T> newQueue) {
 			if (newQueue == null) {
 				throw new NullPointerException(this.getClass()+".swap(ConcurrentLinkedQueue<T> newQueue): newQueue parameter can not be null!");
@@ -81,7 +81,7 @@ public class OneToManyAssocMultiplexer {
 			lock.writeLock().unlock();
 			return oldQueue;
 		}	
-		
+
 		public void concatAsHead(ConcurrentLinkedQueue<T> newHead) {
 			if (newHead == null) {
 				throw new NullPointerException(this.getClass()+".concatAsHead(ConcurrentLinkedQueue<T> newHead): newHead parameter can not be null!");
@@ -94,7 +94,7 @@ public class OneToManyAssocMultiplexer {
 			this.queue = newQueueCopy;
 			lock.writeLock().unlock();
 		}
-		
+
 	}
 	public OneToManyAssocMultiplexer(HostAddressInfo hostAddressInfo, MultiManagementImpl management) throws IOException {
 		super();
@@ -109,7 +109,7 @@ public class OneToManyAssocMultiplexer {
 		this.rxBuffer.flip();
 		initMultiChannel();
 	}
-	
+
 	protected void registerAssociation(ManageableAssociation association) {
 		if (!started.get()) {
 			throw new IllegalStateException("OneToManyAssocMultiplexer is stopped!");
@@ -117,7 +117,7 @@ public class OneToManyAssocMultiplexer {
 		
 		pendingAssocs.add(association);
 	}
-	
+
 	protected void start() throws IOException {
 		if (!started.compareAndSet(false, true)) {
 			return;
@@ -137,7 +137,7 @@ public class OneToManyAssocMultiplexer {
 					SelectionKey.OP_WRITE|SelectionKey.OP_READ));
 		}	
 	}
-	
+
 	protected void assignSctpAssocIdToAssociation(Integer id, ManageableAssociation association) {
 		if (!started.get()) {
 			throw new IllegalStateException("OneToManyAssocMultiplexer is stoped!");
@@ -149,11 +149,11 @@ public class OneToManyAssocMultiplexer {
 		pendingAssocs.remove(association);
 		association.assignSctpAssociationId(id);
 	}
-	
+
 	protected ManageableAssociation findConnectedAssociation(Integer sctpAssocId) {
 		return connectedAssocs.get(sctpAssocId);
 	}
-	
+
 	private String extractPeerAddresses(com.sun.nio.sctp.Association sctpAssociation) {
 		String peerAddresses = "";
 		try {
@@ -163,14 +163,14 @@ public class OneToManyAssocMultiplexer {
 		} catch (IOException e) {	}
 		return peerAddresses;
 	}
-	
+
 	protected ManageableAssociation findPendingAssociation(com.sun.nio.sctp.Association sctpAssociation) {
 		String peerAddresses = extractPeerAddresses(sctpAssociation);
 		if (logger.isDebugEnabled()) {
 			peerAddresses = peerAddresses.isEmpty() ? peerAddresses : peerAddresses.substring(2);
 			logger.debug("Association("+sctpAssociation.associationID()+") connected to "+peerAddresses);
 		}
-		ManageableAssociation ret=null;
+		ManageableAssociation ret = null;
 		for (ManageableAssociation assocImpl : pendingAssocs) {
 			if (assocImpl.isConnectedToPeerAddresses(peerAddresses)) {
 				ret = assocImpl;
@@ -179,7 +179,26 @@ public class OneToManyAssocMultiplexer {
 		}
 		return ret;
 	}
-	
+
+	protected boolean removeAssociationFromPendingAssociations(ManageableAssociation association) {
+		return this.pendingAssocs.remove(association);
+	}
+
+	protected ManageableAssociation findPendingAssociationByAddress(SocketAddress address) {
+		String peerAddress = address.toString();
+		if (logger.isDebugEnabled()) {
+			logger.debug("findPendingAssociationByAddress is called with address parameter=" + peerAddress);
+		}
+		ManageableAssociation ret = null;
+		for (ManageableAssociation assocImpl : pendingAssocs) {
+			if (assocImpl.isConnectedToPeerAddresses(peerAddress)) {
+				ret = assocImpl;
+				break;
+			}
+		}
+		return ret;
+	}
+
 	private void initMultiChannel() throws IOException {
 		socketMultiChannel = SctpMultiChannel.open();
 		socketMultiChannel.configureBlocking(false);
@@ -197,14 +216,14 @@ public class OneToManyAssocMultiplexer {
 					SelectionKey.OP_WRITE|SelectionKey.OP_READ));
 		}		
 	}
-	
+
 	public HostAddressInfo getHostAddressInfo() {
 		return hostAddressInfo;
 	}
 	public SctpMultiChannel getSocketMultiChannel() {
 		return socketMultiChannel;
 	}
-	
+
 	private ManageableAssociation getAssociationByMessageInfo(MessageInfo msgInfo) {
 		ManageableAssociation ret = null;
 		//find connected assoc
@@ -217,7 +236,7 @@ public class OneToManyAssocMultiplexer {
 		}
 		return ret;
 	}
-	
+
 	protected void send(PayloadData payloadData, MessageInfo messageInfo, ManageableAssociation sender) throws IOException {
 		if (!started.get()) {
 			return;
@@ -236,7 +255,7 @@ public class OneToManyAssocMultiplexer {
 		// changes
 		this.management.getSocketSelector().wakeup();
 	}
-	
+
 	protected void write(SelectionKey key) {
 		if (!started.get()) {
 			return;
@@ -255,7 +274,7 @@ public class OneToManyAssocMultiplexer {
 			}
 			return;
 		}
-		
+
 		while (!txQueueTmp.isEmpty()) {
 			SctpMessage msg = txQueueTmp.poll();
 			if (skipList.contains(msg.getSenderAssoc().getName())) {
@@ -267,7 +286,7 @@ public class OneToManyAssocMultiplexer {
 				}
 			}
 		}
-		
+
 		if (!retransmitQueue.isEmpty()) {
 			txQueueSwapper.concatAsHead(retransmitQueue);
 		}
@@ -281,7 +300,6 @@ public class OneToManyAssocMultiplexer {
 		}
 	}
 
-	
 	private void doReadSctp() throws IOException {
 
 		rxBuffer.clear();
@@ -317,7 +335,7 @@ public class OneToManyAssocMultiplexer {
 	
 	}
 
-	
+
 	protected void read() {
 		if (!started.get()) {
 			return;
@@ -330,7 +348,7 @@ public class OneToManyAssocMultiplexer {
 			logger.error("Unexpected exception: unnable to read from socketMultiChannek, hostAddressInfo: "+this.hostAddressInfo, ex);
 		}
 	}
-	
+
 	protected ManageableAssociation resolveAssociationImpl(com.sun.nio.sctp.Association sctpAssociation) {
 		if (!started.get()) {
 			return null;
@@ -349,16 +367,10 @@ public class OneToManyAssocMultiplexer {
 					if (sctpChannel.isBlocking()) {
 						sctpChannel.configureBlocking(false);
 					}
-					
+
 					OneToOneAssociationImpl oneToOneAssoc = (OneToOneAssociationImpl) association;
-					oneToOneAssoc.setBranchChannel(sctpChannel);
-					oneToOneAssoc.setManagement(management);
-				
-					FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
-					synchronized (pendingChanges) {
-						pendingChanges.add(new MultiChangeRequest(sctpChannel, null, oneToOneAssoc, MultiChangeRequest.REGISTER,
-								SelectionKey.OP_WRITE|SelectionKey.OP_READ));
-					}
+					oneToOneAssoc.branch(sctpChannel, management);
+
 					if (logger.isDebugEnabled()) {
 						logger.debug("resolveAssociationImpl result for sctpAssocId: "+sctpAssociation.associationID()+" is "+association);
 					}
@@ -373,7 +385,7 @@ public class OneToManyAssocMultiplexer {
 		}
 		return association;
 	}
-	
+
 	protected void stop() throws IOException {
 		if (!started.compareAndSet(true, false)) {
 			return;

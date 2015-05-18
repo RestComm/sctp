@@ -147,8 +147,8 @@ public class OneToManyAssociationHandler extends AbstractNotificationHandler<One
 
 	@Override
 	public HandlerResult handleNotification(SendFailedNotification notification, OneToManyAssociationImpl associtaion) {
-//        logger.error(String.format("Association=%s SendFailedNotification", associtaion.getName()));
         logger.error(String.format("Association=" + associtaion.getName() + " SendFailedNotification, errorCode=" + notification.errorCode()));
+        associtaion.onSendFailed();
 		return HandlerResult.RETURN;
 	}
 
