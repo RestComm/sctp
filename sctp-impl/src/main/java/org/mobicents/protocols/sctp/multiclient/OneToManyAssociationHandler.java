@@ -56,10 +56,14 @@ public class OneToManyAssociationHandler extends AbstractNotificationHandler<One
 	}
 	
 	@Override
-	public HandlerResult handleNotification(AssociationChangeNotification not, OneToManyAssociationImpl associtaion) {
+	public HandlerResult handleNotification(AssociationChangeNotification not, OneToManyAssociationImpl association) {
 		
 		switch (not.event()) {
 		case COMM_UP:
+			//in case when comm is go online but the association has been already stopped COMM_UP event is sinked.
+			if (!association.isStarted()) {
+				return HandlerResult.CONTINUE;
+			}
 			if (not.association() != null) {
 				this.maxOutboundStreams = not.association().maxOutboundStreams();
 				this.maxInboundStreams = not.association().maxInboundStreams();
@@ -67,60 +71,60 @@ public class OneToManyAssociationHandler extends AbstractNotificationHandler<One
 
 			if (logger.isInfoEnabled()) {
 				logger.info(String.format("New association setup for Association=%s with %d outbound streams, and %d inbound streams, sctp assoc is %s.\n",
-						associtaion.getName(), this.maxOutboundStreams, this.maxInboundStreams, not.association()));
+						association.getName(), this.maxOutboundStreams, this.maxInboundStreams, not.association()));
 			}
 
-			associtaion.createworkerThreadTable(Math.max(this.maxInboundStreams, this.maxOutboundStreams));
+			association.createworkerThreadTable(Math.max(this.maxInboundStreams, this.maxOutboundStreams));
 
 			// TODO assign Thread's ?
 			try {
-				associtaion.markAssociationUp();
-				associtaion.getAssociationListener().onCommunicationUp(associtaion, this.maxInboundStreams, this.maxOutboundStreams);
+				association.markAssociationUp();
+				association.getAssociationListener().onCommunicationUp(association, this.maxInboundStreams, this.maxOutboundStreams);
 			} catch (Exception e) {
-				logger.error(String.format("Exception while calling onCommunicationUp on AssociationListener for Association=%s", associtaion.getName()), e);
+				logger.error(String.format("Exception while calling onCommunicationUp on AssociationListener for Association=%s", association.getName()), e);
 			}
 			return HandlerResult.CONTINUE;
 
 		case CANT_START:
-			logger.error(String.format("Can't start for Association=%s", associtaion.getName()));
-			associtaion.scheduleConnect();
+			logger.error(String.format("Can't start for Association=%s", association.getName()));
+			association.scheduleConnect();
 			return HandlerResult.CONTINUE;
 		case COMM_LOST:
-			logger.warn(String.format("Communication lost for Association=%s", associtaion.getName()));
+			logger.warn(String.format("Communication lost for Association=%s", association.getName()));
 
 			// Close the Socket
-			associtaion.close();
-			associtaion.scheduleConnect();
+			association.close();
+			association.scheduleConnect();
 			try {
-				associtaion.markAssociationDown();
-				associtaion.getAssociationListener().onCommunicationLost(associtaion);
+				association.markAssociationDown();
+				association.getAssociationListener().onCommunicationLost(association);
 			} catch (Exception e) {
-				logger.error(String.format("Exception while calling onCommunicationLost on AssociationListener for Association=%s", associtaion.getName()), e);
+				logger.error(String.format("Exception while calling onCommunicationLost on AssociationListener for Association=%s", association.getName()), e);
 			}
 			return HandlerResult.RETURN;
 		case RESTART:
-			logger.warn(String.format("Restart for Association=%s", associtaion.getName()));
+			logger.warn(String.format("Restart for Association=%s", association.getName()));
 			try {
-				associtaion.getAssociationListener().onCommunicationRestart(associtaion);
+				association.getAssociationListener().onCommunicationRestart(association);
 			} catch (Exception e) {
-				logger.error(String.format("Exception while calling onCommunicationRestart on AssociationListener for Association=%s", associtaion.getName()),
+				logger.error(String.format("Exception while calling onCommunicationRestart on AssociationListener for Association=%s", association.getName()),
 						e);
 			}
 			return HandlerResult.CONTINUE;
 		case SHUTDOWN:
 			if (logger.isInfoEnabled()) {
-				logger.info(String.format("Shutdown for Association=%s", associtaion.getName()));
+				logger.info(String.format("Shutdown for Association=%s", association.getName()));
 			}
 			try {
-				associtaion.markAssociationDown();
-				associtaion.getAssociationListener().onCommunicationShutdown(associtaion);
+				association.markAssociationDown();
+				association.getAssociationListener().onCommunicationShutdown(association);
 			} catch (Exception e) {
-				logger.error(String.format("Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", associtaion.getName()),
+				logger.error(String.format("Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", association.getName()),
 						e);
 			}
 			return HandlerResult.RETURN;
 		default:
-			logger.warn(String.format("Received unkown Event=%s for Association=%s", not.event(), associtaion.getName()));
+			logger.warn(String.format("Received unkown Event=%s for Association=%s", not.event(), association.getName()));
 			break;
 		}
 
