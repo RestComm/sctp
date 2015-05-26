@@ -200,11 +200,21 @@ public class OneToManyAssocMultiplexer {
 	}
 
 	private void initMultiChannel() throws IOException {
-		socketMultiChannel = SctpMultiChannel.open();
-		socketMultiChannel.configureBlocking(false);
-		socketMultiChannel.bind(new InetSocketAddress(this.hostAddressInfo.getPrimaryHostAddress(), this.hostAddressInfo.getHostPort()));
-		if (this.hostAddressInfo.getSecondaryHostAddress() != null && !this.hostAddressInfo.getSecondaryHostAddress().isEmpty()) {
-			socketMultiChannel.bindAddress(InetAddress.getByName(this.hostAddressInfo.getSecondaryHostAddress()));
+		try {
+			socketMultiChannel = SctpMultiChannel.open();
+			socketMultiChannel.configureBlocking(false);
+			socketMultiChannel.bind(new InetSocketAddress(this.hostAddressInfo.getPrimaryHostAddress(), this.hostAddressInfo.getHostPort()));
+			if (this.hostAddressInfo.getSecondaryHostAddress() != null && !this.hostAddressInfo.getSecondaryHostAddress().isEmpty()) {
+				socketMultiChannel.bindAddress(InetAddress.getByName(this.hostAddressInfo.getSecondaryHostAddress()));
+			}
+		} catch (IOException ex) {
+			logger.warn("Error while init multi channel: " + ex.getMessage());
+			if (socketMultiChannel.isOpen()) {
+				try {
+					socketMultiChannel.close();
+				} catch (IOException closeEx) {};
+			}
+			throw ex;
 		}
 		started.set(true);	
 		if (logger.isDebugEnabled()) {					
