@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javolution.text.TextBuilder;
 import javolution.util.FastList;
@@ -65,10 +66,7 @@ import org.mobicents.protocols.sctp.AssociationMap;
  * 		TCP ipChannelType
  * 
  * @author amit bhayani
- * @author alerant appngin
- * 
- *  MultiManagementImpl is a limited implemention OneToMany client associations.
- *   
+ * @author balogh.gabor@alerant.hu 
  */
 public class MultiManagementImpl implements Management {
 
@@ -90,7 +88,8 @@ public class MultiManagementImpl implements Management {
 	protected static final MultiSctpXMLBinding binding = new MultiSctpXMLBinding();
 	protected static final String TAB_INDENT = "\t";
 	private static final String CLASS_ATTRIBUTE = "type";
-
+	private static final AtomicInteger WORKER_POOL_INDEX = new AtomicInteger(0);
+	
 	private final String name;
 
 	protected String persistDir = null;
@@ -291,13 +290,18 @@ public class MultiManagementImpl implements Management {
 				// If not single thread model we create worker threads
 				this.executorServices = new ExecutorService[this.workerThreads];
 				for (int i = 0; i < this.workerThreads; i++) {
-					this.executorServices[i] = Executors.newSingleThreadExecutor();
+					this.executorServices[i] = Executors.newSingleThreadExecutor(new NamingThreadFactory("SCTP-" + WORKER_POOL_INDEX.incrementAndGet()));
+					//this.executorServices[i] = Executors.newSingleThreadExecutor();
+					if (logger.isDebugEnabled()) {
+						logger.debug("Executor service=" + this.executorServices[i] + " assigned to workerThread index of " + i);
+					}
 				}
 			}
+			this.socketSelector = SelectorProvider.provider().openSelector();
 			this.selectorThread = new MultiSelectorThread(this.socketSelector, this);
 			this.selectorThread.setStarted(true);
 
-			(new Thread(this.selectorThread)).start();
+			(new Thread(this.selectorThread, "SCTP-selector")).start();
 
 			this.started = true;
 
@@ -412,7 +416,7 @@ public class MultiManagementImpl implements Management {
             } catch (java.lang.NullPointerException npe) {
                 // ignore.
                 // For backward compatibility we can ignore if these values are not defined
-            }			
+            }
 
 
 			this.associations = reader.read(ASSOCIATIONS, AssociationMap.class);
@@ -528,17 +532,7 @@ public class MultiManagementImpl implements Management {
 				if (assocName.equals(associationTemp.getName())) {
 					throw new Exception(String.format("Already has association=%s", associationTemp.getName()));
 				}
-/* TODO: We should need a new condition
-				if (peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
-					throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d", associationTemp.getName(),
-							peerAddress, peerPort));
-				}
 
-				if (hostAddress.equals(associationTemp.getHostAddress()) && associationTemp.getHostPort() == hostPort) {
-					throw new Exception(String.format("Already has association=%s with same host address=%s and port=%d", associationTemp.getName(),
-							hostAddress, hostPort));
-				}
-*/
 			}
 			ManageableAssociation association = null;
 			if (isInBranchingMode()) {
@@ -692,7 +686,7 @@ public class MultiManagementImpl implements Management {
 				this.workerThreadCount = 0;
 			}
 
-			workerThreadTable[count] = this.workerThreadCount;
+			workerThreadTable[count] = this.workerThreadCount;			
 			this.workerThreadCount++;
 		}
 	}

@@ -11,6 +11,12 @@ import com.sun.nio.sctp.PeerAddressChangeNotification;
 import com.sun.nio.sctp.SendFailedNotification;
 import com.sun.nio.sctp.ShutdownNotification;
 
+/**
+ * 
+ *  @author balogh.gabor@alerant.hu
+ *
+ */
+@SuppressWarnings("restriction")
 public class OneToOneAssociationHandler extends AbstractNotificationHandler<OneToOneAssociationImpl> {
 
 	private static final Logger logger = Logger.getLogger(OneToOneAssociationHandler.class);
@@ -75,7 +81,6 @@ public class OneToOneAssociationHandler extends AbstractNotificationHandler<OneT
 
 			association.createworkerThreadTable(Math.max(this.maxInboundStreams, this.maxOutboundStreams));
 
-			// TODO assign Thread's ?
 			try {
 				association.markAssociationUp();
 				association.getAssociationListener().onCommunicationUp(association, this.maxInboundStreams, this.maxOutboundStreams);
@@ -133,8 +138,6 @@ public class OneToOneAssociationHandler extends AbstractNotificationHandler<OneT
 		if (logger.isInfoEnabled()) {
 			logger.info(String.format("Association=%s SHUTDOWN", associtaion.getName()));
 		}
-
-		// TODO assign Thread's ?
 
 		try {
 			associtaion.markAssociationDown();

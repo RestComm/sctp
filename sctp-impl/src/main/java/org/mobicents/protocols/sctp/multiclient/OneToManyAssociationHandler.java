@@ -11,6 +11,12 @@ import com.sun.nio.sctp.PeerAddressChangeNotification;
 import com.sun.nio.sctp.SendFailedNotification;
 import com.sun.nio.sctp.ShutdownNotification;
 
+/**
+ * 
+ *  @author balogh.gabor@alerant.hu
+ *
+ */
+@SuppressWarnings("restriction")
 public class OneToManyAssociationHandler extends AbstractNotificationHandler<OneToManyAssociationImpl> {
 
 	private static final Logger logger = Logger.getLogger(OneToManyAssociationHandler.class);

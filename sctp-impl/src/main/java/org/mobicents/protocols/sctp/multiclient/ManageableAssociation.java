@@ -9,7 +9,16 @@ import java.nio.channels.spi.AbstractSelectableChannel;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.PayloadData;
 
-import com.sun.nio.sctp.MessageInfo;
+/**
+ * Abstract super class for associations.
+ * It represents an SCTP association with an interface which provides management functionality 
+ * like: start, stop, reconnect. 
+ * It also defines static classes to describe associations: PeerAddressInfo, HostAddressInfo, 
+ * AssociationInfo used by other classes to identify and compare association objects. 
+ * 
+ * @author balogh.gabor@alerant.hu
+ *
+ */
 
 public abstract class ManageableAssociation implements Association {
 	
@@ -193,31 +202,5 @@ public abstract class ManageableAssociation implements Association {
 			this.hostInfo = hostInfo;
 		}
 
-	}
-	
-	static class SctpMessage {
-		private final PayloadData payloadData;
-		private final MessageInfo messageInfo;
-		private final ManageableAssociation senderAssoc;
-		protected SctpMessage(PayloadData payloadData, MessageInfo messageInfo, ManageableAssociation senderAssoc) {
-			super();
-			this.payloadData = payloadData;
-			this.messageInfo = messageInfo;
-			this.senderAssoc = senderAssoc;
-		}
-		protected PayloadData getPayloadData() {
-			return payloadData;
-		}
-		protected MessageInfo getMessageInfo() {
-			return messageInfo;
-		}
-		protected ManageableAssociation getSenderAssoc() {
-			return senderAssoc;
-		}
-		@Override
-		public String toString() {
-			return "SctpMessage [payloadData=" + payloadData + ", messageInfo="
-					+ messageInfo + ", senderAssoc=" + senderAssoc + "]";
-		}
 	}
 }

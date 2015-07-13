@@ -32,12 +32,14 @@ import com.sun.nio.sctp.SendFailedNotification;
 import com.sun.nio.sctp.ShutdownNotification;
 
 /**
- * Implements NotificationHandler for the OneToManyAssocMultiplexer class. Its main responsibility is to delegate the notification to the NotificationHandler of the corresponding
- * OneToManyAssociationImpl. Each handler method calls the resolveAssociatonImpl method to find the corresponding Association. 
+ * Implements NotificationHandler for the OneToManyAssocMultiplexer class. 
+ * Its main responsibility is to delegate notifications to the NotificationHandler of the corresponding
+ * OneToManyAssociationImpl. 
  * 
- * @author alerant appngin
+ *  @author balogh.gabor@alerant.hu
  * 
  */
+@SuppressWarnings("restriction")
 class MultiAssociationHandler extends AbstractNotificationHandler<OneToManyAssocMultiplexer> {
 
 	private static final Logger logger = Logger.getLogger(MultiAssociationHandler.class);
@@ -49,7 +51,7 @@ class MultiAssociationHandler extends AbstractNotificationHandler<OneToManyAssoc
 
 	/**
 	 * The delegateNotificationHandling method resolves the OneToManyAssociationImpl instance which belongs to the given Notification and calls the handleNotification method of the resolved Association.
-	 * In case the association instance can not be resolved the method returns the value of the defaultResult parameter. 
+	 * In case the association instance can not be resolved the method returns the value of the defaultResult parameter.
 	 * 
 	 * @param not  - Notification that need to be delegated 
 	 * @param defaultResult - Default return value used when Association instance can not be resolved

@@ -47,11 +47,6 @@ public class MultiWorker implements Runnable {
 		this.payloadData = payloadData;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Runnable#run()
-	 */
 	@Override
 	public void run() {
 		try {

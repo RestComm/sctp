@@ -25,7 +25,7 @@ import java.nio.channels.spi.AbstractSelectableChannel;
 
 /**
  * @author amit bhayani
- * @author alerant appngin
+ * @author balogh.gabor@alerant.hu
  * 
  */
 public final class MultiChangeRequest {
@@ -127,9 +127,6 @@ public final class MultiChangeRequest {
 		return executionTime;
 	}
 
-	/* (non-Javadoc)
-	 * @see java.lang.Object#toString()
-	 */
 	@Override
 	public String toString() {
 		return "MultiChangeRequest [type=" + type + ", ops=" + ops
@@ -138,6 +135,4 @@ public final class MultiChangeRequest {
 				+ ", multiAssocRequest=" + multiAssocRequest
 				+ ", executionTime=" + executionTime + "]";
 	}
-	
-	
 }

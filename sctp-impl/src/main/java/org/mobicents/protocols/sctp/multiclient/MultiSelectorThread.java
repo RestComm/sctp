@@ -37,9 +37,10 @@ import com.sun.nio.sctp.AssociationChangeNotification.AssocChangeEvent;
 
 /**
  * @author amit bhayani
- * @author alerant appngin
+ * @author balogh.gabo@alerant.hu
  * 
  */
+@SuppressWarnings("restriction")
 public class MultiSelectorThread implements Runnable {
 
 	protected static final Logger logger = Logger.getLogger(MultiSelectorThread.class);
@@ -70,11 +71,6 @@ public class MultiSelectorThread implements Runnable {
 		this.started = started;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Runnable#run()
-	 */
 	@Override
 	public void run() {
 		if (logger.isInfoEnabled()) {

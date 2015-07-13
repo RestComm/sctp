@@ -10,7 +10,7 @@ import org.apache.log4j.Logger;
 /**
  * Stores and manages of the OneToManyAssocMultiplexer instances of a MultiManagementImpl (SCTP stack)
  * 
- * @author alerant appngin
+ * @author balogh.gabor@alerant.hu
  *
  */
 public class MultiChannelController {

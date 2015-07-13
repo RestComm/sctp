@@ -26,9 +26,10 @@ import com.sun.nio.sctp.SctpChannel;
 
 /**
  * @author amit bhayani
- * @
+ * @author balogh.gabor@alerant.hu
  * 
  */
+@SuppressWarnings("restriction")
 public class OneToOneAssociationImpl extends ManageableAssociation {
 
 	protected static final Logger logger = Logger.getLogger(OneToOneAssociationImpl.class.getName());
@@ -361,16 +362,23 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 				// If single thread model the listener should be called in the
 				// selector thread itself
 				try {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Association " + getName() + " read(): singleThread callback");
+					}
 					this.associationListener.onPayload(this, payload);
 				} catch (Exception e) {
 					logger.error(String.format("Error while calling Listener for Association=%s.Payload=%s", this.name,
 							payload), e);
 				}
 			} else {
+				
 				MultiWorker worker = new MultiWorker(this, this.associationListener, payload);
 
 				ExecutorService executorService = this.management.getExecutorService(this.workerThreadTable[payload
 						.getStreamNumber()]);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Association " + getName() + " read(): payload.streamNumber="+payload.getStreamNumber()+ ", executorSerice=" + executorService);
+				}
 				try {
 					executorService.execute(worker);
 				} catch (RejectedExecutionException e) {
@@ -433,7 +441,6 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 
 			if (txBuffer.hasRemaining()) {
 				// All data wasn't sent in last doWrite. Try to send it now
-				// this.socketChannel.send(txBuffer, msgInfo);
 				this.doSend();
 			}
 
@@ -512,13 +519,9 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	}
 
 	private int doSend() throws IOException {
-		return this.doSendSctp();
-	}
-
-	private int doSendSctp() throws IOException {
 		return this.socketChannelSctp.send(txBuffer, msgInfo);
 	}
-
+	
 	protected void close() {
 		if (this.getSocketChannel() != null) {
 			try {
@@ -628,6 +631,11 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	protected void createworkerThreadTable(int maximumBooundStream) {
 		this.workerThreadTable = new int[maximumBooundStream];
 		this.management.populateWorkerThread(this.workerThreadTable);
+		for (int i=0;i<this.workerThreadTable.length;i++) {
+			if (logger.isDebugEnabled()) {
+				logger.debug(" Association " + getName() + "'s workerThread table entry with index of " + i + " is assigned to workerThread " + this.workerThreadTable[i]);
+			}
+		}
 	}
 
 	/*
@@ -667,7 +675,6 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	protected static final XMLFormat<OneToOneAssociationImpl> ASSOCIATION_XML = new XMLFormat<OneToOneAssociationImpl>(
 			OneToOneAssociationImpl.class) {
 
-		@SuppressWarnings("unchecked")
 		@Override
 		public void read(javolution.xml.XMLFormat.InputElement xml, OneToOneAssociationImpl association)
 				throws XMLStreamException {
@@ -727,6 +734,9 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 				// If single thread model the listener should be called in the
 				// selector thread itself
 				try {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Association " + getName() + " readPayload(): singleThread callback");
+					}
 					this.associationListener.onPayload(this, payload);
 				} catch (Exception e) {
 					logger.error(String.format("Error while calling Listener for Association=%s.Payload=%s", this.name,
@@ -734,7 +744,9 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 				}
 			} else {
 				MultiWorker worker = new MultiWorker(this, this.associationListener, payload);
-
+				if (logger.isDebugEnabled()) {
+					logger.debug("Association " + getName() + " readPayload(): payload.streamNumber="+payload.getStreamNumber());
+				}
 				ExecutorService executorService = this.management.getExecutorService(this.workerThreadTable[payload
 						.getStreamNumber()]);
 				try {

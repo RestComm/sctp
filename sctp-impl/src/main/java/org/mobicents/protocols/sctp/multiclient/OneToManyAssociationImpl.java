@@ -21,10 +21,11 @@ import org.mobicents.protocols.api.PayloadData;
 
 import com.sun.nio.sctp.MessageInfo;
 
-/*
- * This Association implementation is limited to ONE-TO-MANY TYPE CLIENT SCTP association
+/**
+ * This Association implementation is limited to ONE-TO-MANY TYPE CLIENT SCTP association.
+ * @author balogh.gabor@alerant.hu 
  */
-
+@SuppressWarnings("restriction")
 public class OneToManyAssociationImpl extends ManageableAssociation {
 
 	protected static final Logger logger = Logger.getLogger(OneToManyAssociationImpl.class);
@@ -46,7 +47,6 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 
 	private AssociationListener associationListener = null;
 	
-	//TODO see dev notes
 	private ByteBuffer txBuffer = ByteBuffer.allocateDirect(8192);
 
 	protected final OneToManyAssociationHandler associationHandler = new OneToManyAssociationHandler();
@@ -114,8 +114,6 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 			}
 		}
 		scheduleConnect();
-
-
 	}
 
 	public void stop() throws Exception {
@@ -395,14 +393,6 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 		return multiplexer.getSocketMultiChannel().send(txBuffer, msgInfo);
 	}
 
-		
-	private void checkSocketIsOpen() throws Exception {
-		if (!started.get()) {
-				throw new Exception(String.format(
-						"Association is not open (started) Association=%s",	this.name));
-		}	
-	}
-
 	protected void reconnect() {
 		try {
 			doInitiateConnectionSctp();
@@ -453,57 +443,6 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 		}
 	}
 
-	protected void initiateConnection() throws IOException {
-
-	/*	// If Association is stopped, don't try to initiate connect
-		if (!this.started) {
-			return;
-		}
-
-		if (this.getSocketChannel() != null) {
-			try {
-				this.getSocketChannel().close();
-			} catch (Exception e) {
-				logger.error(
-						String.format(
-								"Exception while trying to close existing sctp socket and initiate new socket for Association=%s",
-								this.name), e);
-			}
-		}
-
-		try {
-			if (this.ipChannelType == IpChannelType.SCTP)
-				this.doInitiateConnectionSctp();
-			else
-				this.doInitiateConnectionTcp();
-		} catch (Exception e) {
-			logger.error("Error while initiating a connection", e);
-			this.scheduleConnect();
-			return;
-		}
-
-		// reset the ioErrors
-		this.ioErrors = 0;
-
-		// Queue a channel registration since the caller is not the
-		// selecting thread. As part of the registration we'll register
-		// an interest in connection events. These are raised when a channel
-		// is ready to complete connection establishment.
-		FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
-		synchronized (pendingChanges) {
-			pendingChanges.add(new MultiChangeRequest(this.getSocketChannel(), this, MultiChangeRequest.REGISTER,
-					SelectionKey.OP_WRITE));
-		}
-
-		sendInit();
-		this.connecting = true;
-		// Finally, wake up our selecting thread so it can make the required
-		// changes
-		this.management.getSocketSelector().wakeup();
-*/
-	}
-
-
 	private void doInitiateConnectionSctp() throws IOException {
 		this.multiplexer =  management.getMultiChannelController().register(this);
 		//send init msg
@@ -536,7 +475,6 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 	protected static final XMLFormat<OneToManyAssociationImpl> ASSOCIATION_XML = new XMLFormat<OneToManyAssociationImpl>(
 			OneToManyAssociationImpl.class) {
 
-		@SuppressWarnings("unchecked")
 		@Override
 		public void read(javolution.xml.XMLFormat.InputElement xml, OneToManyAssociationImpl association)
 				throws XMLStreamException {

@@ -19,12 +19,12 @@ import javolution.util.FastList;
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.PayloadData;
 import org.mobicents.protocols.sctp.multiclient.ManageableAssociation.HostAddressInfo;
-import org.mobicents.protocols.sctp.multiclient.ManageableAssociation.SctpMessage;
 
 import com.sun.nio.sctp.MessageInfo;
 import com.sun.nio.sctp.SctpChannel;
 import com.sun.nio.sctp.SctpMultiChannel;
 
+@SuppressWarnings("restriction")
 public class OneToManyAssocMultiplexer {
 	private static final Logger logger = Logger.getLogger(OneToManyAssocMultiplexer.class);
 	
@@ -41,7 +41,7 @@ public class OneToManyAssocMultiplexer {
 
 
 	// Queue holds payloads to be transmitted
-	private ConcurrentLinkedQueueSwapper<SctpMessage> txQueueSwapper = new ConcurrentLinkedQueueSwapper(new ConcurrentLinkedQueue<SctpMessage>());
+	private ConcurrentLinkedQueueSwapper<SctpMessage> txQueueSwapper = new ConcurrentLinkedQueueSwapper<SctpMessage>(new ConcurrentLinkedQueue<SctpMessage>());
 	
 	private CopyOnWriteArrayList<ManageableAssociation> pendingAssocs = new CopyOnWriteArrayList<ManageableAssociation>();
 	private ConcurrentHashMap<Integer, ManageableAssociation> connectedAssocs = new ConcurrentHashMap<Integer, ManageableAssociation>();
@@ -103,11 +103,11 @@ public class OneToManyAssocMultiplexer {
 		}
 		this.hostAddressInfo = hostAddressInfo;
 		this.management = management;
-		// clean receiver buffer
 		this.rxBuffer.clear();
 		this.rxBuffer.rewind();
 		this.rxBuffer.flip();
 		initMultiChannel();
+		started.set(true);	
 	}
 
 	protected void registerAssociation(ManageableAssociation association) {
@@ -122,20 +122,10 @@ public class OneToManyAssocMultiplexer {
 		if (!started.compareAndSet(false, true)) {
 			return;
 		}
-		socketMultiChannel = SctpMultiChannel.open();
-		socketMultiChannel.configureBlocking(false);
-		socketMultiChannel.bind(new InetSocketAddress(this.hostAddressInfo.getPrimaryHostAddress(), this.hostAddressInfo.getHostPort()));
-		if (this.hostAddressInfo.getSecondaryHostAddress() != null && !this.hostAddressInfo.getSecondaryHostAddress().isEmpty()) {
-			socketMultiChannel.bindAddress(InetAddress.getByName(this.hostAddressInfo.getSecondaryHostAddress()));
-		}
-		if (logger.isDebugEnabled()) {					
-			logger.debug("New socketMultiChanel is created: "+socketMultiChannel+" supported options: "+socketMultiChannel.validOps()+":"+socketMultiChannel.supportedOptions());
-		}
-		FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
-		synchronized (pendingChanges) {
-			pendingChanges.add(new MultiChangeRequest(this.socketMultiChannel, this, null, MultiChangeRequest.REGISTER,
-					SelectionKey.OP_WRITE|SelectionKey.OP_READ));
-		}	
+		this.rxBuffer.clear();
+		this.rxBuffer.rewind();
+		this.rxBuffer.flip();
+		initMultiChannel();
 	}
 
 	protected void assignSctpAssocIdToAssociation(Integer id, ManageableAssociation association) {
@@ -180,10 +170,6 @@ public class OneToManyAssocMultiplexer {
 		return ret;
 	}
 
-	protected boolean removeAssociationFromPendingAssociations(ManageableAssociation association) {
-		return this.pendingAssocs.remove(association);
-	}
-
 	protected ManageableAssociation findPendingAssociationByAddress(SocketAddress address) {
 		String peerAddress = address.toString();
 		if (logger.isDebugEnabled()) {
@@ -216,7 +202,7 @@ public class OneToManyAssocMultiplexer {
 			}
 			throw ex;
 		}
-		started.set(true);	
+
 		if (logger.isDebugEnabled()) {					
 			logger.debug("New socketMultiChanel is created: "+socketMultiChannel+" supported options: "+socketMultiChannel.validOps()+":"+socketMultiChannel.supportedOptions());
 		}
@@ -418,5 +404,31 @@ public class OneToManyAssocMultiplexer {
 		}
 		pendingAssocs.clear();
 		this.socketMultiChannel.close();
+	}
+	
+	static class SctpMessage {
+		private final PayloadData payloadData;
+		private final MessageInfo messageInfo;
+		private final ManageableAssociation senderAssoc;
+		protected SctpMessage(PayloadData payloadData, MessageInfo messageInfo, ManageableAssociation senderAssoc) {
+			super();
+			this.payloadData = payloadData;
+			this.messageInfo = messageInfo;
+			this.senderAssoc = senderAssoc;
+		}
+		protected PayloadData getPayloadData() {
+			return payloadData;
+		}
+		protected MessageInfo getMessageInfo() {
+			return messageInfo;
+		}
+		protected ManageableAssociation getSenderAssoc() {
+			return senderAssoc;
+		}
+		@Override
+		public String toString() {
+			return "SctpMessage [payloadData=" + payloadData + ", messageInfo="
+					+ messageInfo + ", senderAssoc=" + senderAssoc + "]";
+		}
 	}
 }

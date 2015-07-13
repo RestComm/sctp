@@ -21,8 +21,7 @@
  */
 package org.mobicents.protocols.sctp.multiclient;
 
-import java.util.Iterator;
-import java.util.Map;
+import java.util.Map.Entry;
 
 import javolution.xml.XMLBinding;
 import javolution.xml.XMLFormat;
@@ -32,36 +31,34 @@ import org.mobicents.protocols.sctp.AssociationMap;
 
 /**
  * @author amit bhayani
- * @author alerant appngin
+ * @author balogh.gabor@alerant.hu
  */
+@SuppressWarnings("serial")
 public class MultiSctpXMLBinding extends XMLBinding {
 
-	protected static final XMLFormat<AssociationMap> ASSOCIATION_MAP = new XMLFormat<AssociationMap>(AssociationMap.class) {
+	protected static final XMLFormat<AssociationMap<String, OneToManyAssociationImpl>> ASSOCIATION_MAP = new XMLFormat<AssociationMap<String, OneToManyAssociationImpl>>(null) {
 
 		@Override
-		public void write(AssociationMap obj, javolution.xml.XMLFormat.OutputElement xml) throws XMLStreamException {
-			final Map map = (Map) obj;
-
-			for (Iterator it = map.entrySet().iterator(); it.hasNext();) {
-				Map.Entry entry = (Map.Entry) it.next();
-
+		public void write(AssociationMap<String, OneToManyAssociationImpl> obj, javolution.xml.XMLFormat.OutputElement xml) throws XMLStreamException {
+			for (Entry<String, OneToManyAssociationImpl> entry:  obj.entrySet()) {				
 				xml.add((String) entry.getKey(), "name", String.class);
 				xml.add((OneToManyAssociationImpl) entry.getValue(), "association", OneToManyAssociationImpl.class);
 			}
 		}
 
 		@Override
-		public void read(javolution.xml.XMLFormat.InputElement xml, AssociationMap obj) throws XMLStreamException {
+		public void read(javolution.xml.XMLFormat.InputElement xml, AssociationMap<String, OneToManyAssociationImpl> obj) throws XMLStreamException {
 			while (xml.hasNext()) {
 				String key = xml.get("name", String.class);
 				OneToManyAssociationImpl association = xml.get("association", OneToManyAssociationImpl.class);
 				obj.put(key, association);
 			}
 		}
-
 	};
-
-	protected XMLFormat getFormat(Class forClass) throws XMLStreamException {
+	
+	
+	@SuppressWarnings("rawtypes")
+	protected XMLFormat<?> getFormat( Class forClass) throws XMLStreamException {
 		if (AssociationMap.class.equals(forClass)) {
 			return ASSOCIATION_MAP;
 		}
