@@ -631,11 +631,6 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	protected void createworkerThreadTable(int maximumBooundStream) {
 		this.workerThreadTable = new int[maximumBooundStream];
 		this.management.populateWorkerThread(this.workerThreadTable);
-		for (int i=0;i<this.workerThreadTable.length;i++) {
-			if (logger.isDebugEnabled()) {
-				logger.debug(" Association " + getName() + "'s workerThread table entry with index of " + i + " is assigned to workerThread " + this.workerThreadTable[i]);
-			}
-		}
 	}
 
 	/*

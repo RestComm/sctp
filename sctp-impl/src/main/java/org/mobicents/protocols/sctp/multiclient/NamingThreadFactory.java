@@ -1,5 +1,6 @@
 package org.mobicents.protocols.sctp.multiclient;
 
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -12,26 +13,29 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  */
 public class NamingThreadFactory implements ThreadFactory {
-
-    private final ThreadGroup group;
+	
+    private ThreadFactory delegate;
     private String baseName;
-    private final AtomicInteger index = new AtomicInteger(1);
+    private AtomicInteger index;
 
     public NamingThreadFactory(String baseName) {
-        this.baseName = baseName;
-        SecurityManager s = System.getSecurityManager();
-        group = (s != null) ? s.getThreadGroup() :
-                              Thread.currentThread().getThreadGroup();
+        this(baseName, null);
     }
 
-     public Thread newThread(Runnable r) {
-        Thread t = new Thread(group, r,
-        					"pool-" + baseName + "-thread-" + index.getAndIncrement(),
-                              0);
-        if (t.isDaemon())
-            t.setDaemon(false);
-        if (t.getPriority() != Thread.NORM_PRIORITY)
-            t.setPriority(Thread.NORM_PRIORITY);
-        return t;
+    public NamingThreadFactory(String baseName, ThreadFactory delegate) {
+        this.baseName = baseName;
+        this.delegate = delegate;
+        if (this.delegate == null) {
+            this.delegate = Executors.defaultThreadFactory();
+        }
+        this.index = new AtomicInteger(1);
+    }
+
+    @Override
+    public Thread newThread(Runnable r) {
+        String name = "pool-" + baseName + "-thread-" + index.getAndIncrement();
+        Thread ret = delegate.newThread(r);
+        ret.setName(name);
+        return ret;
     }
 }

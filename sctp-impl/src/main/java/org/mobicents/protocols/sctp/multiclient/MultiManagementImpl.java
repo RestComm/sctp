@@ -291,10 +291,6 @@ public class MultiManagementImpl implements Management {
 				this.executorServices = new ExecutorService[this.workerThreads];
 				for (int i = 0; i < this.workerThreads; i++) {
 					this.executorServices[i] = Executors.newSingleThreadExecutor(new NamingThreadFactory("SCTP-" + WORKER_POOL_INDEX.incrementAndGet()));
-					//this.executorServices[i] = Executors.newSingleThreadExecutor();
-					if (logger.isDebugEnabled()) {
-						logger.debug("Executor service=" + this.executorServices[i] + " assigned to workerThread index of " + i);
-					}
 				}
 			}
 			this.socketSelector = SelectorProvider.provider().openSelector();
