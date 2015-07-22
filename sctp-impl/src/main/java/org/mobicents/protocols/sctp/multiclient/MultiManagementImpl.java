@@ -56,14 +56,14 @@ import org.mobicents.protocols.api.ServerListener;
 import org.mobicents.protocols.sctp.AssociationMap;
 
 /**
- * This class is a partial implementation of the Management interface of the sctp-api. 
+ * This class is a partial implementation of the Management interface of the Mobicents SCTP-API. 
  * It is partial because it does not support the whole functionality of the interface instead
- * it extends the capabilities of the implementition provided by org.mobicents.protocols.sctp package
+ * it extends the capabilities of the implementation provided by org.mobicents.protocols.sctp package
  * with the capability to use One-To-Many type SCTP client associations.
  * 
  * Therefore the following functionality is not supported by this class:
- * 		server type associations
- * 		TCP ipChannelType
+ *     server type associations
+ *     TCP ipChannelType
  * 
  * @author amit bhayani
  * @author balogh.gabor@alerant.hu 
@@ -85,7 +85,7 @@ public class MultiManagementImpl implements Management {
 
 	private final TextBuilder persistFile = TextBuilder.newInstance();
 
-	protected static final MultiSctpXMLBinding binding = new MultiSctpXMLBinding();
+	protected final MultiSctpXMLBinding binding;
 	protected static final String TAB_INDENT = "\t";
 	private static final String CLASS_ATTRIBUTE = "type";
 	private static final AtomicInteger WORKER_POOL_INDEX = new AtomicInteger(0);
@@ -129,12 +129,18 @@ public class MultiManagementImpl implements Management {
 
 	public MultiManagementImpl(String name) throws IOException {
 		this.name = name;
-		binding.setClassAttribute(CLASS_ATTRIBUTE);		
-		binding.setAlias(OneToManyAssociationImpl.class, "association");
-		binding.setAlias(String.class, "string");
-		this.socketSelector = SelectorProvider.provider().openSelector();
 		String enableBranchingString = System.getProperty(ENABLE_SCTP_ASSOC_BRANCHING, "true");
 		this.enableBranching = Boolean.valueOf(enableBranchingString);
+		this.binding =  new MultiSctpXMLBinding(enableBranching);
+		this.binding.setClassAttribute(CLASS_ATTRIBUTE);		
+		if (enableBranching) {
+			this.binding.setAlias(OneToManyAssociationImpl.class, "association");
+		} else {
+			this.binding.setAlias(OneToOneAssociationImpl.class, "association");
+		}
+		this.binding.setAlias(String.class, "string");
+		this.socketSelector = SelectorProvider.provider().openSelector();
+	
 	}
 
 	/**
@@ -414,14 +420,13 @@ public class MultiManagementImpl implements Management {
                 // For backward compatibility we can ignore if these values are not defined
             }
 
-
 			this.associations = reader.read(ASSOCIATIONS, AssociationMap.class);
+
 			for (FastMap.Entry<String, ManageableAssociation> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
 				n.getValue().setManagement(this);
 			}
 		} catch (XMLStreamException ex) {
-			// this.logger.info(
-			// "Error while re-creating Linksets from persisted file", ex);
+			logger.error("Error while re-creating Linksets from persisted file", ex);
 		}
 	}
 

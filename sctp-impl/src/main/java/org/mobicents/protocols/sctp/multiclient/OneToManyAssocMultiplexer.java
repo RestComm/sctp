@@ -6,7 +6,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -23,7 +22,11 @@ import org.mobicents.protocols.sctp.multiclient.ManageableAssociation.HostAddres
 import com.sun.nio.sctp.MessageInfo;
 import com.sun.nio.sctp.SctpChannel;
 import com.sun.nio.sctp.SctpMultiChannel;
-
+/**
+ * Controls the read, write and init operations of SCTP associations of a SctpMultiChannel.
+ * 
+ * @author balogh.gabor@alerant.hu 
+ */
 @SuppressWarnings("restriction")
 public class OneToManyAssocMultiplexer {
 	private static final Logger logger = Logger.getLogger(OneToManyAssocMultiplexer.class);
@@ -49,7 +52,7 @@ public class OneToManyAssocMultiplexer {
 	protected final MultiAssociationHandler associationHandler = new MultiAssociationHandler();
 	
 	/*
-	 * Support fast and save queue operations like:
+	 * Support fast and save queue operations like: swap, conactAsHead.
 	 * 	
 	 */
 	static class ConcurrentLinkedQueueSwapper<T> {
@@ -257,8 +260,6 @@ public class OneToManyAssocMultiplexer {
 			return;
 		}
 		ConcurrentLinkedQueue<SctpMessage> txQueueTmp = txQueueSwapper.swap(new ConcurrentLinkedQueue<SctpMessage>());
-		HashSet<String> skipList = new HashSet<String>();
-		ConcurrentLinkedQueue<SctpMessage> retransmitQueue = new ConcurrentLinkedQueue<SctpMessage>();
 		
 		if (txQueueTmp.isEmpty()) {
 			// We wrote away all data, so we're no longer interested
@@ -273,21 +274,9 @@ public class OneToManyAssocMultiplexer {
 
 		while (!txQueueTmp.isEmpty()) {
 			SctpMessage msg = txQueueTmp.poll();
-			if (skipList.contains(msg.getSenderAssoc().getName())) {
-				retransmitQueue.add(msg);
-			} else {
-				if (!msg.getSenderAssoc().writePayload(msg.getPayloadData())) {
-					skipList.add(msg.getSenderAssoc().getName());
-					retransmitQueue.add(msg);
-				}
-			}
+			msg.getSenderAssoc().writePayload(msg.getPayloadData());
 		}
 
-		if (!retransmitQueue.isEmpty()) {
-			txQueueSwapper.concatAsHead(retransmitQueue);
-		}
-		
-		//TODO see dev notes
 		if (txQueueTmp.isEmpty()) {
 			// We wrote away all data, so we're no longer interested
 			// in writing on this socket. Switch back to waiting for
@@ -330,7 +319,6 @@ public class OneToManyAssocMultiplexer {
 		}
 	
 	}
-
 
 	protected void read() {
 		if (!started.get()) {
@@ -375,7 +363,7 @@ public class OneToManyAssocMultiplexer {
 					logger.error(ex);
 				}
 			}
-		}
+		};
 		if (logger.isDebugEnabled()) {
 			logger.debug("resolveAssociationImpl result for sctpAssocId: "+sctpAssociation.associationID()+" is "+association);
 		}
@@ -405,7 +393,7 @@ public class OneToManyAssocMultiplexer {
 		pendingAssocs.clear();
 		this.socketMultiChannel.close();
 	}
-	
+
 	static class SctpMessage {
 		private final PayloadData payloadData;
 		private final MessageInfo messageInfo;

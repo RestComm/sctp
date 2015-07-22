@@ -12,6 +12,7 @@ import com.sun.nio.sctp.SendFailedNotification;
 import com.sun.nio.sctp.ShutdownNotification;
 
 /**
+ * Handles notifications for OneToManyAssociationImpl objects.
  * 
  *  @author balogh.gabor@alerant.hu
  *
@@ -82,7 +83,6 @@ public class OneToManyAssociationHandler extends AbstractNotificationHandler<One
 
 			association.createworkerThreadTable(Math.max(this.maxInboundStreams, this.maxOutboundStreams));
 
-			// TODO assign Thread's ?
 			try {
 				association.markAssociationUp();
 				association.getAssociationListener().onCommunicationUp(association, this.maxInboundStreams, this.maxOutboundStreams);
@@ -143,8 +143,6 @@ public class OneToManyAssociationHandler extends AbstractNotificationHandler<One
 			logger.info(String.format("Association=%s SHUTDOWN", associtaion.getName()));
 		}
 
-		// TODO assign Thread's ?
-
 		try {
 			associtaion.markAssociationDown();
 			associtaion.getAssociationListener().onCommunicationShutdown(associtaion);
@@ -164,9 +162,8 @@ public class OneToManyAssociationHandler extends AbstractNotificationHandler<One
 
 	@Override
 	public  HandlerResult handleNotification(PeerAddressChangeNotification notification, OneToManyAssociationImpl associtaion) {
-		//associtaion.peerSocketAddress = notification.address();
-		if(logger.isEnabledFor(Priority.WARN)){
-			logger.warn(String.format("Peer Address changed to=%s for Association=%s", notification.address(), associtaion.getName()));
+		if(logger.isEnabledFor(Priority.INFO)){
+			logger.info(String.format("Peer Address changed to=%s for Association=%s", notification.address(), associtaion.getName()));
 		}
 		return HandlerResult.CONTINUE;
 	}

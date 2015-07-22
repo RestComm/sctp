@@ -22,7 +22,9 @@ import org.mobicents.protocols.api.PayloadData;
 import com.sun.nio.sctp.MessageInfo;
 
 /**
- * This Association implementation is limited to ONE-TO-MANY TYPE CLIENT SCTP association.
+ * Implements a one-to-many type ManagableAssociation. Used when associations is NOT peeled off the sctp multi channel sockets to
+ * a separate sctp socket channel.
+ * 
  * @author balogh.gabor@alerant.hu 
  */
 @SuppressWarnings("restriction")
@@ -66,14 +68,17 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 	private OneToManyAssocMultiplexer multiplexer;
 
 	/**
-	 * Count of number of IO Errors occured. If this exceeds the maxIOErrors set
-	 * in Management, socket will be closed and request to reopen the cosket
-	 * will be initiated
-	 */
-	//TODO see dev notes
+	 * Count of number of IO Errors occured. 
+	*/
 	private volatile int ioErrors = 0;
 	
 
+	public OneToManyAssociationImpl() {
+		txBuffer.clear();
+		txBuffer.rewind();
+		txBuffer.flip();
+	}
+	
 	/**
 	 * Creating a CLIENT Association
 	 * 
@@ -210,7 +215,6 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 			logger.debug("Association: "+this+" has been already marked DOWN");
 			return;
 		}
-		
 		for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
 			try {
 				lstr.onAssociationDown(this);
@@ -287,8 +291,6 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 		}
 
 		if (this.management.isSingleThread()) {
-			// If single thread model the listener should be called in the
-			// selector thread itself
 			try {
 				this.associationListener.onPayload(this, payload);
 			} catch (Exception e) {
@@ -479,7 +481,7 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 		public void read(javolution.xml.XMLFormat.InputElement xml, OneToManyAssociationImpl association)
 				throws XMLStreamException {
 			association.name = xml.getAttribute(NAME, "");
-			//association.type = AssociationType.getAssociationType(xml.getAttribute(ASSOCIATION_TYPE, ""));
+
 			association.hostAddress = xml.getAttribute(HOST_ADDRESS, "");
 			association.hostPort = xml.getAttribute(HOST_PORT, 0);
 
@@ -494,7 +496,11 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 			for (int i = 0; i < extraHostAddressesSize; i++) {
 				association.extraHostAddresses[i] = xml.get(EXTRA_HOST_ADDRESS, String.class);
 			}
-
+			try {
+				association.initDerivedFields();
+			} catch (IOException e) {
+				logger.error("Unable to load association from XML: error while calculating derived fields", e);
+			}
 		}
 
 		@Override

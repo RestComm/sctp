@@ -26,8 +26,10 @@ import org.mobicents.protocols.api.AssociationListener;
 import org.mobicents.protocols.api.PayloadData;
 
 /**
- * @author amit bhayani
+ * The MultiWorker class is a runnable task which runs the onPayload callback method of the associated associationListener.
  * 
+ * @author amit bhayani
+ * @author balogh.gabor@alerant.hu
  */
 public class MultiWorker implements Runnable {
 

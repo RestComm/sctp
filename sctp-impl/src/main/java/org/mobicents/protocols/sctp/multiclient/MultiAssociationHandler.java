@@ -43,7 +43,7 @@ import com.sun.nio.sctp.ShutdownNotification;
 class MultiAssociationHandler extends AbstractNotificationHandler<OneToManyAssocMultiplexer> {
 
 	private static final Logger logger = Logger.getLogger(MultiAssociationHandler.class);
-	
+
 
 	public MultiAssociationHandler() {
 
@@ -88,10 +88,11 @@ class MultiAssociationHandler extends AbstractNotificationHandler<OneToManyAssoc
 		if (logger.isDebugEnabled()) {
 			logger.debug("handleNotification(AssociationChangeNotification=" + not + ", OneToManyAssocMultiplexer=" + multiplexer + ") is called");
 		}
+
 		if (not.association() == null) {
 			logger.error("Cannot handle AssociationChangeNotification: association method of AssociationChangeNotification: "+not+" returns null value, handler returns CONTINUE");
 			return HandlerResult.CONTINUE;
-		}		
+		}
 		return delegateNotificationHandling(not, HandlerResult.CONTINUE, multiplexer);
 	}
 
@@ -114,7 +115,7 @@ class MultiAssociationHandler extends AbstractNotificationHandler<OneToManyAssoc
 		}
 		ManageableAssociation assoc = multiplexer.findPendingAssociationByAddress(notification.address());
 		if (assoc == null) {
-			logger.warn("Can not handle sendfafiled notification: no pending manageable association found for address=" + notification.address() + " by the multiplexer");
+			logger.warn("Can not handle sendfailed notification: no pending manageable association found for address=" + notification.address() + " by the multiplexer");
 			return HandlerResult.RETURN;
 		}
 		//delegate notification
@@ -134,7 +135,7 @@ class MultiAssociationHandler extends AbstractNotificationHandler<OneToManyAssoc
 			logger.debug("handleNotification(PeerAddressChangeNotification notification, OneToManyAssocMultiplexer multiplexer) is called");
 		}
 		if (notification.association() == null) {
-			logger.error("Cannot handle PeerAddressChangeNotification: assoction method of PeerAddressChangeNotification: "+notification+" returns null value, handler returns CONTINUE");
+			logger.error("Cannot handle PeerAddressChangeNotification: assoction method of PeerAddressChangeNotification: "+notification+" returns null value, handler returns RETURN");
 			return HandlerResult.RETURN;
 		}		
 		return delegateNotificationHandling(notification, HandlerResult.RETURN, multiplexer);		

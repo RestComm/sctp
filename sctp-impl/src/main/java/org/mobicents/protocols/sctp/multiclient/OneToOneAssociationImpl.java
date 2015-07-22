@@ -25,6 +25,9 @@ import com.sun.nio.sctp.MessageInfo;
 import com.sun.nio.sctp.SctpChannel;
 
 /**
+ * Implements a one-to-one type ManagableAssociation. Used when associations is peeled off the sctp multi channel sockets to
+ * a separate sctp socket channel.
+ * 
  * @author amit bhayani
  * @author balogh.gabor@alerant.hu
  * 
@@ -79,6 +82,19 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	 */
 	private volatile int ioErrors = 0;
 
+	public OneToOneAssociationImpl() {
+		this.type = AssociationType.CLIENT;
+		// clean transmission buffer
+		txBuffer.clear();
+		txBuffer.rewind();
+		txBuffer.flip();
+
+		// clean receiver buffer
+		rxBuffer.clear();
+		rxBuffer.rewind();
+		rxBuffer.flip();
+	}
+	
 	/**
 	 * Creating a CLIENT Association
 	 * 
@@ -362,9 +378,6 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 				// If single thread model the listener should be called in the
 				// selector thread itself
 				try {
-					if (logger.isDebugEnabled()) {
-						logger.debug("Association " + getName() + " read(): singleThread callback");
-					}
 					this.associationListener.onPayload(this, payload);
 				} catch (Exception e) {
 					logger.error(String.format("Error while calling Listener for Association=%s.Payload=%s", this.name,
@@ -376,9 +389,6 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 
 				ExecutorService executorService = this.management.getExecutorService(this.workerThreadTable[payload
 						.getStreamNumber()]);
-				if (logger.isDebugEnabled()) {
-					logger.debug("Association " + getName() + " read(): payload.streamNumber="+payload.getStreamNumber()+ ", executorSerice=" + executorService);
-				}
 				try {
 					executorService.execute(worker);
 				} catch (RejectedExecutionException e) {
@@ -561,47 +571,6 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 		}
 	}
 
-	protected void initiateConnection() throws IOException {
-		if (!this.started.get()) {
-			return;
-		}
-		if (this.getSocketChannel() != null) {
-			try {
-				this.getSocketChannel().close();
-			} catch (Exception e) {
-				logger.error(
-						String.format(
-								"Exception while trying to close existing sctp socket and initiate new socket for Association=%s",
-								this.name), e);
-			}
-		}
-		try {
-			this.doInitiateConnectionSctp();
-		} catch (Exception e) {
-			logger.error("Error while initiating a connection: " + e.getMessage(), e);
-			this.scheduleConnect();
-			return;
-		}
-
-		// reset the ioErrors
-		this.ioErrors = 0;
-
-		// Queue a channel registration since the caller is not the
-		// selecting thread. As part of the registration we'll register
-		// an interest in connection events. These are raised when a channel
-		// is ready to complete connection establishment.
-		FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
-		synchronized (pendingChanges) {
-			pendingChanges.add(new MultiChangeRequest(this.getSocketChannel(), null, this, MultiChangeRequest.REGISTER,
-					SelectionKey.OP_CONNECT));
-		}
-
-		// Finally, wake up our selecting thread so it can make the required
-		// changes
-		this.management.getSocketSelector().wakeup();
-
-	}
-	
 	protected void branch(SctpChannel sctpChannel, MultiManagementImpl management) {
 		this.socketChannelSctp = sctpChannel;
 		this.management = management;
@@ -674,7 +643,6 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 		public void read(javolution.xml.XMLFormat.InputElement xml, OneToOneAssociationImpl association)
 				throws XMLStreamException {
 			association.name = xml.getAttribute(NAME, "");
-			association.type = AssociationType.getAssociationType(xml.getAttribute(ASSOCIATION_TYPE, ""));
 			association.hostAddress = xml.getAttribute(HOST_ADDRESS, "");
 			association.hostPort = xml.getAttribute(HOST_PORT, 0);
 
@@ -688,181 +656,177 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 			for (int i = 0; i < extraHostAddressesSize; i++) {
 				association.extraHostAddresses[i] = xml.get(EXTRA_HOST_ADDRESS, String.class);
 			}
-
+			try {
+				association.initDerivedFields();
+			} catch (IOException e) {
+				logger.error("Unable to load association from XML: error while calculating derived fields", e);
 			}
-
-			@Override
-			public void write(OneToOneAssociationImpl association, javolution.xml.XMLFormat.OutputElement xml)
-					throws XMLStreamException {
-				xml.setAttribute(NAME, association.name);
-				xml.setAttribute(ASSOCIATION_TYPE, association.type.getType());
-				xml.setAttribute(HOST_ADDRESS, association.hostAddress);
-				xml.setAttribute(HOST_PORT, association.hostPort);
-
-				xml.setAttribute(PEER_ADDRESS, association.peerAddress);
-				xml.setAttribute(PEER_PORT, association.peerPort);
-
-				xml.setAttribute(SERVER_NAME,"");
-				xml.setAttribute(IPCHANNEL_TYPE, IpChannelType.SCTP);
-
-				xml.setAttribute(EXTRA_HOST_ADDRESS_SIZE,
-						association.extraHostAddresses != null ? association.extraHostAddresses.length : 0);
-				if (association.extraHostAddresses != null) {
-					for (String s : association.extraHostAddresses) {
-						xml.add(s, EXTRA_HOST_ADDRESS, String.class);
-					}
-				}
-			}
-		};
+		}
 
 		@Override
-		protected void readPayload(PayloadData payload) {
-			if (payload == null) {
-				return;
-			}
-			
-			if (logger.isDebugEnabled()) {
-				logger.debug(String.format("Rx : Ass=%s %s", this.name, payload));
-			}
+		public void write(OneToOneAssociationImpl association, javolution.xml.XMLFormat.OutputElement xml)
+				throws XMLStreamException {
+			xml.setAttribute(NAME, association.name);
+			xml.setAttribute(ASSOCIATION_TYPE, association.type.getType());
+			xml.setAttribute(HOST_ADDRESS, association.hostAddress);
+			xml.setAttribute(HOST_PORT, association.hostPort);
 
-			if (this.management.isSingleThread()) {
-				// If single thread model the listener should be called in the
-				// selector thread itself
-				try {
-					if (logger.isDebugEnabled()) {
-						logger.debug("Association " + getName() + " readPayload(): singleThread callback");
-					}
-					this.associationListener.onPayload(this, payload);
-				} catch (Exception e) {
-					logger.error(String.format("Error while calling Listener for Association=%s.Payload=%s", this.name,
-							payload), e);
-				}
-			} else {
-				MultiWorker worker = new MultiWorker(this, this.associationListener, payload);
-				if (logger.isDebugEnabled()) {
-					logger.debug("Association " + getName() + " readPayload(): payload.streamNumber="+payload.getStreamNumber());
-				}
-				ExecutorService executorService = this.management.getExecutorService(this.workerThreadTable[payload
-						.getStreamNumber()]);
-				try {
-					executorService.execute(worker);
-				} catch (RejectedExecutionException e) {
-					logger.error(String.format("Rejected %s as Executors is shutdown", payload), e);
-				} catch (NullPointerException e) {
-					logger.error(String.format("NullPointerException while submitting %s", payload), e);
-				} catch (Exception e) {
-					logger.error(String.format("Exception while submitting %s", payload), e);
+			xml.setAttribute(PEER_ADDRESS, association.peerAddress);
+			xml.setAttribute(PEER_PORT, association.peerPort);
+
+			xml.setAttribute(SERVER_NAME,"");
+			xml.setAttribute(IPCHANNEL_TYPE, IpChannelType.SCTP);
+
+			xml.setAttribute(EXTRA_HOST_ADDRESS_SIZE,
+					association.extraHostAddresses != null ? association.extraHostAddresses.length : 0);
+			if (association.extraHostAddresses != null) {
+				for (String s : association.extraHostAddresses) {
+					xml.add(s, EXTRA_HOST_ADDRESS, String.class);
 				}
 			}
 		}
+	};
+
+	@Override
+	protected void readPayload(PayloadData payload) {
+		if (payload == null) {
+			return;
+		}
 		
-		@Override
-		protected boolean writePayload(PayloadData payloadData) {
+		if (logger.isDebugEnabled()) {
+			logger.debug(String.format("Rx : Ass=%s %s", this.name, payload));
+		}
+
+		if (this.management.isSingleThread()) {
 			try {
+				this.associationListener.onPayload(this, payload);
+			} catch (Exception e) {
+				logger.error(String.format("Error while calling Listener for Association=%s.Payload=%s", this.name,
+						payload), e);
+			}
+		} else {
+			MultiWorker worker = new MultiWorker(this, this.associationListener, payload);
+			ExecutorService executorService = this.management.getExecutorService(this.workerThreadTable[payload
+					.getStreamNumber()]);
+			try {
+				executorService.execute(worker);
+			} catch (RejectedExecutionException e) {
+				logger.error(String.format("Rejected %s as Executors is shutdown", payload), e);
+			} catch (NullPointerException e) {
+				logger.error(String.format("NullPointerException while submitting %s", payload), e);
+			} catch (Exception e) {
+				logger.error(String.format("Exception while submitting %s", payload), e);
+			}
+		}
+	}
+		
+	@Override
+	protected boolean writePayload(PayloadData payloadData) {
+		try {
+
+			if (txBuffer.hasRemaining()) {
+				multiplexer.getSocketMultiChannel().send(txBuffer, msgInfo);
+			}
+			// TODO Do we need to synchronize ConcurrentLinkedQueue?
+			// synchronized (this.txQueue) {
+			if (!txBuffer.hasRemaining()) {
+				txBuffer.clear();
+				if (logger.isDebugEnabled()) {
+					logger.debug(String.format("Tx : Ass=%s %s", this.name, payloadData));
+				}
+
+				// load ByteBuffer
+				// TODO: BufferOverflowException ?
+				txBuffer.put(payloadData.getData());
+					
+				int seqControl = payloadData.getStreamNumber();
+
+				if (seqControl < 0 || seqControl >= this.associationHandler.getMaxOutboundStreams()) {
+					try {
+						// TODO : calling in same Thread. Is this ok? or
+						// dangerous?
+						this.associationListener.inValidStreamId(payloadData);
+					} catch (Exception e) {
+						logger.warn(e);
+					}
+					txBuffer.clear();
+					txBuffer.flip();
+					return false;
+				}
+
+				msgInfo = MessageInfo.createOutgoing(this.peerSocketAddress, seqControl);
+				
+				msgInfo.payloadProtocolID(payloadData.getPayloadProtocolId());
+				msgInfo.complete(payloadData.isComplete());
+				msgInfo.unordered(payloadData.isUnordered());
+
+				logger.debug("write() - msgInfo: "+msgInfo);
+				txBuffer.flip();
+
+				multiplexer.getSocketMultiChannel().send(txBuffer, msgInfo);
 
 				if (txBuffer.hasRemaining()) {
-					multiplexer.getSocketMultiChannel().send(txBuffer, msgInfo);
-				}
-				// TODO Do we need to synchronize ConcurrentLinkedQueue?
-				// synchronized (this.txQueue) {
-				if (!txBuffer.hasRemaining()) {
-					txBuffer.clear();
-					if (logger.isDebugEnabled()) {
-						logger.debug(String.format("Tx : Ass=%s %s", this.name, payloadData));
-					}
-
-					// load ByteBuffer
-					// TODO: BufferOverflowException ?
-					txBuffer.put(payloadData.getData());
-						
-					int seqControl = payloadData.getStreamNumber();
-
-					if (seqControl < 0 || seqControl >= this.associationHandler.getMaxOutboundStreams()) {
-						try {
-							// TODO : calling in same Thread. Is this ok? or
-							// dangerous?
-							this.associationListener.inValidStreamId(payloadData);
-						} catch (Exception e) {
-							logger.warn(e);
-						}
-						txBuffer.clear();
-						txBuffer.flip();
-						return false;
-					}
-
-					msgInfo = MessageInfo.createOutgoing(this.peerSocketAddress, seqControl);
-					
-					msgInfo.payloadProtocolID(payloadData.getPayloadProtocolId());
-					msgInfo.complete(payloadData.isComplete());
-					msgInfo.unordered(payloadData.isUnordered());
-
-					logger.debug("write() - msgInfo: "+msgInfo);
-					txBuffer.flip();
-
-					multiplexer.getSocketMultiChannel().send(txBuffer, msgInfo);
-
-					if (txBuffer.hasRemaining()) {
-						// Couldn't send all data. Lets return now and try to
-						// send
-						// this message in next cycle
-						return true;
-					}
+					// Couldn't send all data. Lets return now and try to
+					// send
+					// this message in next cycle
 					return true;
 				}
-				return false;
-			} catch (IOException e) {
-				this.ioErrors++;
-				logger.error(String.format(
-						"IOException while trying to write to underlying socket for Association=%s IOError count=%d",
-						this.name, this.ioErrors), e);
-				return false;
-			} catch (Exception ex) {
-				logger.error(String.format("Unexpected exception has been caught while trying to write SCTP socketChanel for Association=%s: %s",
-						this.name, ex.getMessage()), ex);
-				return false;
+				return true;
 			}
+			return false;
+		} catch (IOException e) {
+			this.ioErrors++;
+			logger.error(String.format(
+					"IOException while trying to write to underlying socket for Association=%s IOError count=%d",
+					this.name, this.ioErrors), e);
+			return false;
+		} catch (Exception ex) {
+			logger.error(String.format("Unexpected exception has been caught while trying to write SCTP socketChanel for Association=%s: %s",
+					this.name, ex.getMessage()), ex);
+			return false;
 		}
-		
-		protected void onSendFailed() {
-			//if started and down then it means it is a CANT_START event and scheduleConnect must be called.
-			if (started.get() && !up.get()) {
-				logger.warn("Association=" + getName() + " CANT_START, trying to reconnect...");
-				reconnect();
+	}
+	
+	protected void onSendFailed() {
+		//if started and down then it means it is a CANT_START event and scheduleConnect must be called.
+		if (started.get() && !up.get()) {
+			logger.warn("Association=" + getName() + " CANT_START, trying to reconnect...");
+			reconnect();
+		}
+	}
+	
+	//called when COMM_UP event arrived after association was stopped.
+	protected void silentlyShutdown() {
+		if (!started.get()) {
+			if (logger.isInfoEnabled()) {
+				logger.info("Association=" + getName() + " has been already stopped when COMM_UP event arrived, closing sctp association without notifying any listeners.");
 			}
-		}
-		
-		//called when COMM_UP event arrived after association was stopped.
-		protected void silentlyShutdown() {
-			if (!started.get()) {
-				if (logger.isInfoEnabled()) {
-					logger.info("Association=" + getName() + " has been already stopped when COMM_UP event arrived, closing sctp association without notifying any listeners.");
-				}
-				if (this.getSocketChannel() != null) {
-					try {
-						this.getSocketChannel().close();
-						if (logger.isDebugEnabled()) {
-							logger.debug("close() - socketChannel is closed for association=" + getName());
-						}
-					} catch (Exception e) {
-						logger.error(String.format("Exception while closing the SctpScoket for Association=%s", this.name), e);
+			if (this.getSocketChannel() != null) {
+				try {
+					this.getSocketChannel().close();
+					if (logger.isDebugEnabled()) {
+						logger.debug("close() - socketChannel is closed for association=" + getName());
 					}
+				} catch (Exception e) {
+					logger.error(String.format("Exception while closing the SctpScoket for Association=%s", this.name), e);
 				}
 			}
 		}
-		
-		@Override
-		public void acceptAnonymousAssociation(
-				AssociationListener associationListener) throws Exception {
-			throw new UnsupportedOperationException(this.getClass()+" class does not implement SERVER type Associations!");
-		}
-		
-		@Override
-		public void rejectAnonymousAssociation() {
-			throw new UnsupportedOperationException(this.getClass()+" class does not implement SERVER type Associations!");
-		}
-		
-		@Override
-		public void stopAnonymousAssociation() throws Exception {
-			throw new UnsupportedOperationException(this.getClass()+" class does not implement SERVER type Associations!");
-		}
+	}
+	
+	@Override
+	public void acceptAnonymousAssociation(
+			AssociationListener associationListener) throws Exception {
+		throw new UnsupportedOperationException(this.getClass()+" class does not implement SERVER type Associations!");
+	}
+	
+	@Override
+	public void rejectAnonymousAssociation() {
+		throw new UnsupportedOperationException(this.getClass()+" class does not implement SERVER type Associations!");
+	}
+	
+	@Override
+	public void stopAnonymousAssociation() throws Exception {
+		throw new UnsupportedOperationException(this.getClass()+" class does not implement SERVER type Associations!");
+	}
 }

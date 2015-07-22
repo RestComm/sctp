@@ -8,7 +8,7 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 /**
- * Stores and manages of the OneToManyAssocMultiplexer instances of a MultiManagementImpl (SCTP stack)
+ * Stores and manages OneToManyAssocMultiplexer and ManageableAssociation objects of a SCTP stack (MultiManagementImpl instance).
  * 
  * @author balogh.gabor@alerant.hu
  *
@@ -25,7 +25,6 @@ public class MultiChannelController {
 		this.management = management;
 	}
 
-	
 	private OneToManyAssocMultiplexer findMultiplexerByHostAddrInfo(OneToManyAssociationImpl.HostAddressInfo hostAddressInfo) {
 		OneToManyAssocMultiplexer ret = null;
 		if (logger.isDebugEnabled()) {
@@ -48,7 +47,7 @@ public class MultiChannelController {
 		}
 		return ret;
 	}
-	
+
 	private void storeMultiplexer(OneToManyAssociationImpl.HostAddressInfo hostAddrInfo, OneToManyAssocMultiplexer multiplexer) {
 		ArrayList<OneToManyAssocMultiplexer> mList = multiplexers.get(hostAddrInfo.getHostPort());
 		if (mList == null) {
@@ -67,6 +66,7 @@ public class MultiChannelController {
 	 */
 	protected OneToManyAssocMultiplexer register(ManageableAssociation assocImpl) throws IOException {
 		if (assocImpl == null || assocImpl.getAssocInfo() == null || assocImpl.getAssocInfo().getHostInfo() == null) {
+			logger.error("Unable to register association=" + assocImpl);
 			return null;
 		}
 		if (logger.isDebugEnabled()) {
@@ -77,13 +77,13 @@ public class MultiChannelController {
 			ret = findMultiplexerByHostAddrInfo(assocImpl.getAssocInfo().getHostInfo());
 			if (ret == null) {			
 				ret = new OneToManyAssocMultiplexer(assocImpl.getAssocInfo().getHostInfo(), management);
-				storeMultiplexer(assocImpl.getAssocInfo().getHostInfo(), ret);					
+				storeMultiplexer(assocImpl.getAssocInfo().getHostInfo(), ret);
 			}
 			ret.registerAssociation(assocImpl);
 		}
 		return ret;
 	}
-	
+
 	protected void stopAllMultiplexers() {
 		for (List<OneToManyAssocMultiplexer> mList: multiplexers.values()) {
 			for (OneToManyAssocMultiplexer multiplexer: mList) {
@@ -96,5 +96,5 @@ public class MultiChannelController {
 		}
 		multiplexers.clear();
 	}
-	
+
 }

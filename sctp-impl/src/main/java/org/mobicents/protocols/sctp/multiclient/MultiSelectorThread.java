@@ -32,15 +32,14 @@ import javolution.util.FastList;
 
 import org.apache.log4j.Logger;
 
-import com.sun.nio.sctp.AssociationChangeNotification;
-import com.sun.nio.sctp.AssociationChangeNotification.AssocChangeEvent;
-
 /**
+ * This class controls the nio sockets and manages the I/O operations.
+ * 
  * @author amit bhayani
  * @author balogh.gabo@alerant.hu
  * 
  */
-@SuppressWarnings("restriction")
+
 public class MultiSelectorThread implements Runnable {
 
 	protected static final Logger logger = Logger.getLogger(MultiSelectorThread.class);
@@ -94,11 +93,11 @@ public class MultiSelectorThread implements Runnable {
 						}
 						switch (change.getType()) {
 						case MultiChangeRequest.CHANGEOPS:
-							pendingChanges.remove(change);							
+							pendingChanges.remove(change);
 							key.interestOps(change.getOps());
 							break;
 						case MultiChangeRequest.ADD_OPS  :
-							pendingChanges.remove(change);								
+							pendingChanges.remove(change);
 							key.interestOps(key.interestOps() | change.getOps());
 							break;
 						case MultiChangeRequest.REGISTER:
@@ -107,15 +106,11 @@ public class MultiSelectorThread implements Runnable {
 
 							if (change.isMultiAssocRequest()) {
 								key1.attach(change.getAssocMultiplexer());
-								AssocChangeEvent ace = AssocChangeEvent.COMM_UP;
-								AssociationChangeNotification2 acn = new AssociationChangeNotification2(ace);
-								change.getAssocMultiplexer().associationHandler.handleNotification(acn, change.getAssocMultiplexer());
 							} else {
-								key1.attach(change.getAssociation());							
+								key1.attach(change.getAssociation());
 							}
 							break;
 						case MultiChangeRequest.CONNECT:
-							//in CONNECT request assocociation is filled in both OneToOne and OneToMany cases
 							if (!change.getAssociation().isStarted()) {
 								pendingChanges.remove(change);
 							} else {
@@ -199,26 +194,8 @@ public class MultiSelectorThread implements Runnable {
 		} else if (key.attachment() instanceof OneToOneAssociationImpl) {
 			OneToOneAssociationImpl association = (OneToOneAssociationImpl) key.attachment();
 			association.write(key);
-		}	
-	}
-
-	class AssociationChangeNotification2 extends AssociationChangeNotification {
-		
-		private AssocChangeEvent assocChangeEvent;
-
-		public AssociationChangeNotification2(AssocChangeEvent assocChangeEvent) {
-			this.assocChangeEvent = assocChangeEvent;
-		}
-
-		@Override
-		public com.sun.nio.sctp.Association association() {
-			return null;
-		}
-
-		@Override
-		public AssocChangeEvent event() {
-			return this.assocChangeEvent;
 		}
 	}
+
 }
 

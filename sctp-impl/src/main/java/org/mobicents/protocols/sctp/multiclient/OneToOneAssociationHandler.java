@@ -12,6 +12,7 @@ import com.sun.nio.sctp.SendFailedNotification;
 import com.sun.nio.sctp.ShutdownNotification;
 
 /**
+ * Handles notifications for OneToOneAssociationImpl objects.
  * 
  *  @author balogh.gabor@alerant.hu
  *

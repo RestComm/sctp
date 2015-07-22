@@ -6,6 +6,9 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.spi.AbstractSelectableChannel;
 
+import javolution.xml.XMLFormat;
+import javolution.xml.stream.XMLStreamException;
+
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.PayloadData;
 
@@ -21,7 +24,17 @@ import org.mobicents.protocols.api.PayloadData;
  */
 
 public abstract class ManageableAssociation implements Association {
-	
+	private static final String NAME = "name";
+	private static final String SERVER_NAME = "serverName";
+	private static final String HOST_ADDRESS = "hostAddress";
+	private static final String HOST_PORT = "hostPort";
+
+	private static final String PEER_ADDRESS = "peerAddress";
+	private static final String PEER_PORT = "peerPort";
+
+	private static final String EXTRA_HOST_ADDRESS = "extraHostAddress";
+	private static final String EXTRA_HOST_ADDRESS_SIZE = "extraHostAddresseSize";
+
 	protected MultiManagementImpl management;
 	protected String hostAddress;
 	protected int hostPort;
@@ -30,7 +43,7 @@ public abstract class ManageableAssociation implements Association {
 	protected String name;
 	protected String[] extraHostAddresses;
 	protected AssociationInfo assocInfo;
-	
+
 	/**
 	 * This is used only for SCTP This is the socket address for peer which will
 	 * be null initially. If the Association has multihome support and if peer
@@ -47,6 +60,10 @@ public abstract class ManageableAssociation implements Association {
 	protected abstract boolean writePayload(PayloadData payloadData);
 	protected abstract void readPayload(PayloadData payloadData);
 
+	protected ManageableAssociation() {
+		
+	}
+
 	protected ManageableAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName,
 			String[] extraHostAddresses) throws IOException {
 		this.hostAddress = hostAddress;
@@ -55,15 +72,19 @@ public abstract class ManageableAssociation implements Association {
 		this.peerPort = peerPort;
 		this.name = assocName;
 		this.extraHostAddresses = extraHostAddresses;
+		initDerivedFields();
+	}
+
+	protected void initDerivedFields() throws IOException {
 		this.peerSocketAddress =  new InetSocketAddress(InetAddress.getByName(peerAddress), peerPort);
 		String secondaryHostAddress = null;
 		if (extraHostAddresses != null && extraHostAddresses.length >= 1) {
 			secondaryHostAddress = extraHostAddresses[0];
 		}
 		this.assocInfo = new AssociationInfo(new PeerAddressInfo(peerSocketAddress),
-											 new HostAddressInfo(hostAddress, secondaryHostAddress, hostPort));
+				 new HostAddressInfo(hostAddress, secondaryHostAddress, hostPort));
 	}
-	
+
 	protected void setManagement(MultiManagementImpl management) {
 		this.management = management;
 	}
@@ -161,7 +182,7 @@ public abstract class ManageableAssociation implements Association {
 			if (this.getSecondaryHostAddress() != null && !this.getSecondaryHostAddress().isEmpty()) {
 				if (this.getSecondaryHostAddress().equals(hostAddressInfo.getPrimaryHostAddress()) 
 					|| this.getSecondaryHostAddress().equals(hostAddressInfo.getSecondaryHostAddress())) {
-					return true;
+					return true; 
 				}
 			}
 			return false;
@@ -203,4 +224,54 @@ public abstract class ManageableAssociation implements Association {
 		}
 
 	}
+	
+	/**
+	 * XML Serialization/Deserialization
+	 */
+	protected static final XMLFormat<ManageableAssociation> ASSOCIATION_XML = new XMLFormat<ManageableAssociation>(
+			ManageableAssociation.class) {
+
+		@Override
+		public void read(javolution.xml.XMLFormat.InputElement xml, ManageableAssociation association)
+				throws XMLStreamException {
+			association.name = xml.getAttribute(NAME, "");
+			association.hostAddress = xml.getAttribute(HOST_ADDRESS, "");
+			association.hostPort = xml.getAttribute(HOST_PORT, 0);
+
+			association.peerAddress = xml.getAttribute(PEER_ADDRESS, "");
+			association.peerPort = xml.getAttribute(PEER_PORT, 0);
+
+
+			int extraHostAddressesSize = xml.getAttribute(EXTRA_HOST_ADDRESS_SIZE, 0);
+			association.extraHostAddresses = new String[extraHostAddressesSize];
+
+			for (int i = 0; i < extraHostAddressesSize; i++) {
+				association.extraHostAddresses[i] = xml.get(EXTRA_HOST_ADDRESS, String.class);
+			}
+
+		}
+
+		@Override
+		public void write(ManageableAssociation association, javolution.xml.XMLFormat.OutputElement xml)
+				throws XMLStreamException {
+			xml.setAttribute(NAME, association.name);
+			//xml.setAttribute(ASSOCIATION_TYPE, association.type.getType());
+			xml.setAttribute(HOST_ADDRESS, association.hostAddress);
+			xml.setAttribute(HOST_PORT, association.hostPort);
+
+			xml.setAttribute(PEER_ADDRESS, association.peerAddress);
+			xml.setAttribute(PEER_PORT, association.peerPort);
+
+			xml.setAttribute(SERVER_NAME,"");
+			//xml.setAttribute(IPCHANNEL_TYPE, IpChannelType.SCTP);
+
+			xml.setAttribute(EXTRA_HOST_ADDRESS_SIZE,
+					association.extraHostAddresses != null ? association.extraHostAddresses.length : 0);
+			if (association.extraHostAddresses != null) {
+				for (String s : association.extraHostAddresses) {
+					xml.add(s, EXTRA_HOST_ADDRESS, String.class);
+				}
+			}
+		}
+	};
 }

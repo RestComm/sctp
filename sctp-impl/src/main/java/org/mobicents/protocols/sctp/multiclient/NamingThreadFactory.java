@@ -9,8 +9,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * This is a replacement for Executors.defaultThreadFactory() to be able to identify pools.
  * Optionally a delegate thread factory can be given which creates the Thread
  * object itself, if no delegate has been given, Executors.defaultThreadFactory is used.
+ * 
  * @author pocsaji.miklos@alerant.hu
- *
  */
 public class NamingThreadFactory implements ThreadFactory {
 	
