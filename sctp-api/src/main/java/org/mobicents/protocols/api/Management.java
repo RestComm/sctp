@@ -365,7 +365,7 @@ public interface Management {
 	 * 
 	 * @param connectDelay
 	 */
-	public void setConnectDelay(int connectDelay);
+	public void setConnectDelay(int connectDelay) throws Exception;
 
 	/**
 	 * Number of threads configured to callback {@link AssociationListener}
@@ -380,7 +380,7 @@ public interface Management {
 	 * 
 	 * @param workerThreads
 	 */
-	public void setWorkerThreads(int workerThreads);
+	public void setWorkerThreads(int workerThreads) throws Exception;
 
 	/**
 	 * If set as single thread, number of workers thread set has no effect and
@@ -395,5 +395,5 @@ public interface Management {
 	 * 
 	 * @param singleThread
 	 */
-	public void setSingleThread(boolean singleThread);
+	public void setSingleThread(boolean singleThread) throws Exception;
 }

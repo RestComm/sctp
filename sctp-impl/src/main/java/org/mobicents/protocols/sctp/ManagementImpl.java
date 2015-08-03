@@ -147,10 +147,13 @@ public class ManagementImpl implements Management {
 	 * @param connectDelay
 	 *            the connectDelay to set
 	 */
-	public void setConnectDelay(int connectDelay) {
-		this.connectDelay = connectDelay;
-		
-		this.store();
+	public void setConnectDelay(int connectDelay) throws Exception {
+        if (!this.started)
+            throw new Exception("ConnectDelay parameter can be updated only when SCTP stack is running");
+
+        this.connectDelay = connectDelay;
+
+        this.store();
 	}
 
 	/**
@@ -164,13 +167,16 @@ public class ManagementImpl implements Management {
 	 * @param workerThreads
 	 *            the workerThreads to set
 	 */
-	public void setWorkerThreads(int workerThreads) {
+	public void setWorkerThreads(int workerThreads) throws Exception {
+        if (this.started)
+            throw new Exception("WorkerThreads parameter can be updated only when SCTP stack is NOT running");
+
 		if (workerThreads < 1) {
 			workerThreads = DEFAULT_IO_THREADS;
 		}
 		this.workerThreads = workerThreads;
 
-		this.store();
+//		this.store();
 	}
 
 	/**
@@ -202,10 +208,13 @@ public class ManagementImpl implements Management {
 	 * @param singleThread
 	 *            the singleThread to set
 	 */
-	public void setSingleThread(boolean singleThread) {
+	public void setSingleThread(boolean singleThread) throws Exception {
+        if (this.started)
+            throw new Exception("SingleThread parameter can be updated only when SCTP stack is NOT running");
+
 		this.singleThread = singleThread;
-		
-		this.store();
+
+//		this.store();
 	}
 
 	public ServerListener getServerListener() {
@@ -393,8 +402,10 @@ public class ManagementImpl implements Management {
 
             try {
                 this.connectDelay = reader.read(CONNECT_DELAY_PROP, Integer.class);
-                this.workerThreads = reader.read(WORKER_THREADS_PROP, Integer.class);
-                this.singleThread = reader.read(SINGLE_THREAD_PROP, Boolean.class);
+//                this.workerThreads = reader.read(WORKER_THREADS_PROP, Integer.class);
+//                this.singleThread = reader.read(SINGLE_THREAD_PROP, Boolean.class);
+                Integer vali = reader.read(WORKER_THREADS_PROP, Integer.class);
+                Boolean valb = reader.read(SINGLE_THREAD_PROP, Boolean.class);
             } catch (java.lang.NullPointerException npe) {
                 // ignore.
                 // For backward compatibility we can ignore if these values are not defined
@@ -435,8 +446,8 @@ public class ManagementImpl implements Management {
 			writer.setIndentation(TAB_INDENT);
 
             writer.write(this.connectDelay, CONNECT_DELAY_PROP, Integer.class);
-            writer.write(this.workerThreads, WORKER_THREADS_PROP, Integer.class);
-            writer.write(this.singleThread, SINGLE_THREAD_PROP, Boolean.class);
+//            writer.write(this.workerThreads, WORKER_THREADS_PROP, Integer.class);
+//            writer.write(this.singleThread, SINGLE_THREAD_PROP, Boolean.class);
 
 			writer.write(this.servers, SERVERS, FastList.class);
 			writer.write(this.associations, ASSOCIATIONS, AssociationMap.class);
