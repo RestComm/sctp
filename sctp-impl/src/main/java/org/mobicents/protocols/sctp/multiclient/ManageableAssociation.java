@@ -43,6 +43,9 @@ public abstract class ManageableAssociation implements Association {
 	protected String name;
 	protected String[] extraHostAddresses;
 	protected AssociationInfo assocInfo;
+	
+	//payload data used in the first dummy message which initiate the connect procedure
+	protected PayloadData initPayloadData = new PayloadData(0, new byte[1], true, false, 0, 0);
 
 	/**
 	 * This is used only for SCTP This is the socket address for peer which will
@@ -105,6 +108,14 @@ public abstract class ManageableAssociation implements Association {
 		return peerAddresses.contains(getAssocInfo().getPeerInfo().getPeerSocketAddress().toString());
 	}
 	
+	protected PayloadData getInitPayloadData() {
+		return initPayloadData;
+	}
+	
+	protected void setInitPayloadData(PayloadData initPayloadData) {
+		this.initPayloadData = initPayloadData;
+	}
+
 	static class PeerAddressInfo {
 		protected SocketAddress peerSocketAddress;
 		protected int sctpAssocId;

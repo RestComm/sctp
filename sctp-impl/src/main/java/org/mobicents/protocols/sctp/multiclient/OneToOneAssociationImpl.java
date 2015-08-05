@@ -591,10 +591,7 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 
 	private void doInitiateConnectionSctp() throws IOException {
 		this.multiplexer =  management.getMultiChannelController().register(this);
-		//send init msg
-		byte[] spaceTrash = new byte[]{0x01, 0x00, 0x02, 0x03, 0x00, 0x00, 0x00, 0x18, 0x00, 0x06, 0x00, 0x08, 0x00, 0x00, 0x00, 0x05, 0x00, 0x12, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00};
-		PayloadData payloadData = new PayloadData(spaceTrash.length, spaceTrash, true, false, 0, 0);
-		this.multiplexer.send(payloadData, null, this);
+		this.multiplexer.send(getInitPayloadData(), null, this);
 	}
 
 	protected void createworkerThreadTable(int maximumBooundStream) {

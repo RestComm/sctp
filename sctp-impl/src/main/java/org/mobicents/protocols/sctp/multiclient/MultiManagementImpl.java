@@ -51,6 +51,7 @@ import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.Management;
 import org.mobicents.protocols.api.ManagementEventListener;
+import org.mobicents.protocols.api.PayloadData;
 import org.mobicents.protocols.api.Server;
 import org.mobicents.protocols.api.ServerListener;
 import org.mobicents.protocols.sctp.AssociationMap;
@@ -126,6 +127,9 @@ public class MultiManagementImpl implements Management {
 	private final MultiChannelController multiChannelController = new MultiChannelController(this);
 	
 	private boolean enableBranching;
+	
+	//default value of the dummy message sent to initiate the SCTP connection
+	private PayloadData initPayloadData =  new PayloadData(0, new byte[1], true, false, 0, 0);
 
 	public MultiManagementImpl(String name) throws IOException {
 		this.name = name;
@@ -543,6 +547,7 @@ public class MultiManagementImpl implements Management {
 			}
 				
 			association.setManagement(this);
+			association.setInitPayloadData(initPayloadData);
 
 			AssociationMap<String, ManageableAssociation> newAssociations = new AssociationMap<String, ManageableAssociation>();
 			newAssociations.putAll(this.associations);
@@ -665,6 +670,14 @@ public class MultiManagementImpl implements Management {
 				}
 			}
 		}
+	}
+
+	public PayloadData getInitPayloadData() {
+		return initPayloadData;
+	}
+
+	public void setInitPayloadData(PayloadData initPayloadData) {
+		this.initPayloadData = initPayloadData;
 	}
 
 	/**
