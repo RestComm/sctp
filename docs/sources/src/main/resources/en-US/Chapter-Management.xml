@@ -617,6 +617,7 @@ public interface Management {
 					<listitem>
 						<para>
 							 Time in milli seconds that underlying SCTP socket will wait before attempting to connect to peer. This is only applivable for clien side sockets.
+                             This parameter can be updated only at the SCTP stack running time, including GUI.
 						</para>
 					</listitem>
 				</varlistentry>
@@ -628,6 +629,7 @@ public interface Management {
 					<listitem>
 						<para>
 							 Number of threads to callback the AssociationListener. Its assured that packets with same SLS will always be queued in same Thread for callback to make sure order is maintained.
+                             This parameter can be updated only when the SCTP stack is not yet running.
 						</para>
 					</listitem>
 				</varlistentry>		
@@ -639,6 +641,7 @@ public interface Management {
 					<listitem>
 						<para>
 							 Only single thread will be used to callback the AssociationListener. If this is set to true, setting number of threads by calling setWorkerThreads has no effect. 
+                             This parameter can be updated only when the SCTP stack is not yet running.
 						</para>
 					</listitem>
 				</varlistentry>							
