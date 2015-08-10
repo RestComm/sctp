@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.mobicents.protocols.sctp</groupId>
 		<artifactId>sctp-parent</artifactId>
-		<version>1.6.0.FINAL</version>
+		<version>1.7.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>mobicents-sctp-docs</artifactId>
