@@ -108,9 +108,9 @@ public class SctpMultiHomeTransferTest {
 		this.serverMessage = new FastList<String>();
 
 		this.management = new ManagementImpl("server-management");
-		this.management.setConnectDelay(10000);// Try connecting every 10 secs
 		this.management.setSingleThread(true);
 		this.management.start();
+        this.management.setConnectDelay(10000);// Try connecting every 10 secs
 		this.management.removeAllResourses();
 
 		this.server = this.management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, false, 0, new String[] { SERVER_HOST1 });

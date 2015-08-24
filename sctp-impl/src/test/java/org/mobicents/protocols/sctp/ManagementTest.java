@@ -230,8 +230,8 @@ public class ManagementTest {
 
 		ManagementImpl management = new ManagementImpl("ManagementTest");
 		management.setSingleThread(true);
-		management.setConnectDelay(10000);// Try connecting every 10 secs
 		management.start();
+        management.setConnectDelay(10000);// Try connecting every 10 secs
 		management.removeAllResourses();
 
 		management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, false, 0, null);
