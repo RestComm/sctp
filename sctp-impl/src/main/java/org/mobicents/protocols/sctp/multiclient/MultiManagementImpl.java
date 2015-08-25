@@ -81,8 +81,6 @@ public class MultiManagementImpl implements Management {
 	private static final String ASSOCIATIONS = "associations";
 	
     private static final String CONNECT_DELAY_PROP = "connectdelay";
-    private static final String SINGLE_THREAD_PROP = "singlethread";
-    private static final String WORKER_THREADS_PROP = "workerthreads";
 
 	private final TextBuilder persistFile = TextBuilder.newInstance();
 
@@ -173,7 +171,10 @@ public class MultiManagementImpl implements Management {
 	 * @param connectDelay
 	 *            the connectDelay to set
 	 */
-	public void setConnectDelay(int connectDelay) {
+	public void setConnectDelay(int connectDelay)  throws Exception {
+		if (!this.started)
+			throw new Exception("ConnectDelay parameter can be updated only when SCTP stack is running");
+
 		this.connectDelay = connectDelay;
 		
 		this.store();
@@ -190,13 +191,14 @@ public class MultiManagementImpl implements Management {
 	 * @param workerThreads
 	 *            the workerThreads to set
 	 */
-	public void setWorkerThreads(int workerThreads) {
+	public void setWorkerThreads(int workerThreads)  throws Exception {
+		if (this.started)
+			throw new Exception("WorkerThreads parameter can be updated only when SCTP stack is NOT running");
+
 		if (workerThreads < 1) {
 			workerThreads = DEFAULT_IO_THREADS;
 		}
 		this.workerThreads = workerThreads;
-
-		this.store();
 	}
 
 	/**
@@ -228,10 +230,11 @@ public class MultiManagementImpl implements Management {
 	 * @param singleThread
 	 *            the singleThread to set
 	 */
-	public void setSingleThread(boolean singleThread) {
+	public void setSingleThread(boolean singleThread)  throws Exception {
+		if (this.started)
+			throw new Exception("SingleThread parameter can be updated only when SCTP stack is NOT running");
+
 		this.singleThread = singleThread;
-		
-		this.store();
 	}
 
 	protected FastList<ManagementEventListener> getManagementEventListeners() {
@@ -415,14 +418,12 @@ public class MultiManagementImpl implements Management {
 			reader = XMLObjectReader.newInstance(new FileInputStream(persistFile.toString()));
 			reader.setBinding(binding);
 
-            try {
-                this.connectDelay = reader.read(CONNECT_DELAY_PROP, Integer.class);
-                this.workerThreads = reader.read(WORKER_THREADS_PROP, Integer.class);
-                this.singleThread = reader.read(SINGLE_THREAD_PROP, Boolean.class);
-            } catch (java.lang.NullPointerException npe) {
-                // ignore.
-                // For backward compatibility we can ignore if these values are not defined
-            }
+			try {
+				this.connectDelay = reader.read(CONNECT_DELAY_PROP, Integer.class);
+			} catch (java.lang.NullPointerException npe) {
+				// ignore.
+				// For backward compatibility we can ignore if these values are not defined
+			}
 
 			this.associations = reader.read(ASSOCIATIONS, AssociationMap.class);
 
@@ -445,9 +446,7 @@ public class MultiManagementImpl implements Management {
 			// writer.setReferenceResolver(new XMLReferenceResolver());
 			writer.setIndentation(TAB_INDENT);
 
-            writer.write(this.connectDelay, CONNECT_DELAY_PROP, Integer.class);
-            writer.write(this.workerThreads, WORKER_THREADS_PROP, Integer.class);
-            writer.write(this.singleThread, SINGLE_THREAD_PROP, Boolean.class);
+			writer.write(this.connectDelay, CONNECT_DELAY_PROP, Integer.class);
 
 			writer.write(this.associations, ASSOCIATIONS, AssociationMap.class);
 
