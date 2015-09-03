@@ -528,7 +528,7 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 		//if started and down then it means it is a CANT_START event and scheduleConnect must be called.
 		if (started.get() && !up.get()) {
 			logger.warn("Association=" + getName() + " CANT_START, trying to reconnect...");
-			reconnect();
+			scheduleConnect();
 		}
 	}
 	
