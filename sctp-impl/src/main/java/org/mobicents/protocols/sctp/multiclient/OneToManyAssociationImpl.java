@@ -429,13 +429,6 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 		}
 		if (up.get()) {
 			logger.info("Associoation " + name + " is up, no need to reconnect");
-			try {
-				this.associationListener.onCommunicationUp(this, associationHandler.getMaxInboundStreams(), associationHandler.getMaxOutboundStreams());
-			} catch (Exception e) {
-				logger.error(String.format(
-						"Exception while calling onCommunicationShutdown on AssociationListener for Association=%s",
-						this.name), e);
-			}
 		} else {
 			FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
 			synchronized (pendingChanges) {

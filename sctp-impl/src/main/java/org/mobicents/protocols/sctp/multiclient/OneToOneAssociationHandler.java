@@ -122,6 +122,7 @@ public class OneToOneAssociationHandler extends AbstractNotificationHandler<OneT
 			try {
 				association.markAssociationDown();
 				association.getAssociationListener().onCommunicationShutdown(association);
+				association.scheduleConnect();
 			} catch (Exception e) {
 				logger.error(String.format("Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", association.getName()),
 						e);
