@@ -310,6 +310,9 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 
 	protected void reconnect() {
 		try {
+			if (isOpen()) {
+				close();
+			}
 			doInitiateConnectionSctp();
 		} catch(Exception ex) {
 			logger.warn("Error while trying to reconnect association[" + this.getName() + "]: " + ex.getMessage(), ex);
@@ -532,6 +535,10 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 		return this.socketChannelSctp.send(txBuffer, msgInfo);
 	}
 	
+	protected boolean isOpen() {
+		return this.getSocketChannel() != null && this.getSocketChannel().isOpen();
+	}
+	
 	protected void close() {
 		if (this.getSocketChannel() != null) {
 			try {
@@ -590,6 +597,8 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	}
 
 	private void doInitiateConnectionSctp() throws IOException {
+		// reset the ioErrors
+		this.ioErrors = 0;
 		this.multiplexer =  management.getMultiChannelController().register(this);
 		this.multiplexer.send(getInitPayloadData(), null, this);
 	}
@@ -776,6 +785,9 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 			logger.error(String.format(
 					"IOException while trying to write to underlying socket for Association=%s IOError count=%d",
 					this.name, this.ioErrors), e);
+			logger.error("Internal send failed, retrying.");
+			this.close();
+			onSendFailed();
 			return false;
 		} catch (Exception ex) {
 			logger.error(String.format("Unexpected exception has been caught while trying to write SCTP socketChanel for Association=%s: %s",

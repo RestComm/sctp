@@ -383,6 +383,9 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
 			logger.error(String.format(
 					"IOException while trying to write to underlying socket for Association=%s IOError count=%d",
 					this.name, this.ioErrors), e);
+			logger.error("Internal send failed, retrying.");
+			this.close();
+			onSendFailed();
 			return false;
 		} catch (Exception ex) {
 			logger.error(String.format("Unexpected exception has been caught while trying to write SCTP socketChanel for Association=%s: %s",
