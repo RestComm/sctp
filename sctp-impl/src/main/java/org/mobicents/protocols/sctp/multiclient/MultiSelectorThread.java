@@ -84,6 +84,7 @@ public class MultiSelectorThread implements Runnable {
 					Iterator<MultiChangeRequest> changes = pendingChanges.iterator();
 					while (changes.hasNext()) {
 						MultiChangeRequest change = changes.next();
+						
 						SelectionKey key = change.getSocketChannel() == null ? null :  change.getSocketChannel().keyFor(this.selector);
 						if (logger.isDebugEnabled()) {
 							if (key != null && key.isValid()) {
@@ -94,20 +95,39 @@ public class MultiSelectorThread implements Runnable {
 						switch (change.getType()) {
 						case MultiChangeRequest.CHANGEOPS:
 							pendingChanges.remove(change);
-							key.interestOps(change.getOps());
+							if (key == null ) {
+								logger.warn("change=" + change + ": key is null", new NullPointerException("Selection key is null"));
+							} else if (!key.isValid()) {
+								logger.warn("change=" + change + ": key=" + key + " key is invalid", new InternalError("Selection key is invalid"));
+							} else {
+								key.interestOps(change.getOps());
+							}
 							break;
 						case MultiChangeRequest.ADD_OPS  :
 							pendingChanges.remove(change);
-							key.interestOps(key.interestOps() | change.getOps());
+							if (key == null ) {
+								logger.warn("change=" + change + ": key is null", new NullPointerException("Selection key is null"));
+							} else if (!key.isValid()) {
+								logger.warn("change=" + change + ": key=" + key + " key is invalid", new InternalError("Selection key is invalid"));
+							} else {
+								key.interestOps(key.interestOps() | change.getOps());
+							}
 							break;
 						case MultiChangeRequest.REGISTER:
 							pendingChanges.remove(change);
+							
 							SelectionKey key1 = change.getSocketChannel().register(this.selector, change.getOps());
 
 							if (change.isMultiAssocRequest()) {
 								key1.attach(change.getAssocMultiplexer());
+								if (logger.isDebugEnabled()) {
+									logger.debug("Key=" + key1 + "is registered to channel=" + change.getSocketChannel() + " of the association=" + change.getAssocMultiplexer());
+								}
 							} else {
 								key1.attach(change.getAssociation());
+								if (logger.isDebugEnabled()) {
+									logger.debug("Key=" + key1 + "is registered to channel=" + change.getSocketChannel() + " of the association=" + change.getAssociation());
+								}
 							}
 							break;
 						case MultiChangeRequest.CONNECT:
@@ -125,6 +145,7 @@ public class MultiSelectorThread implements Runnable {
 							if (!change.isMultiAssocRequest()) {
 								change.getAssociation().close();
 							}
+							break;
 						}
 					}
 				}

@@ -310,9 +310,6 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 
 	protected void reconnect() {
 		try {
-			if (isOpen()) {
-				close();
-			}
 			doInitiateConnectionSctp();
 		} catch(Exception ex) {
 			logger.warn("Error while trying to reconnect association[" + this.getName() + "]: " + ex.getMessage(), ex);
@@ -334,7 +331,6 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	
 			FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
 			synchronized (pendingChanges) {
-	
 				// Indicate we want the interest ops set changed
 				pendingChanges.add(new MultiChangeRequest(this.getSocketChannel(), null, this, MultiChangeRequest.CHANGEOPS,
 						SelectionKey.OP_WRITE));
@@ -343,7 +339,6 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 				// synchronized (this.txQueue) {
 				this.txQueue.add(payloadData);
 			}
-	
 			// Finally, wake up our selecting thread so it can make the required
 			// changes
 			this.management.getSocketSelector().wakeup();
@@ -550,16 +545,16 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 				logger.error(String.format("Exception while closing the SctpScoket for Association=%s", this.name), e);
 			}
 		}
-
-		try {
-			this.markAssociationDown();
-			this.associationListener.onCommunicationShutdown(this);
-		} catch (Exception e) {
-			logger.error(String.format(
-					"Exception while calling onCommunicationShutdown on AssociationListener for Association=%s",
-					this.name), e);
+		if (this.up.get()) {
+			try {
+				this.markAssociationDown();
+				this.associationListener.onCommunicationShutdown(this);
+			} catch (Exception e) {
+				logger.error(String.format(
+						"Exception while calling onCommunicationShutdown on AssociationListener for Association=%s",
+						this.name), e);
+			}
 		}
-
 		// Finally clear the txQueue
 		if (this.txQueue.size() > 0) {
 			logger.warn(String.format("Clearig txQueue for Association=%s. %d messages still pending will be cleared",
@@ -579,9 +574,6 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 	}
 
 	protected void branch(SctpChannel sctpChannel, MultiManagementImpl management) {
-		this.socketChannelSctp = sctpChannel;
-		this.management = management;
-		
 		//if association is stopped, channel wont be registered.
 		if (!started.get()) {
 			if (logger.isInfoEnabled()) {
@@ -590,10 +582,12 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 		} else {
 			FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
 			synchronized (pendingChanges) {
+				this.socketChannelSctp = sctpChannel;
+				this.management = management;
 				pendingChanges.add(new MultiChangeRequest(sctpChannel, null, this, MultiChangeRequest.REGISTER,
 						SelectionKey.OP_WRITE|SelectionKey.OP_READ));
 			}
-		}
+		};
 	}
 
 	private void doInitiateConnectionSctp() throws IOException {

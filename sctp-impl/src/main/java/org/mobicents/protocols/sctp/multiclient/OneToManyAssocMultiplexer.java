@@ -197,8 +197,8 @@ public class OneToManyAssocMultiplexer {
 				socketMultiChannel.bindAddress(InetAddress.getByName(this.hostAddressInfo.getSecondaryHostAddress()));
 			}
 		} catch (IOException ex) {
-			logger.warn("Error while init multi channel: " + ex.getMessage());
-			if (socketMultiChannel.isOpen()) {
+			logger.warn("Error while init multi channel ", ex);
+			if (socketMultiChannel != null && socketMultiChannel.isOpen()) {
 				try {
 					socketMultiChannel.close();
 				} catch (IOException closeEx) {};
