@@ -579,9 +579,13 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
 			if (logger.isInfoEnabled()) {
 				logger.info("Branching a stopped association, channel wont be registered to the selector.");
 			}
+			//set channel to able to close later
+			this.socketChannelSctp = sctpChannel;
+			this.management = management;
 		} else {
 			FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
 			synchronized (pendingChanges) {
+				//setting the channel must be synchronized
 				this.socketChannelSctp = sctpChannel;
 				this.management = management;
 				pendingChanges.add(new MultiChangeRequest(sctpChannel, null, this, MultiChangeRequest.REGISTER,
