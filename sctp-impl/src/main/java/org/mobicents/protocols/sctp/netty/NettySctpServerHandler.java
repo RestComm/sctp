@@ -21,11 +21,13 @@
 package org.mobicents.protocols.sctp.netty;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.sctp.SctpMessage;
+import io.netty.util.ReferenceCountUtil;
 
 import java.net.InetSocketAddress;
 
@@ -123,17 +125,20 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         SctpMessage sctpMessage = (SctpMessage) msg;
-        //MessageInfo messageInfo = sctpMessage.messageInfo();
-        ByteBuf byteBuf = sctpMessage.content();
+        try {
+            // MessageInfo messageInfo = sctpMessage.messageInfo();
+            ByteBuf byteBuf = sctpMessage.content();
 
-        byte[] array = new byte[byteBuf.readableBytes()];
-        byteBuf.getBytes(0, array);
-        
+            byte[] array = new byte[byteBuf.readableBytes()];
+            byteBuf.getBytes(0, array);
 
-        PayloadData payload = new PayloadData(array.length, array, sctpMessage.isComplete(), sctpMessage.isUnordered(),
-                sctpMessage.protocolIdentifier(), sctpMessage.streamIdentifier());
+            PayloadData payload = new PayloadData(array.length, array, sctpMessage.isComplete(), sctpMessage.isUnordered(),
+                    sctpMessage.protocolIdentifier(), sctpMessage.streamIdentifier());
 
-        this.association.read(payload);
+            this.association.read(payload);
+        } finally {
+            ReferenceCountUtil.release(sctpMessage);
+        }
     }
 
     @Override
@@ -147,13 +152,21 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
         byte[] data = payloadData.getData();
         // final ByteBuf byteBuf = ctx.alloc().buffer(data.length);
         final ByteBuf byteBuf = Unpooled.wrappedBuffer(data);
+
+        // final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.wrappedBuffer(data);
+
         SctpMessage sctpMessage = new SctpMessage(payloadData.getPayloadProtocolId(), payloadData.getStreamNumber(),
                 payloadData.isUnordered(), byteBuf);
 
         try {
+            // TODO Async stops the traffic after a while and performance degrades. Lets understand why?
+            // this.channel.writeAndFlush(sctpMessage);
             this.channel.writeAndFlush(sctpMessage).sync();
         } catch (InterruptedException e) {
             logger.error(String.format("Sending of payload failed for Associtaion %s", this.association.getName()), e);
+        } finally {
+            // Release Byte buffer is only for pooled
+            // ReferenceCountUtil.release(sctpMessage);
         }
 
     }

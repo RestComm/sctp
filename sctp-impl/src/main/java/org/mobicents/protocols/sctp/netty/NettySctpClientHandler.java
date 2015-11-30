@@ -24,6 +24,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.sctp.SctpMessage;
+import io.netty.util.ReferenceCountUtil;
 
 import java.net.InetSocketAddress;
 
@@ -78,16 +79,20 @@ public class NettySctpClientHandler extends NettySctpChannelInboundHandlerAdapte
         // TODO may be move this method to parent class?
 
         SctpMessage sctpMessage = (SctpMessage) msg;
-        // MessageInfo messageInfo = sctpMessage.messageInfo();
-        ByteBuf byteBuf = sctpMessage.content();
+        try {
+            // MessageInfo messageInfo = sctpMessage.messageInfo();
+            ByteBuf byteBuf = sctpMessage.content();
 
-        byte[] array = new byte[byteBuf.readableBytes()];
-        byteBuf.getBytes(0, array);
+            byte[] array = new byte[byteBuf.readableBytes()];
+            byteBuf.getBytes(0, array);
 
-        PayloadData payload = new PayloadData(array.length, array, sctpMessage.isComplete(), sctpMessage.isUnordered(),
-                sctpMessage.protocolIdentifier(), sctpMessage.streamIdentifier());
+            PayloadData payload = new PayloadData(array.length, array, sctpMessage.isComplete(), sctpMessage.isUnordered(),
+                    sctpMessage.protocolIdentifier(), sctpMessage.streamIdentifier());
 
-        this.association.read(payload);
+            this.association.read(payload);
+        } finally {
+            ReferenceCountUtil.release(sctpMessage);
+        }
     }
 
     @Override
@@ -107,9 +112,13 @@ public class NettySctpClientHandler extends NettySctpChannelInboundHandlerAdapte
                 payloadData.isUnordered(), byteBuf);
 
         try {
+            // this.channel.writeAndFlush(sctpMessage);
             this.channel.writeAndFlush(sctpMessage).sync();
         } catch (InterruptedException e) {
             logger.error(String.format("Sending of payload failed for Associtaion %s", this.association.getName(), e));
+        } finally {
+            // Release Byte buffer is only for pooled
+            // ReferenceCountUtil.release(sctpMessage);
         }
     }
 

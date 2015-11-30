@@ -224,8 +224,8 @@ public class NettyServerImpl implements Server {
     }
 
     protected void start() throws Exception {
-        this.bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("BossGroup-" + this.name));
-        this.workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("WorkerGroup-" + this.name));
+        this.bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("SctpServer-BossGroup-" + this.name));
+        this.workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("SctpServer-WorkerGroup-" + this.name));
 
         NettySctpServerChannelInitializer sctpEchoServerChannelInitializer = new NettySctpServerChannelInitializer(this,
                 this.management);

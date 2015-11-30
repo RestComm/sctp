@@ -27,6 +27,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.sctp.SctpChannel;
 import io.netty.channel.sctp.SctpChannelOption;
 import io.netty.channel.sctp.nio.NioSctpChannel;
+import io.netty.util.concurrent.DefaultThreadFactory;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -543,7 +544,7 @@ public class NettyAssociationImpl implements Association {
 
     protected void connect() {
         try {
-            this.group = new NioEventLoopGroup();
+            this.group = new NioEventLoopGroup(0, new DefaultThreadFactory("SctpClient-BossGroup-" + this.name));
             Bootstrap b = new Bootstrap();
 
             NettySctpClientChannelInitializer nettySctpClientChannelInitializer = new NettySctpClientChannelInitializer(this);
