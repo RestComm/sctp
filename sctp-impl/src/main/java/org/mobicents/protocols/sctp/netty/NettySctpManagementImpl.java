@@ -19,6 +19,10 @@
  */
 package org.mobicents.protocols.sctp.netty;
 
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.DefaultThreadFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -81,8 +85,8 @@ public class NettySctpManagementImpl implements Management {
     private int workerThreads = DEFAULT_IO_THREADS;
 
     private boolean singleThread = true;
-    
-    private NettyClientOpsThread nettyClientOpsThread = null;
+
+    // private NettyClientOpsThread nettyClientOpsThread = null;
 
     private ServerListener serverListener = null;
 
@@ -90,6 +94,9 @@ public class NettySctpManagementImpl implements Management {
     protected FastList<Server> servers = new FastList<Server>();
     protected AssociationMap<String, Association> associations = new AssociationMap<String, Association>();
     private volatile boolean started = false;
+
+    private EventLoopGroup bossGroup;
+    private EventLoopGroup workerGroup;
 
     /**
 	 * 
@@ -150,6 +157,14 @@ public class NettySctpManagementImpl implements Management {
     @Override
     public void setServerListener(ServerListener serverListener) {
         this.serverListener = serverListener;
+    }
+
+    protected EventLoopGroup getBossGroup() {
+        return bossGroup;
+    }
+
+    protected EventLoopGroup getWorkerGroup() {
+        return workerGroup;
     }
 
     /*
@@ -215,9 +230,12 @@ public class NettySctpManagementImpl implements Management {
 
             logger.info(String.format("SCTP configuration file path %s", persistFile.toString()));
 
-            this.nettyClientOpsThread = new NettyClientOpsThread(this);
-            (new Thread(this.nettyClientOpsThread )).start();
-            
+            this.bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("SctpServer-BossGroup-" + this.name));
+            this.workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("SctpServer-WorkerGroup-" + this.name));
+
+            // this.nettyClientOpsThread = new NettyClientOpsThread(this);
+            // (new Thread(this.nettyClientOpsThread )).start();
+
             try {
                 this.load();
             } catch (FileNotFoundException e) {
@@ -252,8 +270,8 @@ public class NettySctpManagementImpl implements Management {
             logger.warn(String.format("management=%s is already stopped", this.name));
             return;
         }
-        
-        this.nettyClientOpsThread.setStarted(false);
+
+        // this.nettyClientOpsThread.setStarted(false);
 
         for (ManagementEventListener lstr : managementEventListeners) {
             try {
@@ -303,6 +321,11 @@ public class NettySctpManagementImpl implements Management {
             Thread.sleep(100);
         }
 
+        // TODO - make a general shutdown and waiting for it instead of "waiting till stopping associations" 
+        this.bossGroup.shutdownGracefully();
+        this.workerGroup.shutdownGracefully();
+        
+        
         // TODO Should servers be also checked for shutdown?
 
         this.started = false;
@@ -1019,10 +1042,10 @@ public class NettySctpManagementImpl implements Management {
     protected FastList<ManagementEventListener> getManagementEventListeners() {
         return managementEventListeners;
     }
-    
-    protected NettyClientOpsThread getNettyClientOpsThread() {
-        return nettyClientOpsThread;
-    }
+
+    // protected NettyClientOpsThread getNettyClientOpsThread() {
+    // return nettyClientOpsThread;
+    // }
 
     @SuppressWarnings("unchecked")
     private void load() throws FileNotFoundException {

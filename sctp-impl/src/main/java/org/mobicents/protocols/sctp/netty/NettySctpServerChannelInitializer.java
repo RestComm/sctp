@@ -40,7 +40,8 @@ public class NettySctpServerChannelInitializer extends ChannelInitializer<SctpCh
 
     @Override
     protected void initChannel(SctpChannel ch) throws Exception {
-        ch.pipeline().addLast(new SctpMessageCompletionHandler(), new NettySctpServerHandler(this.nettyServerImpl, this.sctpManagementImpl));
+        ch.pipeline().addLast(new SctpMessageCompletionHandler(),
+                new NettySctpServerHandler(this.nettyServerImpl, this.sctpManagementImpl));
     }
 
 }

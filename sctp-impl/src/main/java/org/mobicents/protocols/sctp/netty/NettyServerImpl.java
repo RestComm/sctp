@@ -23,13 +23,12 @@ package org.mobicents.protocols.sctp.netty;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.ServerChannel;
 import io.netty.channel.sctp.SctpServerChannel;
 import io.netty.channel.sctp.nio.NioSctpServerChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.util.concurrent.DefaultThreadFactory;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -83,9 +82,9 @@ public class NettyServerImpl implements Server {
     protected FastList<Association> anonymAssociations = new FastList<Association>();
 
     // Netty declarations
-    private EventLoopGroup bossGroup;
-    private EventLoopGroup workerGroup;
-    private ChannelFuture cahnnelFuture;
+    // The channel on which we'll accept connections
+    private SctpServerChannel serverChannelSctp;
+    private NioServerSocketChannel serverChannelTcp;
 
     /**
      * 
@@ -223,34 +222,26 @@ public class NettyServerImpl implements Server {
         return this.anonymAssociations.unmodifiable();
     }
 
+    protected ServerChannel getIpChannel() {
+        if (this.ipChannelType == IpChannelType.SCTP)
+            return this.serverChannelSctp;
+        else
+            return this.serverChannelTcp;
+    }
+
+    /**
+     * @param management the management to set
+     */
+    protected void setManagement(NettySctpManagementImpl management) {
+        this.management = management;
+    }
+
     protected void start() throws Exception {
-        this.bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("SctpServer-BossGroup-" + this.name));
-        this.workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("SctpServer-WorkerGroup-" + this.name));
+        this.initSocket();
+        this.started = true;
 
-        NettySctpServerChannelInitializer sctpEchoServerChannelInitializer = new NettySctpServerChannelInitializer(this,
-                this.management);
-        ServerBootstrap b = new ServerBootstrap();
-        b.group(bossGroup, workerGroup).channel(NioSctpServerChannel.class).option(ChannelOption.SO_BACKLOG, 100)
-                .handler(new LoggingHandler(LogLevel.INFO)).childHandler(sctpEchoServerChannelInitializer);
-
-        InetSocketAddress localAddress = new InetSocketAddress(this.hostAddress, this.hostport);
-
-        // Bind the server to primary address.
-        this.cahnnelFuture = b.bind(localAddress).sync();
-
-        // Get the underlying sctp channel
-        SctpServerChannel channel = (SctpServerChannel) this.cahnnelFuture.channel();
-
-        // Bind the secondary address.
-        // Please note that, bindAddress in the client channel should be done before connecting if you have not
-        // enable Dynamic Address Configuration. See net.sctp.addip_enable kernel param
-        if (this.extraHostAddresses != null) {
-            for (int count = 0; count < this.extraHostAddresses.length; count++) {
-                String localSecondaryAddress = this.extraHostAddresses[count];
-                InetAddress localSecondaryInetAddress = InetAddress.getByName(localSecondaryAddress);
-
-                this.cahnnelFuture = channel.bindAddress(localSecondaryInetAddress).sync();
-            }
+        if (logger.isInfoEnabled()) {
+            logger.info(String.format("Started Server=%s", this.name));
         }
     }
 
@@ -280,24 +271,90 @@ public class NettyServerImpl implements Server {
         }
 
         // Stop underlying channel and wait till its done
-        if (this.cahnnelFuture != null) {
-            this.cahnnelFuture.channel().close().sync();
-        }
-
-        if (this.bossGroup != null) {
-            bossGroup.shutdownGracefully();
-        }
-
-        if (this.workerGroup != null) {
-            workerGroup.shutdownGracefully();
+        if (this.getIpChannel() != null) {
+            try {
+                this.getIpChannel().close().sync();
+            } catch (Exception e) {
+                logger.warn(String.format("Error while stopping the Server=%s", this.name), e);
+            }
         }
     }
 
-    /**
-     * @param management the management to set
-     */
-    protected void setManagement(NettySctpManagementImpl management) {
-        this.management = management;
+    private void initSocket() throws Exception {
+        NettySctpServerChannelInitializer channelInitializer = new NettySctpServerChannelInitializer(this, this.management);
+        ServerBootstrap b = new ServerBootstrap();
+        b.group(this.management.getBossGroup(), this.management.getWorkerGroup());
+        if (this.ipChannelType == IpChannelType.SCTP) {
+            b.channel(NioSctpServerChannel.class);
+            b.option(ChannelOption.SO_BACKLOG, 100);
+        } else {
+            b.channel(NioServerSocketChannel.class);
+            b.option(ChannelOption.SO_BACKLOG, 100);
+        }
+        b.handler(new LoggingHandler(LogLevel.INFO));
+        b.childHandler(channelInitializer);
+
+        InetSocketAddress localAddress = new InetSocketAddress(this.hostAddress, this.hostport);
+
+        // Bind the server to primary address.
+        ChannelFuture channelFuture = b.bind(localAddress).sync();
+
+        // Get the underlying sctp channel
+        if (this.ipChannelType == IpChannelType.SCTP) {
+            this.serverChannelSctp = (SctpServerChannel) channelFuture.channel();
+
+            // Bind the secondary address.
+            // Please note that, bindAddress in the client channel should be done before connecting if you have not
+            // enable Dynamic Address Configuration. See net.sctp.addip_enable kernel param
+            if (this.extraHostAddresses != null) {
+                for (int count = 0; count < this.extraHostAddresses.length; count++) {
+                    String localSecondaryAddress = this.extraHostAddresses[count];
+                    InetAddress localSecondaryInetAddress = InetAddress.getByName(localSecondaryAddress);
+
+                    channelFuture = this.serverChannelSctp.bindAddress(localSecondaryInetAddress).sync();
+                }
+            }
+
+            if (logger.isInfoEnabled()) {
+                logger.info(String.format("SctpServerChannel bound to=%s ", this.serverChannelSctp.allLocalAddresses()));
+            }
+        } else {
+            this.serverChannelTcp = (NioServerSocketChannel) channelFuture.channel();
+
+            if (logger.isInfoEnabled()) {
+                logger.info(String.format("ServerSocketChannel bound to=%s ", this.serverChannelTcp.localAddress()));
+            }
+        }
+    }
+
+    @Override
+    public String toString() {
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Server [name=").append(this.name).append(", started=").append(this.started).append(", hostAddress=").append(this.hostAddress)
+                .append(", hostPort=").append(hostport).append(", ipChannelType=").append(ipChannelType).append(", acceptAnonymousConnections=")
+                .append(this.acceptAnonymousConnections).append(", maxConcurrentConnectionsCount=").append(this.maxConcurrentConnectionsCount)
+                .append(", associations(anonymous does not included)=[");
+
+        for (FastList.Node<String> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+            sb.append(n.getValue());
+            sb.append(", ");
+        }
+
+        sb.append("], extraHostAddress=[");
+
+        if (this.extraHostAddresses != null) {
+            for (int i = 0; i < this.extraHostAddresses.length; i++) {
+                String extraHostAddress = this.extraHostAddresses[i];
+                sb.append(extraHostAddress);
+                sb.append(", ");
+            }
+        }
+
+        sb.append("]]");
+
+        return sb.toString();
     }
 
     /**

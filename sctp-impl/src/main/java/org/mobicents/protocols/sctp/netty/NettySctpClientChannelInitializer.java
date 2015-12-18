@@ -45,5 +45,4 @@ public class NettySctpClientChannelInitializer extends ChannelInitializer<SctpCh
         ch.pipeline().addLast(new SctpMessageCompletionHandler(), new NettySctpClientHandler(this.nettyAssociationImpl));
 
     }
-
 }

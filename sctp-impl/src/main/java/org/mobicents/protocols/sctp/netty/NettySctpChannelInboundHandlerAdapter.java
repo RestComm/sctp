@@ -20,13 +20,22 @@
 
 package org.mobicents.protocols.sctp.netty;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.sctp.SctpMessage;
+import io.netty.util.ReferenceCountUtil;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
 
-import sun.nio.ch.SctpAssocChange;
+//import sun.nio.ch.SctpAssocChange;
+
+
+import org.mobicents.protocols.api.AssociationType;
+import org.mobicents.protocols.api.IpChannelType;
+import org.mobicents.protocols.api.PayloadData;
 
 import com.sun.nio.sctp.AssociationChangeNotification;
 import com.sun.nio.sctp.PeerAddressChangeNotification;
@@ -47,6 +56,9 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
 
     protected NettyAssociationImpl association = null;
 
+    protected Channel channel = null;
+    protected ChannelHandlerContext ctx = null;
+
     /**
      * 
      */
@@ -55,10 +67,18 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
     }
 
     @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        this.association.markAssociationDown();
+    }
+
+    @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
 
         if (evt instanceof AssociationChangeNotification) {
-            SctpAssocChange not = (SctpAssocChange) evt;
+
+            // SctpAssocChange not = (SctpAssocChange) evt;
+            AssociationChangeNotification not = (AssociationChangeNotification) evt;
+
             switch (not.event()) {
                 case COMM_UP:
                     if (not.association() != null) {
@@ -72,15 +92,7 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
                                 association.getName(), this.maxOutboundStreams, this.maxInboundStreams));
                     }
 
-                    try {
-                        this.association.markAssociationUp();
-                        this.association.getAssociationListener().onCommunicationUp(association, this.maxInboundStreams,
-                                this.maxOutboundStreams);
-                    } catch (Exception e) {
-                        logger.error(String.format(
-                                "Exception while calling onCommunicationUp on AssociationListener for Association=%s",
-                                association.getName()), e);
-                    }
+                    this.association.markAssociationUp(this.maxInboundStreams, this.maxOutboundStreams);
                     break;
                 case CANT_START:
                     logger.error(String.format("Can't start for Association=%s", association.getName()));
@@ -89,8 +101,11 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
                     logger.warn(String.format("Communication lost for Association=%s", association.getName()));
 
                     // Close the Socket
-                    association.close();
-                    association.scheduleConnect();
+                    association.getAssociationListener().onCommunicationLost(association);
+                    ctx.close();
+                    if (association.getAssociationType() == AssociationType.CLIENT) {
+                        association.scheduleConnect();
+                    }
                     break;
                 case RESTART:
                     logger.warn(String.format("Restart for Association=%s", association.getName()));
@@ -106,20 +121,21 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
                     if (logger.isInfoEnabled()) {
                         logger.info(String.format("Shutdown for Association=%s", association.getName()));
                     }
-                    try {
-                        association.markAssociationDown();
-                    } catch (Exception e) {
-                        logger.error(String.format(
-                                "Exception while calling onCommunicationShutdown on AssociationListener for Association=%s",
-                                association.getName()), e);
-                    }
+//                    try {
+//                        association.markAssociationDown();
+//                    } catch (Exception e) {
+//                        logger.error(String.format(
+//                                "Exception while calling onCommunicationShutdown on AssociationListener for Association=%s",
+//                                association.getName()), e);
+//                    }
                     break;
                 default:
                     logger.warn(String.format("Received unkown Event=%s for Association=%s", not.event(), association.getName()));
                     break;
             }
+        }
 
-        } else if (evt instanceof PeerAddressChangeNotification) {
+        if (evt instanceof PeerAddressChangeNotification) {
             PeerAddressChangeNotification notification = (PeerAddressChangeNotification) evt;
 
             if (logger.isEnabledFor(Priority.WARN)) {
@@ -141,16 +157,59 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
 
             // TODO assign Thread's ?
 
-            try {
-                association.markAssociationDown();
-                association.getAssociationListener().onCommunicationShutdown(association);
-            } catch (Exception e) {
-                logger.error(String.format(
-                        "Exception while calling onCommunicationShutdown on AssociationListener for Association=%s",
-                        association.getName()), e);
-            }
+//            try {
+//                association.markAssociationDown();
+//                association.getAssociationListener().onCommunicationShutdown(association);
+//            } catch (Exception e) {
+//                logger.error(String.format(
+//                        "Exception while calling onCommunicationShutdown on AssociationListener for Association=%s",
+//                        association.getName()), e);
+//            }
         }// if (evt instanceof AssociationChangeNotification)
 
+    }
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        try {
+            PayloadData payload;
+            if (this.association.getIpChannelType() == IpChannelType.SCTP) {
+                SctpMessage sctpMessage = (SctpMessage) msg;
+                ByteBuf byteBuf = sctpMessage.content();
+                payload = new PayloadData(byteBuf.readableBytes(), byteBuf, sctpMessage.isComplete(),
+                        sctpMessage.isUnordered(), sctpMessage.protocolIdentifier(), sctpMessage.streamIdentifier());
+            } else {
+                ByteBuf byteBuf = (ByteBuf) msg;
+                payload = new PayloadData(byteBuf.readableBytes(), byteBuf, true, false, 0, 0);
+            }
+
+            if (logger.isDebugEnabled()) {
+                logger.debug(String.format("Rx : Ass=%s %s", this.association.getName(), payload));
+            }
+
+            this.association.read(payload);
+        } finally {
+            ReferenceCountUtil.release(msg);
+        }
+    }
+
+    protected void writeAndFlush(Object message) {
+        Channel ch = this.channel;
+        if (ch != null) {
+            ch.writeAndFlush(message);
+        }
+    }
+
+    protected void closeChannel() {
+        Channel ch = this.channel;
+        if (ch != null) {
+            try {
+                ch.close().sync();
+            } catch (InterruptedException e) {
+                logger.error(String.format("Error while trying to close Channel for Associtaion %s",
+                        this.association.getName(), e));
+            }
+        }
     }
 
 }

@@ -21,17 +21,21 @@
 package org.mobicents.protocols.sctp.netty;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.sctp.SctpChannel;
 import io.netty.channel.sctp.SctpChannelOption;
+import io.netty.channel.sctp.SctpMessage;
 import io.netty.channel.sctp.nio.NioSctpChannel;
-import io.netty.util.concurrent.DefaultThreadFactory;
+import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 import javolution.xml.XMLFormat;
 import javolution.xml.stream.XMLStreamException;
@@ -86,11 +90,7 @@ public class NettyAssociationImpl implements Association {
     // Is the Association up (connection is established)
     protected volatile boolean up = false;
 
-    private NettySctpServerHandler sctpServerHandler;
-    private NettySctpClientHandler sctpClientHandler;
-
-    private EventLoopGroup group;
-    private ChannelFuture cahnnelFuture;
+    private NettySctpChannelInboundHandlerAdapter sctpHandler;
 
     public NettyAssociationImpl() {
         super();
@@ -120,7 +120,6 @@ public class NettyAssociationImpl implements Association {
         this.extraHostAddresses = extraHostAddresses;
 
         this.type = AssociationType.CLIENT;
-
     }
 
     /**
@@ -317,11 +316,24 @@ public class NettyAssociationImpl implements Association {
      */
     @Override
     public void send(PayloadData payloadData) throws Exception {
-        if (this.type == AssociationType.SERVER) {
-            this.sctpServerHandler.send(payloadData);
+        NettySctpChannelInboundHandlerAdapter handler = checkSocketIsOpen();
+
+        final ByteBuf byteBuf = payloadData.getByteBuf();
+        if (this.ipChannelType == IpChannelType.SCTP) {
+            SctpMessage sctpMessage = new SctpMessage(payloadData.getPayloadProtocolId(), payloadData.getStreamNumber(),
+                    payloadData.isUnordered(), byteBuf);
+            handler.writeAndFlush(sctpMessage);
         } else {
-            this.sctpClientHandler.send(payloadData);
+            handler.writeAndFlush(byteBuf);
         }
+    }
+
+    private NettySctpChannelInboundHandlerAdapter checkSocketIsOpen() throws Exception {
+        NettySctpChannelInboundHandlerAdapter handler = this.sctpHandler;
+        if (!this.started || handler == null)
+            throw new Exception(String.format(
+                    "Association is not started or underlying sctp/tcp channel is down for Association=%s", this.name));
+        return handler;
     }
 
     /*
@@ -339,7 +351,6 @@ public class NettyAssociationImpl implements Association {
         }
 
         this.start();
-
     }
 
     /*
@@ -349,8 +360,6 @@ public class NettyAssociationImpl implements Association {
      */
     @Override
     public void rejectAnonymousAssociation() {
-        // TODO Auto-generated method stub
-
     }
 
     /*
@@ -366,7 +375,6 @@ public class NettyAssociationImpl implements Association {
         }
 
         this.stop();
-
     }
 
     /*
@@ -444,29 +452,10 @@ public class NettyAssociationImpl implements Association {
             }
         }
 
-        try {
-            this.markAssociationDown();
-            this.associationListener.onCommunicationShutdown(this);
-        } catch (Exception e) {
-            logger.error(String.format(
-                    "Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", this.name), e);
+        NettySctpChannelInboundHandlerAdapter handler = this.sctpHandler;
+        if (handler != null) {
+            handler.closeChannel();
         }
-
-        if (this.type == AssociationType.SERVER) {
-            if (this.sctpServerHandler != null) {
-                this.sctpServerHandler.closeChannel();
-            }
-        } else {
-
-            if (this.cahnnelFuture != null) {
-                this.cahnnelFuture.channel().close().sync();
-            }
-
-            if (this.group != null) {
-                this.group.shutdownGracefully();
-            }
-        }
-
     }
 
     protected void read(PayloadData payload) {
@@ -477,7 +466,7 @@ public class NettyAssociationImpl implements Association {
         }
     }
 
-    protected void markAssociationUp() {
+    protected void markAssociationUp(int maxInboundStreams, int maxOutboundStreams) {
         if (this.server != null) {
             synchronized (this.server.anonymAssociations) {
                 this.server.anonymAssociations.add(this);
@@ -485,6 +474,8 @@ public class NettyAssociationImpl implements Association {
         }
 
         this.up = true;
+        this.getAssociationListener().onCommunicationUp(this, maxInboundStreams, maxOutboundStreams);
+
         for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
             try {
                 lstr.onAssociationUp(this);
@@ -498,6 +489,7 @@ public class NettyAssociationImpl implements Association {
         if (this.up) {
             // To avoid calling Listener again and again
             this.up = false;
+
             for (ManagementEventListener lstr : this.management.getManagementEventListeners()) {
                 try {
                     lstr.onAssociationDown(this);
@@ -506,77 +498,88 @@ public class NettyAssociationImpl implements Association {
                 }
             }
 
+            this.getAssociationListener().onCommunicationShutdown(this);
+
             if (this.server != null) {
                 synchronized (this.server.anonymAssociations) {
                     this.server.anonymAssociations.remove(this);
                 }
             }
-            
-            this.getAssociationListener().onCommunicationShutdown(this);
         }
     }
 
-    protected void close() {
-
-        // channel.close();
-
-        try {
-            this.markAssociationDown();
-        } catch (Exception e) {
-            logger.error(String.format(
-                    "Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", this.name), e);
-        }
-    }
+//    protected void close() {
+//
+//        // channel.close();
+//
+//        try {
+//            this.markAssociationDown();
+//        } catch (Exception e) {
+//            logger.error(String.format(
+//                    "Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", this.name), e);
+//        }
+//    }
 
     protected void scheduleConnect() {
-        if (this.getAssociationType() == AssociationType.CLIENT) {
-            this.management.getNettyClientOpsThread().scheduleConnect(this);
-        }
+        int connectDelay = this.management.getConnectDelay();
+        logger.debug(String.format("Scheduling of a channel connection: Association=%s, connectDelay=%d", this, connectDelay));
+
+        final EventLoop loop = this.management.getBossGroup().next();
+        loop.schedule(new Runnable() {
+            @Override
+            public void run() {
+                connect();
+            }
+        }, connectDelay, TimeUnit.SECONDS);
     }
 
-    protected void setSctpServerHandler(NettySctpServerHandler sctpEchoServerHandler) {
-        this.sctpServerHandler = sctpEchoServerHandler;
-    }
-
-    protected void setSctpClientHandler(NettySctpClientHandler sctpClientHandler) {
-        this.sctpClientHandler = sctpClientHandler;
+    protected void setSctpHandler(NettySctpChannelInboundHandlerAdapter sctpHandler) {
+        this.sctpHandler = sctpHandler;
     }
 
     protected void connect() {
         try {
-            this.group = new NioEventLoopGroup(0, new DefaultThreadFactory("SctpClient-BossGroup-" + this.name));
+            EventLoopGroup group = this.management.getBossGroup();
             Bootstrap b = new Bootstrap();
 
-            NettySctpClientChannelInitializer nettySctpClientChannelInitializer = new NettySctpClientChannelInitializer(this);
-            b.group(group).channel(NioSctpChannel.class).option(SctpChannelOption.SCTP_NODELAY, true)
-                    .handler(nettySctpClientChannelInitializer);
+            NettySctpClientChannelInitializer nettyClientChannelInitializer = new NettySctpClientChannelInitializer(this);
+            b.group(group);
+            if (this.ipChannelType == IpChannelType.SCTP) {
+                b.channel(NioSctpChannel.class);
+                b.option(SctpChannelOption.SCTP_NODELAY, true);
+            } else {
+                b.channel(NioSocketChannel.class);
+                b.option(ChannelOption.TCP_NODELAY, true);
+            }
+            b.handler(nettyClientChannelInitializer);
 
             InetSocketAddress localAddress = new InetSocketAddress(this.hostAddress, this.hostPort);
 
             // Bind the client channel.
             ChannelFuture bindFuture = b.bind(localAddress).sync();
 
-            // Get the underlying sctp channel
-            SctpChannel channel = (SctpChannel) bindFuture.channel();
+            if (this.ipChannelType == IpChannelType.SCTP) {
+                // Get the underlying sctp channel
+                SctpChannel channel = (SctpChannel) bindFuture.channel();
 
-            // Bind the secondary address.
-            // Please note that, bindAddress in the client channel should be done before connecting if you have not
-            // enable Dynamic Address Configuration. See net.sctp.addip_enable kernel param
-            if (this.extraHostAddresses != null) {
-                for (int count = 0; count < this.extraHostAddresses.length; count++) {
-                    String localSecondaryAddress = this.extraHostAddresses[count];
-                    InetAddress localSecondaryInetAddress = InetAddress.getByName(localSecondaryAddress);
+                // Bind the secondary address.
+                // Please note that, bindAddress in the client channel should be done before connecting if you have not
+                // enable Dynamic Address Configuration. See net.sctp.addip_enable kernel param
+                if (this.extraHostAddresses != null) {
+                    for (int count = 0; count < this.extraHostAddresses.length; count++) {
+                        String localSecondaryAddress = this.extraHostAddresses[count];
+                        InetAddress localSecondaryInetAddress = InetAddress.getByName(localSecondaryAddress);
 
-                    channel.bindAddress(localSecondaryInetAddress).sync();
+                        channel.bindAddress(localSecondaryInetAddress).sync();
+                    }
                 }
             }
 
             InetSocketAddress remoteAddress = new InetSocketAddress(this.peerAddress, this.peerPort);
 
             // Finish connect
-            this.cahnnelFuture = channel.connect(remoteAddress).sync();
-
-            System.out.println(this.getName() + " Client Channel at connect = " + this.cahnnelFuture.channel());
+            b.connect(remoteAddress).sync();
+            System.out.println(this.getName() + "Finished Client Channel connection, Ass=" + this.name);
         } catch (Exception e) {
             logger.error(String.format("Exception while finishing connection for Association=%s", this.getName()), e);
             // TODO check if channel is up and close it?

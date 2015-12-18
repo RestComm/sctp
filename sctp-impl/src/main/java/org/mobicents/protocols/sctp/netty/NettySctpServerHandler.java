@@ -20,14 +20,8 @@
 
 package org.mobicents.protocols.sctp.netty;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.sctp.SctpMessage;
-import io.netty.util.ReferenceCountUtil;
 
 import java.net.InetSocketAddress;
 
@@ -36,7 +30,7 @@ import javolution.util.FastMap;
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationType;
-import org.mobicents.protocols.api.PayloadData;
+import org.mobicents.protocols.api.IpChannelType;
 
 /**
  * @author <a href="mailto:amit.bhayani@telestax.com">Amit Bhayani</a>
@@ -49,15 +43,19 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
     private final NettyServerImpl serverImpl;
     private final NettySctpManagementImpl managementImpl;
 
-    private Channel channel = null;
-    private ChannelHandlerContext ctx = null;
-
     /**
      * 
      */
     public NettySctpServerHandler(NettyServerImpl serverImpl, NettySctpManagementImpl managementImpl) {
         this.serverImpl = serverImpl;
         this.managementImpl = managementImpl;
+    }
+
+    @Override
+    public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
+        this.association.setSctpHandler(null);
+        if (association != null)
+            logger.warn(String.format("ChannelUnregistered for Association=%s", association.getName()));
     }
 
     @Override
@@ -93,51 +91,83 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
                         logger.error(String.format(
                                 "Received connect request for Association=%s but not started yet. Droping the connection! ",
                                 association.getName()));
-                        ChannelFuture channelFuture = channel.close();
-                        break;
+                        channel.close();
+                        return;
                     }
 
                     this.association = association;
                     this.channel = channel;
                     this.ctx = ctx;
-                    this.association.setSctpServerHandler(this);
-                    // ((AssociationImpl) association).setSocketChannel(socketChannel);
+                    this.association.setSctpHandler(this);
 
                     if (logger.isInfoEnabled()) {
                         logger.info(String.format("Connected %s", association));
                     }
 
-                    // if (association.getIpChannelType() == IpChannelType.TCP) {
-                    // AssocChangeEvent ace = AssocChangeEvent.COMM_UP;
-                    // AssociationChangeNotification2 acn = new AssociationChangeNotification2(ace);
-                    // association.associationHandler.handleNotification(acn, association);
-                    // }
+                    if (association.getIpChannelType() == IpChannelType.TCP) {
+                        this.association.markAssociationUp(1, 1);
+                    }
 
                     break;
                 }
             }
         }// for loop
 
-        // lets try to close the Channel
-        // ChannelFuture channelFuture = channel.close();
-    }
+        if (!provisioned && serverImpl.isAcceptAnonymousConnections() && this.managementImpl.getServerListener() != null) {
+            // the server accepts anonymous connections
 
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        SctpMessage sctpMessage = (SctpMessage) msg;
-        try {
-            // MessageInfo messageInfo = sctpMessage.messageInfo();
-            ByteBuf byteBuf = sctpMessage.content();
+            // checking for limit of concurrent connections
+            if (serverImpl.getMaxConcurrentConnectionsCount() > 0
+                    && serverImpl.anonymAssociations.size() >= serverImpl.getMaxConcurrentConnectionsCount()) {
+                logger.warn(String.format(
+                        "Incoming anonymous connection is rejected because of too many active connections to Server=%s",
+                        serverImpl));
+                channel.close();
+                return;
+            }
 
-            byte[] array = new byte[byteBuf.readableBytes()];
-            byteBuf.getBytes(0, array);
+            provisioned = true;
 
-            PayloadData payload = new PayloadData(array.length, array, sctpMessage.isComplete(), sctpMessage.isUnordered(),
-                    sctpMessage.protocolIdentifier(), sctpMessage.streamIdentifier());
+            NettyAssociationImpl anonymAssociation = new NettyAssociationImpl(host, port, serverImpl.getName(),
+                    serverImpl.getIpChannelType(), serverImpl);
+            anonymAssociation.setManagement(this.managementImpl);
 
-            this.association.read(payload);
-        } finally {
-            ReferenceCountUtil.release(sctpMessage);
+            try {
+                this.managementImpl.getServerListener().onNewRemoteConnection(serverImpl, anonymAssociation);
+            } catch (Throwable e) {
+                logger.warn(String.format("Exception when invoking ServerListener.onNewRemoteConnection() Ass=%s",
+                        anonymAssociation), e);
+                channel.close();
+                return;
+            }
+
+            if (!anonymAssociation.isStarted()) {
+                // connection is rejected
+                logger.info(String.format("Rejected anonymous %s", anonymAssociation));
+                channel.close();
+                return;
+            }
+
+            this.association = anonymAssociation;
+            this.channel = channel;
+            this.ctx = ctx;
+            this.association.setSctpHandler(this);
+
+            if (logger.isInfoEnabled()) {
+                logger.info(String.format("Accepted anonymous %s", anonymAssociation));
+            }
+
+            if (association.getIpChannelType() == IpChannelType.TCP) {
+                this.association.markAssociationUp(1, 1);
+            }
+        }
+
+        if (!provisioned) {
+            // There is no corresponding Associate provisioned. Lets close the
+            // channel here
+            logger.warn(String.format("Received connect request from non provisioned %s:%d address. Closing Channel", host,
+                    port));
+            ctx.close();
         }
     }
 
@@ -146,40 +176,6 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
         // Close the connection when an exception is raised.
         logger.error(String.format("ExceptionCaught for Associtaion %s", this.association.getName()), cause);
         ctx.close();
-    }
-
-    protected void send(PayloadData payloadData) {
-        byte[] data = payloadData.getData();
-        // final ByteBuf byteBuf = ctx.alloc().buffer(data.length);
-        final ByteBuf byteBuf = Unpooled.wrappedBuffer(data);
-
-        // final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.wrappedBuffer(data);
-
-        SctpMessage sctpMessage = new SctpMessage(payloadData.getPayloadProtocolId(), payloadData.getStreamNumber(),
-                payloadData.isUnordered(), byteBuf);
-
-        try {
-            // TODO Async stops the traffic after a while and performance degrades. Lets understand why?
-            // this.channel.writeAndFlush(sctpMessage);
-            this.channel.writeAndFlush(sctpMessage).sync();
-        } catch (InterruptedException e) {
-            logger.error(String.format("Sending of payload failed for Associtaion %s", this.association.getName()), e);
-        } finally {
-            // Release Byte buffer is only for pooled
-            // ReferenceCountUtil.release(sctpMessage);
-        }
-
-    }
-
-    protected void closeChannel() {
-        if (this.channel != null) {
-            try {
-                channel.close().sync();
-            } catch (InterruptedException e) {
-                logger.error(
-                        String.format("Error while trying to close Channel for Associtaion %s", this.association.getName()), e);
-            }
-        }
     }
 
 }
