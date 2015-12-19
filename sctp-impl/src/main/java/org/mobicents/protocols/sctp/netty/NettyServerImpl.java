@@ -281,18 +281,18 @@ public class NettyServerImpl implements Server {
     }
 
     private void initSocket() throws Exception {
-        NettySctpServerChannelInitializer channelInitializer = new NettySctpServerChannelInitializer(this, this.management);
         ServerBootstrap b = new ServerBootstrap();
         b.group(this.management.getBossGroup(), this.management.getWorkerGroup());
         if (this.ipChannelType == IpChannelType.SCTP) {
             b.channel(NioSctpServerChannel.class);
             b.option(ChannelOption.SO_BACKLOG, 100);
+            b.childHandler(new NettySctpServerChannelInitializer(this, this.management));
         } else {
             b.channel(NioServerSocketChannel.class);
             b.option(ChannelOption.SO_BACKLOG, 100);
+            b.childHandler(new NettyTcpServerChannelInitializer(this, this.management));
         }
         b.handler(new LoggingHandler(LogLevel.INFO));
-        b.childHandler(channelInitializer);
 
         InetSocketAddress localAddress = new InetSocketAddress(this.hostAddress, this.hostport);
 

@@ -25,7 +25,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.sctp.SctpMessage;
-import io.netty.util.ReferenceCountUtil;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
@@ -68,14 +67,20 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
+        if (logger.isDebugEnabled()) {
+            logger.debug(String.format("channelInactive event: association=%s", this.association));
+        }
+
         this.association.markAssociationDown();
     }
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug(String.format("userEventTriggered event: association=%s \nevent=%s", this.association, evt));
+        }
 
         if (evt instanceof AssociationChangeNotification) {
-
             // SctpAssocChange not = (SctpAssocChange) evt;
             AssociationChangeNotification not = (AssociationChangeNotification) evt;
 
@@ -171,26 +176,26 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        try {
-            PayloadData payload;
-            if (this.association.getIpChannelType() == IpChannelType.SCTP) {
-                SctpMessage sctpMessage = (SctpMessage) msg;
-                ByteBuf byteBuf = sctpMessage.content();
-                payload = new PayloadData(byteBuf.readableBytes(), byteBuf, sctpMessage.isComplete(),
-                        sctpMessage.isUnordered(), sctpMessage.protocolIdentifier(), sctpMessage.streamIdentifier());
-            } else {
-                ByteBuf byteBuf = (ByteBuf) msg;
-                payload = new PayloadData(byteBuf.readableBytes(), byteBuf, true, false, 0, 0);
-            }
-
-            if (logger.isDebugEnabled()) {
-                logger.debug(String.format("Rx : Ass=%s %s", this.association.getName(), payload));
-            }
-
-            this.association.read(payload);
-        } finally {
-            ReferenceCountUtil.release(msg);
+        // try {
+        PayloadData payload;
+        if (this.association.getIpChannelType() == IpChannelType.SCTP) {
+            SctpMessage sctpMessage = (SctpMessage) msg;
+            ByteBuf byteBuf = sctpMessage.content();
+            payload = new PayloadData(byteBuf.readableBytes(), byteBuf, sctpMessage.isComplete(), sctpMessage.isUnordered(),
+                    sctpMessage.protocolIdentifier(), sctpMessage.streamIdentifier());
+        } else {
+            ByteBuf byteBuf = (ByteBuf) msg;
+            payload = new PayloadData(byteBuf.readableBytes(), byteBuf, true, false, 0, 0);
         }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug(String.format("Rx : Ass=%s %s", this.association.getName(), payload));
+        }
+
+        this.association.read(payload);
+        // } finally {
+        // ReferenceCountUtil.release(msg);
+        // }
     }
 
     protected void writeAndFlush(Object message) {

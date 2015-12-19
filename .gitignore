@@ -3,3 +3,5 @@ target
 /.project
 /ManagementTest_sctp.xml
 /sctptest.log
+/test-output/
+/netty-server-management_sctp.xml

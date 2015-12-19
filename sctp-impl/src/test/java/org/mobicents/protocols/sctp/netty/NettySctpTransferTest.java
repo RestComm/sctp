@@ -98,7 +98,7 @@ public class NettySctpTransferTest {
 		this.serverMessage = null;
 
 		this.management = new NettySctpManagementImpl("netty-server-management");
-		this.management.setSingleThread(true);
+//		this.management.setSingleThread(true);
 		this.management.start();
         this.management.setConnectDelay(10000);// Try connecting every 10 secs
 		this.management.removeAllResourses();
@@ -124,7 +124,6 @@ public class NettySctpTransferTest {
 	 */
 	@Test(groups = { "functional", "sctp" })
 	public void testDataTransferSctp() throws Exception {
-
 		if (NettySctpTransferTest.checkSctpEnabled())
 			this.testDataTransferByProtocol(IpChannelType.SCTP);
 	}
@@ -134,20 +133,16 @@ public class NettySctpTransferTest {
 	 * and brings down association. Finally removes the Associations and Server
 	 */
 	//TODO
-//	@Test(groups = { "functional", "tcp" })
-//	public void testDataTransferTcp() throws Exception {
-//
-//		// BasicConfigurator.configure();
-//		// Logger logger = Logger.getLogger(ServerImpl.class.getName());
-//		// logger.setLevel(Level.ALL);
-//
-//		this.testDataTransferByProtocol(IpChannelType.TCP);
-//	}
+    @Test(groups = { "functional", "tcp" })
+    public void testDataTransferTcp() throws Exception {
+        this.testDataTransferByProtocol(IpChannelType.TCP);
+    }
 
 	private void testDataTransferByProtocol(IpChannelType ipChannelType) throws Exception {
 
 		this.setUp(ipChannelType);
 
+		// !!!!! turn it on
 		this.management.startServer(SERVER_NAME);
 
 		this.serverAssociation.setAssociationListener(new ServerAssociationListener());

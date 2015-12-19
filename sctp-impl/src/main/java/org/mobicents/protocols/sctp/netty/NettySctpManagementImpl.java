@@ -32,6 +32,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import javolution.text.TextBuilder;
 import javolution.util.FastList;
@@ -97,6 +100,7 @@ public class NettySctpManagementImpl implements Management {
 
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
+    private ScheduledExecutorService clientExecutor;
 
     /**
 	 * 
@@ -167,6 +171,10 @@ public class NettySctpManagementImpl implements Management {
         return workerGroup;
     }
 
+    protected ScheduledExecutorService getClientExecutor() {
+        return clientExecutor;
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -232,6 +240,7 @@ public class NettySctpManagementImpl implements Management {
 
             this.bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("SctpServer-BossGroup-" + this.name));
             this.workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("SctpServer-WorkerGroup-" + this.name));
+            this.clientExecutor = new ScheduledThreadPoolExecutor(1);
 
             // this.nettyClientOpsThread = new NettyClientOpsThread(this);
             // (new Thread(this.nettyClientOpsThread )).start();
@@ -324,8 +333,9 @@ public class NettySctpManagementImpl implements Management {
         // TODO - make a general shutdown and waiting for it instead of "waiting till stopping associations" 
         this.bossGroup.shutdownGracefully();
         this.workerGroup.shutdownGracefully();
-        
-        
+        this.clientExecutor.shutdown();
+       
+
         // TODO Should servers be also checked for shutdown?
 
         this.started = false;

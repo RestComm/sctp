@@ -47,30 +47,39 @@ public class NettySctpClientHandler extends NettySctpChannelInboundHandlerAdapte
 
     @Override
     public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
-        this.association.setSctpHandler(null);
-        logger.warn(String.format("ChannelUnregistered for Association=%s", association.getName()));
+        logger.warn(String.format("ChannelUnregistered event: association=%s", association));
+        this.association.setChannelHandler(null);
 
         this.association.scheduleConnect();
     }
 
     @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug(String.format("channelRegistered event: association=%s", this.association));
+        }
+    }
+
+    @Override
     public void channelActive(ChannelHandlerContext ctx) {
+        if (logger.isDebugEnabled()) {
+            logger.debug(String.format("channelActive event: association=%s", this.association));
+        }
+
         this.ctx = ctx;
         this.channel = ctx.channel();
-        this.association.setSctpHandler(this);
+        this.association.setChannelHandler(this);
 
         InetSocketAddress sockAdd = ((InetSocketAddress) channel.remoteAddress());
         String host = sockAdd.getAddress().getHostAddress();
         int port = sockAdd.getPort();
 
-        if (association.getIpChannelType() == IpChannelType.TCP) {
-            this.association.markAssociationUp(1, 1);
-        }
-
-        // ctx.writeAndFlush(new SctpMessage(3, 1, firstMessage));
-
         if (logger.isInfoEnabled()) {
             logger.info(String.format("Association=%s connected to host=%s port=%d", association.getName(), host, port));
+        }
+
+        if (association.getIpChannelType() == IpChannelType.TCP) {
+            this.association.markAssociationUp(1, 1);
         }
     }
 

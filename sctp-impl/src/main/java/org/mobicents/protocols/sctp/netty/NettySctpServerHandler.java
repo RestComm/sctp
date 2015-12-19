@@ -53,13 +53,18 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
 
     @Override
     public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
-        this.association.setSctpHandler(null);
-        if (association != null)
-            logger.warn(String.format("ChannelUnregistered for Association=%s", association.getName()));
+        logger.warn(String.format("ChannelUnregistered event: association=%s", association));
+        if (association != null) {
+            this.association.setChannelHandler(null);
+        }
     }
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug(String.format("channelRegistered event: association=%s", this.association));
+        }
+
         Channel channel = ctx.channel();
         InetSocketAddress sockAdd = ((InetSocketAddress) channel.remoteAddress());
         String host = sockAdd.getAddress().getHostAddress();
@@ -68,14 +73,13 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
         boolean provisioned = false;
 
         if (logger.isDebugEnabled()) {
-            logger.debug("Received connect from peer host=" + host + " port=" + port);
+            logger.debug(String.format("Received connect request from peer host=%s port=%d", host, port));
         }
 
         // Iterate through all corresponding associate to
         // check if incoming connection request matches with any provisioned
         // ip:port
         FastMap<String, Association> associations = this.managementImpl.associations;
-
         for (FastMap.Entry<String, Association> n = associations.head(), end = associations.tail(); (n = n.getNext()) != end
                 && !provisioned;) {
             NettyAssociationImpl association = (NettyAssociationImpl) n.getValue();
@@ -89,7 +93,7 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
 
                     if (!association.isStarted()) {
                         logger.error(String.format(
-                                "Received connect request for Association=%s but not started yet. Droping the connection! ",
+                                "Received connect request for Association=%s but not started yet. Droping the connection!",
                                 association.getName()));
                         channel.close();
                         return;
@@ -98,7 +102,7 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
                     this.association = association;
                     this.channel = channel;
                     this.ctx = ctx;
-                    this.association.setSctpHandler(this);
+                    this.association.setChannelHandler(this);
 
                     if (logger.isInfoEnabled()) {
                         logger.info(String.format("Connected %s", association));
@@ -151,7 +155,7 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
             this.association = anonymAssociation;
             this.channel = channel;
             this.ctx = ctx;
-            this.association.setSctpHandler(this);
+            this.association.setChannelHandler(this);
 
             if (logger.isInfoEnabled()) {
                 logger.info(String.format("Accepted anonymous %s", anonymAssociation));
@@ -168,6 +172,13 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
             logger.warn(String.format("Received connect request from non provisioned %s:%d address. Closing Channel", host,
                     port));
             ctx.close();
+        }
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("channelActive event: association=" + this.association);
         }
     }
 

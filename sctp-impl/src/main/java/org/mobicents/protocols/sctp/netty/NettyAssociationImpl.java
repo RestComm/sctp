@@ -22,6 +22,7 @@ package org.mobicents.protocols.sctp.netty;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoop;
@@ -35,6 +36,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javolution.xml.XMLFormat;
@@ -90,7 +92,7 @@ public class NettyAssociationImpl implements Association {
     // Is the Association up (connection is established)
     protected volatile boolean up = false;
 
-    private NettySctpChannelInboundHandlerAdapter sctpHandler;
+    private NettySctpChannelInboundHandlerAdapter channelHandler;
 
     public NettyAssociationImpl() {
         super();
@@ -316,6 +318,10 @@ public class NettyAssociationImpl implements Association {
      */
     @Override
     public void send(PayloadData payloadData) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug(String.format("Tx : Ass=%s %s", this.getName(), payloadData));
+        }
+
         NettySctpChannelInboundHandlerAdapter handler = checkSocketIsOpen();
 
         final ByteBuf byteBuf = payloadData.getByteBuf();
@@ -329,7 +335,7 @@ public class NettyAssociationImpl implements Association {
     }
 
     private NettySctpChannelInboundHandlerAdapter checkSocketIsOpen() throws Exception {
-        NettySctpChannelInboundHandlerAdapter handler = this.sctpHandler;
+        NettySctpChannelInboundHandlerAdapter handler = this.channelHandler;
         if (!this.started || handler == null)
             throw new Exception(String.format(
                     "Association is not started or underlying sctp/tcp channel is down for Association=%s", this.name));
@@ -452,7 +458,7 @@ public class NettyAssociationImpl implements Association {
             }
         }
 
-        NettySctpChannelInboundHandlerAdapter handler = this.sctpHandler;
+        NettySctpChannelInboundHandlerAdapter handler = this.channelHandler;
         if (handler != null) {
             handler.closeChannel();
         }
@@ -522,45 +528,54 @@ public class NettyAssociationImpl implements Association {
 
     protected void scheduleConnect() {
         int connectDelay = this.management.getConnectDelay();
-        logger.debug(String.format("Scheduling of a channel connection: Association=%s, connectDelay=%d", this, connectDelay));
+        if (logger.isDebugEnabled()) {
+            logger.debug(String.format("Scheduling of a channel connection: Association=%s, connectDelay=%d", this,
+                    connectDelay));
+        }
 
-        final EventLoop loop = this.management.getBossGroup().next();
+//        final ScheduledExecutorService loop = this.management.getBossGroup().next();
+        final ScheduledExecutorService loop = this.management.getClientExecutor();
         loop.schedule(new Runnable() {
             @Override
             public void run() {
                 connect();
             }
-        }, connectDelay, TimeUnit.SECONDS);
+        }, connectDelay, TimeUnit.MILLISECONDS);
     }
 
-    protected void setSctpHandler(NettySctpChannelInboundHandlerAdapter sctpHandler) {
-        this.sctpHandler = sctpHandler;
+    protected void setChannelHandler(NettySctpChannelInboundHandlerAdapter channelHandler) {
+        this.channelHandler = channelHandler;
     }
 
     protected void connect() {
         try {
+            if (logger.isDebugEnabled()) {
+                logger.debug(String.format("Initiating connection started: Association=%s", this));
+            }
+
             EventLoopGroup group = this.management.getBossGroup();
             Bootstrap b = new Bootstrap();
 
-            NettySctpClientChannelInitializer nettyClientChannelInitializer = new NettySctpClientChannelInitializer(this);
             b.group(group);
             if (this.ipChannelType == IpChannelType.SCTP) {
                 b.channel(NioSctpChannel.class);
                 b.option(SctpChannelOption.SCTP_NODELAY, true);
+                b.handler(new NettySctpClientChannelInitializer(this));
             } else {
                 b.channel(NioSocketChannel.class);
                 b.option(ChannelOption.TCP_NODELAY, true);
+                b.handler(new NettyTcpClientChannelInitializer(this));
             }
-            b.handler(nettyClientChannelInitializer);
 
             InetSocketAddress localAddress = new InetSocketAddress(this.hostAddress, this.hostPort);
 
             // Bind the client channel.
             ChannelFuture bindFuture = b.bind(localAddress).sync();
+            Channel channel = bindFuture.channel();
 
             if (this.ipChannelType == IpChannelType.SCTP) {
                 // Get the underlying sctp channel
-                SctpChannel channel = (SctpChannel) bindFuture.channel();
+                SctpChannel sctpChannel = (SctpChannel) channel;
 
                 // Bind the secondary address.
                 // Please note that, bindAddress in the client channel should be done before connecting if you have not
@@ -570,7 +585,7 @@ public class NettyAssociationImpl implements Association {
                         String localSecondaryAddress = this.extraHostAddresses[count];
                         InetAddress localSecondaryInetAddress = InetAddress.getByName(localSecondaryAddress);
 
-                        channel.bindAddress(localSecondaryInetAddress).sync();
+                        sctpChannel.bindAddress(localSecondaryInetAddress).sync();
                     }
                 }
             }
@@ -578,8 +593,10 @@ public class NettyAssociationImpl implements Association {
             InetSocketAddress remoteAddress = new InetSocketAddress(this.peerAddress, this.peerPort);
 
             // Finish connect
-            b.connect(remoteAddress).sync();
-            System.out.println(this.getName() + "Finished Client Channel connection, Ass=" + this.name);
+            bindFuture.channel().connect(remoteAddress).sync();
+            if (logger.isDebugEnabled()) {
+                logger.debug(String.format("Initiating connection scheduled: Association=%s remoteAddress=%s", this, remoteAddress));
+            }
         } catch (Exception e) {
             logger.error(String.format("Exception while finishing connection for Association=%s", this.getName()), e);
             // TODO check if channel is up and close it?
