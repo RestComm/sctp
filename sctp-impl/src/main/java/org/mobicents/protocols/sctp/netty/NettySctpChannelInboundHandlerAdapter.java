@@ -71,7 +71,8 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
             logger.debug(String.format("channelInactive event: association=%s", this.association));
         }
 
-        this.association.markAssociationDown();
+        if (this.association != null)
+            this.association.markAssociationDown();
     }
 
     @Override
@@ -108,9 +109,9 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
                     // Close the Socket
                     association.getAssociationListener().onCommunicationLost(association);
                     ctx.close();
-                    if (association.getAssociationType() == AssociationType.CLIENT) {
-                        association.scheduleConnect();
-                    }
+//                    if (association.getAssociationType() == AssociationType.CLIENT) {
+//                        association.scheduleConnect();
+//                    }
                     break;
                 case RESTART:
                     logger.warn(String.format("Restart for Association=%s", association.getName()));

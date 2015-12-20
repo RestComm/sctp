@@ -85,9 +85,8 @@ public class NettySctpManagementImpl implements Management {
     protected String persistDir = null;
     private int connectDelay = 5000;
 
-    private int workerThreads = DEFAULT_IO_THREADS;
-
-    private boolean singleThread = true;
+//    private int workerThreads = DEFAULT_IO_THREADS;
+//    private boolean singleThread = true;
 
     // private NettyClientOpsThread nettyClientOpsThread = null;
 
@@ -254,8 +253,7 @@ public class NettySctpManagementImpl implements Management {
             this.started = true;
 
             if (logger.isInfoEnabled()) {
-                logger.info(String.format("Started SCTP Management=%s WorkerThreads=%d SingleThread=%s", this.name,
-                        (this.singleThread ? 0 : this.workerThreads), this.singleThread));
+                logger.info(String.format("Started SCTP Management=%s", this.name));
             }
 
             for (ManagementEventListener lstr : managementEventListeners) {
@@ -1006,7 +1004,8 @@ public class NettySctpManagementImpl implements Management {
      */
     @Override
     public int getWorkerThreads() {
-        return this.workerThreads;
+        return 1;
+//        return this.workerThreads;
     }
 
     /*
@@ -1016,13 +1015,13 @@ public class NettySctpManagementImpl implements Management {
      */
     @Override
     public void setWorkerThreads(int workerThreads) throws Exception {
-        if (this.started)
-            throw new Exception("WorkerThreads parameter can be updated only when SCTP stack is NOT running");
-
-        if (workerThreads < 1) {
-            workerThreads = DEFAULT_IO_THREADS;
-        }
-        this.workerThreads = workerThreads;
+//        if (this.started)
+//            throw new Exception("WorkerThreads parameter can be updated only when SCTP stack is NOT running");
+//
+//        if (workerThreads < 1) {
+//            workerThreads = DEFAULT_IO_THREADS;
+//        }
+//        this.workerThreads = workerThreads;
     }
 
     /*
@@ -1032,7 +1031,8 @@ public class NettySctpManagementImpl implements Management {
      */
     @Override
     public boolean isSingleThread() {
-        return this.singleThread;
+        return true;
+//        return this.singleThread;
     }
 
     /*
@@ -1042,10 +1042,10 @@ public class NettySctpManagementImpl implements Management {
      */
     @Override
     public void setSingleThread(boolean singleThread) throws Exception {
-        if (this.started)
-            throw new Exception("SingleThread parameter can be updated only when SCTP stack is NOT running");
-
-        this.singleThread = singleThread;
+//        if (this.started)
+//            throw new Exception("SingleThread parameter can be updated only when SCTP stack is NOT running");
+//
+//        this.singleThread = singleThread;
 
     }
     

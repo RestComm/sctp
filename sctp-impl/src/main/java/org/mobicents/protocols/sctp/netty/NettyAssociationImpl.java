@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.sctp.SctpChannel;
 import io.netty.channel.sctp.SctpChannelOption;
@@ -514,18 +513,6 @@ public class NettyAssociationImpl implements Association {
         }
     }
 
-//    protected void close() {
-//
-//        // channel.close();
-//
-//        try {
-//            this.markAssociationDown();
-//        } catch (Exception e) {
-//            logger.error(String.format(
-//                    "Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", this.name), e);
-//        }
-//    }
-
     protected void scheduleConnect() {
         int connectDelay = this.management.getConnectDelay();
         if (logger.isDebugEnabled()) {
@@ -548,13 +535,20 @@ public class NettyAssociationImpl implements Association {
     }
 
     protected void connect() {
-        try {
-            if (logger.isDebugEnabled()) {
-                logger.debug(String.format("Initiating connection started: Association=%s", this));
-            }
+        if (!this.started || this.up) {
+            // return if not started or already up
+            return;
+        }
 
+        if (logger.isDebugEnabled()) {
+            logger.debug(String.format("Initiating connection started: Association=%s", this));
+        }
+
+        Bootstrap b;
+        InetSocketAddress localAddress;
+        try {
             EventLoopGroup group = this.management.getBossGroup();
-            Bootstrap b = new Bootstrap();
+            b = new Bootstrap();
 
             b.group(group);
             if (this.ipChannelType == IpChannelType.SCTP) {
@@ -567,9 +561,15 @@ public class NettyAssociationImpl implements Association {
                 b.handler(new NettyTcpClientChannelInitializer(this));
             }
 
-            InetSocketAddress localAddress = new InetSocketAddress(this.hostAddress, this.hostPort);
+            localAddress = new InetSocketAddress(this.hostAddress, this.hostPort);
+        } catch (Exception e) {
+            logger.error(String.format("Exception while creating connection for Association=%s", this.getName()), e);
+            this.scheduleConnect();
+            return;
+        }
 
-            // Bind the client channel.
+        // Bind the client channel.
+        try {
             ChannelFuture bindFuture = b.bind(localAddress).sync();
             Channel channel = bindFuture.channel();
 
@@ -593,14 +593,13 @@ public class NettyAssociationImpl implements Association {
             InetSocketAddress remoteAddress = new InetSocketAddress(this.peerAddress, this.peerPort);
 
             // Finish connect
-            bindFuture.channel().connect(remoteAddress).sync();
+            bindFuture.channel().connect(remoteAddress);
             if (logger.isDebugEnabled()) {
-                logger.debug(String.format("Initiating connection scheduled: Association=%s remoteAddress=%s", this, remoteAddress));
+                logger.debug(String.format("Initiating connection scheduled: Association=%s remoteAddress=%s", this,
+                        remoteAddress));
             }
         } catch (Exception e) {
             logger.error(String.format("Exception while finishing connection for Association=%s", this.getName()), e);
-            // TODO check if channel is up and close it?
-            this.scheduleConnect();
         }
     }
 

@@ -5,3 +5,7 @@ target
 /sctptest.log
 /test-output/
 /netty-server-management_sctp.xml
+/ClientAssociationTest_sctp.xml
+/server-management_sctp.xml
+/server-management2_sctp.xml
+/server-management3_sctp.xml

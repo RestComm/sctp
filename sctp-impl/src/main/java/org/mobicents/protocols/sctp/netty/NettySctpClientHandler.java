@@ -89,7 +89,7 @@ public class NettySctpClientHandler extends NettySctpChannelInboundHandlerAdapte
         logger.error(String.format("ExceptionCaught for Associtaion %s", this.association.getName(), cause));
         ctx.close();
 
-        this.association.scheduleConnect();
+//        this.association.scheduleConnect();
     }
 
     // byte [] m3uaMessage = new byte
