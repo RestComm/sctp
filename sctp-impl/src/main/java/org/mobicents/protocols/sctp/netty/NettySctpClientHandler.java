@@ -70,9 +70,13 @@ public class NettySctpClientHandler extends NettySctpChannelInboundHandlerAdapte
         this.channel = ctx.channel();
         this.association.setChannelHandler(this);
 
+        String host = null;
+        int port = 0;
         InetSocketAddress sockAdd = ((InetSocketAddress) channel.remoteAddress());
-        String host = sockAdd.getAddress().getHostAddress();
-        int port = sockAdd.getPort();
+        if (sockAdd != null) {
+            host = sockAdd.getAddress().getHostAddress();
+            port = sockAdd.getPort();
+        }
 
         if (logger.isInfoEnabled()) {
             logger.info(String.format("Association=%s connected to host=%s port=%d", association.getName(), host, port));
@@ -86,7 +90,7 @@ public class NettySctpClientHandler extends NettySctpChannelInboundHandlerAdapte
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         // Close the connection when an exception is raised.
-        logger.error(String.format("ExceptionCaught for Associtaion %s", this.association.getName(), cause));
+        logger.error("ExceptionCaught for Associtaion: " + this.association.getName() + "\n", cause);
         ctx.close();
 
 //        this.association.scheduleConnect();

@@ -185,7 +185,7 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         // Close the connection when an exception is raised.
-        logger.error(String.format("ExceptionCaught for Associtaion %s", this.association.getName()), cause);
+        logger.error("ExceptionCaught for Associtaion: " + this.association.getName() + "\n", cause);
         ctx.close();
     }
 

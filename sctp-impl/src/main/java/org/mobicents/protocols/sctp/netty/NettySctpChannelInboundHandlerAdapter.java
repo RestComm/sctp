@@ -29,10 +29,6 @@ import io.netty.channel.sctp.SctpMessage;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
 
-//import sun.nio.ch.SctpAssocChange;
-
-
-import org.mobicents.protocols.api.AssociationType;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.PayloadData;
 
