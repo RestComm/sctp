@@ -19,6 +19,7 @@
 		<javolution.version>5.5.1</javolution.version>
 		<commons.version>1.0.0.CR1</commons.version>
 		<testng.version>6.2</testng.version>
+		<netty.version>4.0.33.Final</netty.version>
 		<compiler.plugin.version>2.0.2</compiler.plugin.version>
 		<compile.source>1.7</compile.source>
 

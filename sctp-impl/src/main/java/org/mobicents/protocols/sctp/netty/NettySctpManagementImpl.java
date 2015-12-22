@@ -236,9 +236,11 @@ public class NettySctpManagementImpl implements Management {
 
             logger.info(String.format("SCTP configuration file path %s", persistFile.toString()));
 
-            this.bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("SctpServer-BossGroup-" + this.name));
-            this.workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("SctpServer-WorkerGroup-" + this.name));
-            this.clientExecutor = new ScheduledThreadPoolExecutor(1);
+            this.bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("Sctp-BossGroup-" + this.name));
+            // TODO: make a thread count for WorkerGroup configurable
+            this.workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("Sctp-WorkerGroup-" + this.name));
+            this.clientExecutor = new ScheduledThreadPoolExecutor(1, new DefaultThreadFactory("Sctp-ClientExecutorGroup-"
+                    + this.name));
 
             // this.nettyClientOpsThread = new NettyClientOpsThread(this);
             // (new Thread(this.nettyClientOpsThread )).start();
@@ -481,7 +483,7 @@ public class NettySctpManagementImpl implements Management {
     @Override
     public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType,
             String[] extraHostAddresses) throws Exception {
-        return addServer(serverName, hostAddress, port, IpChannelType.SCTP, false, 0, null);
+        return addServer(serverName, hostAddress, port, ipChannelType, false, 0, extraHostAddresses);
     }
 
     /*
