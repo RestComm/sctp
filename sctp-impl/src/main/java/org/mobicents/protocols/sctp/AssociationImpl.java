@@ -22,6 +22,8 @@
 
 package org.mobicents.protocols.sctp;
 
+import io.netty.buffer.ByteBufAllocator;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -683,6 +685,11 @@ public class AssociationImpl implements Association {
 	private int doSendTcp() throws IOException {
 		return this.socketChannelTcp.write(txBuffer);
 	}
+
+    @Override
+    public ByteBufAllocator getByteBufAllocator() {
+        return null;
+    }
 
 	protected void close() {
 		if (this.getSocketChannel() != null) {

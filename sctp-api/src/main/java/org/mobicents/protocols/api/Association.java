@@ -22,6 +22,8 @@
 
 package org.mobicents.protocols.api;
 
+import io.netty.buffer.ByteBufAllocator;
+
 
 
 /**
@@ -147,6 +149,13 @@ public interface Association {
 	 * @throws Exception
 	 */
 	public void send(PayloadData payloadData) throws Exception;
+
+    /**
+     * Return ByteBufAllocator if the underlying Channel is netty or null if not
+     *
+     * @return
+     */
+    public ByteBufAllocator getByteBufAllocator() throws Exception;
 
 	/**
 	 * Use this method only for accepting anonymous connections
