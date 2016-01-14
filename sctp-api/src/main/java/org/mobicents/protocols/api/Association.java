@@ -157,6 +157,13 @@ public interface Association {
      */
     public ByteBufAllocator getByteBufAllocator() throws Exception;
 
+    /**
+     * Return the last measured Congestion Level at the sending direction
+     *
+     * @return
+     */
+    public int getCongestionLevel();
+
 	/**
 	 * Use this method only for accepting anonymous connections
 	 * from the ServerListener.onNewRemoteConnection() invoking

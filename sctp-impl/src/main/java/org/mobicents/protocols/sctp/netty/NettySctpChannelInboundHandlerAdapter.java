@@ -22,13 +22,14 @@ package org.mobicents.protocols.sctp.netty;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.sctp.SctpMessage;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
-
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.PayloadData;
 
@@ -53,6 +54,11 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
 
     protected Channel channel = null;
     protected ChannelHandlerContext ctx = null;
+
+    protected long lastCongestionMonitorSecond;
+
+    private double[] delayThreshold = new double[] { 2.5, 8, 14 };
+    private double[] backToNormalMemoryThreshold = new double[] { 1.5, 5.5, 10 };
 
     /**
      * 
@@ -198,8 +204,43 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
     protected void writeAndFlush(Object message) {
         Channel ch = this.channel;
         if (ch != null) {
-            ch.writeAndFlush(message);
+            ChannelFuture future = ch.writeAndFlush(message);
+
+            long curMillisec = System.currentTimeMillis();
+            long sec = curMillisec / 1000;
+            if (lastCongestionMonitorSecond < sec) {
+                lastCongestionMonitorSecond = sec;
+                CongestionMonitor congestionMonitor = new CongestionMonitor();
+                future.addListener(congestionMonitor);
+            }
         }
+     }
+
+    private void onCongestionMonitor(double delaySec) {
+        int newAlarmLevel = this.association.getCongestionLevel();
+        for (int i1 = this.association.getCongestionLevel() - 1; i1 >= 0; i1--) {
+            if (delaySec <= backToNormalMemoryThreshold[i1]) {
+                newAlarmLevel = i1;
+            }
+        }
+        for (int i1 = this.association.getCongestionLevel(); i1 < 3; i1++) {
+            if (delaySec >= delayThreshold[i1]) {
+                newAlarmLevel = i1 + 1;
+            }
+        }
+        this.association.setCongestionLevel(newAlarmLevel);
+    }
+
+    private class CongestionMonitor implements ChannelFutureListener {
+        long startTime = System.currentTimeMillis();
+
+        @Override
+        public void operationComplete(ChannelFuture arg0) throws Exception {
+            long delay = System.currentTimeMillis() - startTime;
+            double delaySec = (double) delay / 1000;
+            onCongestionMonitor(delaySec);
+        }
+
     }
 
     protected void closeChannel() {

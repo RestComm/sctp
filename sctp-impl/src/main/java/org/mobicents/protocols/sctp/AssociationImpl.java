@@ -691,6 +691,11 @@ public class AssociationImpl implements Association {
         return null;
     }
 
+    @Override
+    public int getCongestionLevel() {
+        return 0;
+    }
+
 	protected void close() {
 		if (this.getSocketChannel() != null) {
 			try {

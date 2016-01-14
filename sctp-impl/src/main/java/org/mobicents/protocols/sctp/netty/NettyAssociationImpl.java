@@ -93,6 +93,7 @@ public class NettyAssociationImpl implements Association {
     protected volatile boolean up = false;
 
     private NettySctpChannelInboundHandlerAdapter channelHandler;
+    protected int congLevel;
 
     public NettyAssociationImpl() {
         super();
@@ -348,6 +349,15 @@ public class NettyAssociationImpl implements Association {
             return this.channelHandler.channel.alloc();
         else
             return null;
+    }
+
+    @Override
+    public int getCongestionLevel() {
+        return this.congLevel;
+    }
+
+    protected void setCongestionLevel(int val) {
+        this.congLevel = val;
     }
 
     /*
