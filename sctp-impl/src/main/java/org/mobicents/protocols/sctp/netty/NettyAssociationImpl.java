@@ -357,6 +357,11 @@ public class NettyAssociationImpl implements Association {
     }
 
     protected void setCongestionLevel(int val) {
+        if (this.congLevel != val) {
+            logger.warn("Outgoing congestion control: SCTP: Changing of congestion level for Association=" + this.name + " "
+                    + this.congLevel + "->" + val);
+        }
+
         this.congLevel = val;
     }
 
