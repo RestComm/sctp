@@ -1,0 +1,653 @@
+<?xml version='1.0'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [<!ENTITY % BOOK_ENTITIES SYSTEM "SCTP_Stack_User_Guide.ent">%BOOK_ENTITIES;]>
+
+<chapter id="management">
+
+	<title>Management</title>
+	<para>In addition to managing the associations and servers, management
+		also persists the state of each in XXX_sctp.xml file, where XXX is
+		unique name given to management instance.</para>
+	<para>If there is system crash, management is responsible to bring the
+		associations and servers back to same state it was before the crash.
+		For example if client side association was connected to peer server
+		before crash,
+		management will try to connect back to peer server after restoration</para>
+
+	<section>
+		<title>API</title>
+		<para>
+			The
+			<code>Management.java</code>
+			API looks like
+		</para>
+
+		<programlisting lang="JAVA" role="JAVA"><![CDATA[
+package org.mobicents.protocols.api;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * <p>
+ * {@link Management} class manages the underlying {@link Association} and
+ * {@link Server}.
+ * </p>
+ * <p>
+ * Management should persist the state of {@link Server} and {@link Association}
+ * </p>
+ * <p>
+ * Management when {@link #start() started} looks for file <tt>XXX_sctp.xml</tt> containing serialized state of underlying
+ * {@link Association} and {@link Server}. Set the directory path by calling {@link #setPersistDir(String)} to direct Management to look at specified
+ * directory for underlying serialized file.
+ * </p>
+ * <p>
+ * If directory path is not set, Management searches for system property
+ * <tt>sctp.persist.dir</tt> to get the path for directory
+ * </p>
+ * <p>
+ * Even if <tt>sctp.persist.dir</tt> system property is not set,
+ * Management will look at System set property <tt>user.dir</tt>
+ * </p>
+ * 
+ * @author amit bhayani
+ * 
+ */
+public interface Management {
+
+	/**
+	 * Returns the name of this {@link Management} instance
+	 * 
+	 * @return
+	 */
+	public String getName();
+	
+	/**
+	 * Get persist dir
+	 * @return
+	 */
+	public String getPersistDir();
+	
+	/**
+	 * Directory where the XXX.xml will be searched
+	 * @param persistDir
+	 */
+	public void setPersistDir(String persistDir);
+
+	/**
+	 * Adding ManagementEventListener.
+	 * This listener is notified when adding/removing servers and associations 
+	 * @param listener
+	 */
+	public void addManagementEventListener(ManagementEventListener listener);
+
+	/**
+	 * Removing ManagementEventListener.
+	 * This listener is notified when adding/removing servers and associations 
+	 * @param listener
+	 */
+	public void removeManagementEventListener(ManagementEventListener listener);
+
+	/**
+	 * Start the management. No management operation can be executed unless
+	 * {@link Management} is started. If {@link Server} and {@link Association}
+	 * were defined previously, Management should recreate those {@link Server}
+	 * and {@link Association}.
+	 * 
+	 * @throws Exception
+	 */
+	public void start() throws Exception;
+
+	/**
+	 * Stop the management. It should persist the state of {@link Server} and
+	 * {@link Associtaion}.
+	 * 
+	 * @throws Exception
+	 */
+	public void stop() throws Exception;
+
+	/**
+	 * This method stops and removes all registered servers and associations
+	 * Management should be started
+	 * Use this method only for test purposes or after total crashes 
+	 * 
+	 * @throws Exception
+	 */
+	public void removeAllResourses() throws Exception;
+	
+	/**
+	 * Add new {@link Server}.
+	 * 
+	 * @param serverName
+	 *            name of the Server. Should be unique name
+	 * @param hostAddress
+	 *            IP address that this server will bind to
+	 * @param port
+	 *            port that this server will bind to
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
+	 * @param extraHostAddresses
+	 *            When SCTP multi-homing configuration extra IP addresses can be put here
+	 *            If multi-homing absence this parameter can be null 
+	 * @return new Server instance
+	 * @throws Exception
+	 *             Exception if management not started or server name already
+	 *             taken or some other server already has same ip:port
+	 */
+	public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, String[] extraHostAddresses) throws Exception;
+
+	/**
+	 * Add new {@link Server}. IP channel type is SCTP.
+	 * 
+	 * @param serverName
+	 *            name of the Server. Should be unique name
+	 * @param hostAddress
+	 *            IP address that this server will bind to
+	 * @param port
+	 *            port that this server will bind to
+	 * @return new Server instance
+	 * @throws Exception
+	 *             Exception if management not started or server name already
+	 *             taken or some other server already has same ip:port
+	 */
+	public Server addServer(String serverName, String hostAddress, int port) throws Exception;
+	
+	/**
+	 * Remove existing {@link Server}
+	 * 
+	 * @param serverName
+	 * @throws Exception
+	 *             Exception if no Server with the passed name exist or Server
+	 *             is started. Before removing server, it should be stopped
+	 */
+	public void removeServer(String serverName) throws Exception;
+
+	/**
+	 * Start the existing Server
+	 * 
+	 * @param serverName
+	 *            name of the Server to be started
+	 * @throws Exception
+	 *             Exception if no Server found for given name or Server already
+	 *             started
+	 */
+	public void startServer(String serverName) throws Exception;
+
+	/**
+	 * Stop the Server.
+	 * 
+	 * @param serverName
+	 *            name of the Server to be stopped
+	 * @throws Exception
+	 *             Exception if no Server found for given name or any of the
+	 *             {@link Association} within Server still started. All the
+	 *             Association's must be stopped before stopping Server
+	 */
+	public void stopServer(String serverName) throws Exception;
+
+	/**
+	 * Get the list of Servers configured
+	 * 
+	 * @return
+	 */
+	public List<Server> getServers();
+
+	/**
+	 * Add server Association.
+	 * 
+	 * @param peerAddress
+	 *            the peer IP address that this association will accept
+	 *            connection from
+	 * @param peerPort
+	 *            the peer port that this association will accept connection
+	 *            from
+	 * @param serverName
+	 *            the Server that this association belongs to
+	 * @param assocName
+	 *            unique name of Association
+	 * @return
+	 * @throws Exception
+	 */
+	public Association addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName) throws Exception;
+
+	/**
+	 * Add server Association. IP channel type is SCTP.
+	 * 
+	 * @param peerAddress
+	 *            the peer IP address that this association will accept
+	 *            connection from
+	 * @param peerPort
+	 *            the peer port that this association will accept connection
+	 *            from
+	 * @param serverName
+	 *            the Server that this association belongs to
+	 * @param assocName
+	 *            unique name of Association
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
+	 * @return
+	 * @throws Exception
+	 */
+	public Association addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName, IpChannelType ipChannelType)
+			throws Exception;
+
+	/**
+	 * Add Association. IP channel type is SCTP.
+	 * 
+	 * @param hostAddress
+	 * @param hostPort
+	 * @param peerAddress
+	 * @param peerPort
+	 * @param assocName
+	 * @return
+	 * @throws Exception
+	 */
+	public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName)
+			throws Exception;
+
+	/**
+	 * Add Association
+	 * 
+	 * @param hostAddress
+	 * @param hostPort
+	 * @param peerAddress
+	 * @param peerPort
+	 * @param assocName
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
+	 * @param extraHostAddresses
+	 *            When SCTP multi-homing configuration extra IP addresses can be put here
+	 *            If multi-homing absence this parameter can be null 
+	 * @return
+	 * @throws Exception
+	 */
+	public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
+			String[] extraHostAddresses) throws Exception;
+
+	/**
+	 * Remove existing Association. Association should be stopped before
+	 * removing
+	 * 
+	 * @param assocName
+	 * @throws Exception
+	 */
+	public void removeAssociation(String assocName) throws Exception;
+
+	/**
+	 * Get existing Association for passed name
+	 * 
+	 * @param assocName
+	 * @return
+	 * @throws Exception
+	 */
+	public Association getAssociation(String assocName) throws Exception;
+
+	/**
+	 * Get configured Association map with name as key and Association instance
+	 * as value
+	 * 
+	 * @return
+	 */
+	public Map<String, Association> getAssociations();
+
+	/**
+	 * Start the existing Association
+	 * 
+	 * @param assocName
+	 * @throws Exception
+	 */
+	public void startAssociation(String assocName) throws Exception;
+
+	/**
+	 * Stop the existing Association
+	 * 
+	 * @param assocName
+	 * @throws Exception
+	 */
+	public void stopAssociation(String assocName) throws Exception;
+
+	/**
+	 * Get connection delay. If the client side {@link Association} dies due to
+	 * network failure or any other reason, it should attempt to reconnect after
+	 * connectDelay interval
+	 * 
+	 * @return
+	 */
+	public int getConnectDelay();
+
+	/**
+	 * Set the connection delay for client side {@link Association}
+	 * 
+	 * @param connectDelay
+	 */
+	public void setConnectDelay(int connectDelay);
+
+	/**
+	 * Number of threads configured to callback {@link AssociationListener}
+	 * methods.
+	 * 
+	 * @return
+	 */
+	public int getWorkerThreads();
+
+	/**
+	 * Number of threads configured for callback {@link AssociationListener}
+	 * 
+	 * @param workerThreads
+	 */
+	public void setWorkerThreads(int workerThreads);
+
+	/**
+	 * If set as single thread, number of workers thread set has no effect and
+	 * entire protocol stack runs on single thread
+	 * 
+	 * @return
+	 */
+	public boolean isSingleThread();
+
+	/**
+	 * Set protocol stack as single thread
+	 * 
+	 * @param singleThread
+	 */
+	public void setSingleThread(boolean singleThread);
+}
+		]]>
+		</programlisting>
+
+		<para>
+			Management API is divided into two sections 1) managing the
+			resources and 2) configuring management
+		</para>
+
+		<section>
+			<title>API's to manage resources</title>
+			<variablelist>
+				<varlistentry>
+					<term>
+						<literal>public void addManagementEventListener(ManagementEventListener listener)</literal>
+					</term>
+					<listitem>
+						<para>
+							Adding a listener for management events (adding/removing servers and associations).
+						</para>
+					</listitem>
+				</varlistentry>
+
+				<varlistentry>
+					<term>
+						<literal>public void removeManagementEventListener(ManagementEventListener listener)</literal>
+					</term>
+					<listitem>
+						<para>
+							Removing a listener for management events (adding/removing servers and associations).
+						</para>
+					</listitem>
+				</varlistentry>
+
+				<varlistentry>
+					<term>
+						<literal>public Association addAssociation(String hostAddress, int hostPort, String peerAddress, int peerPort, String assocName, IpChannelType ipChannelType,
+			String[] extraHostAddresses)</literal>
+					</term>
+					<listitem>
+						<para>
+							Add's a new client side association to the management. The underlying protocol (SCTP or TCP) depends on IpChannelType passed.
+							Association when started will create underlying SCTP/TCP socket that will bind to
+							hostAddress:hostPort and tries to connect to
+							peerAddress:peerPort. Each association is identified by unique name. The connection attempt
+							be will made after every <code>connectDelay</code>
+							milliseconds till the connection is successfully created.
+						</para>
+						<para>
+							If SCTP socket is being created, extraHostAddresses can be passed for multi-home machines. SCTP Socket will bind to "hostAddress" as primary address and use "extraHostAddresses" as fall-back 
+							in case if primary network goes down.  
+						</para>
+						<para>
+							Appropriate Exception's are thrown if other association with same name
+							already exist or if other association is already bound to same
+							hostAddress:hostPort or other association is
+							already configured to connect to same peerAddress:peerPort.
+						</para>
+					</listitem>
+				</varlistentry>
+
+				<varlistentry>
+					<term>
+						<literal>public Association addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName, IpChannelType ipChannelType)</literal>
+					</term>
+					<listitem>
+						<para>
+							Add's a new server side association to the management. A server
+							by name <code>serverName</code> should already have been added to the management before adding
+							server side association. Only Association from peerAddress:peerPort will be accepted by
+							underlying server socket. If connection request is coming from
+							any other ip:port combination it's gracefully closed and error
+							message is logged. If connect request comes for configured peerAddress:peerPort, but underlying association is not started, it's gracefully closed
+							and error message is logged. The IpChannelType should match with that configured for server.
+						</para>
+						
+						<para>
+							Appropriate Exception's are thrown if other association with same name
+							already exist or if other association is already configured to receive connection request from
+							same peerAddress:peerPort.
+						</para>
+					</listitem>
+				</varlistentry>
+				
+				<varlistentry>
+					<term>
+						<literal>public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, String[] extraHostAddresses)</literal>
+					</term>
+					<listitem>
+						<para>
+							Add's a new server to the management. Server will be bound to hostAddress:port when started. Type of underlying protocol (SCTP/TCP) depends on IpChannelType passed
+						</para>
+						<para>
+							If SCTP server socket is being created, extraHostAddresses can be passed for multi-home machines. SCTP Socket will bind to "hostAddress" as primary address and use 
+							"extraHostAddresses" as fall-back in case if primary network goes down.  
+						</para>						
+						<para>
+							Each server is identified by unique name. 
+						</para>
+						<para>
+							Appropriate Exception's are thrown if other server with same name
+							already exist or if other server is already configured to bind to same hostAddress:port
+						</para>
+					</listitem>
+				</varlistentry>	
+				
+				<varlistentry>
+					<term>
+						<literal>public void startAssociation(String assocName)</literal>
+					</term>
+					<listitem>
+						<para>
+							Start's the association with name <code>assocName</code>. <code>AssociationListener</code> should be set before starting this association
+						</para>
+						<para>
+							Appropriate Exception's are thrown if there is no association with given name or if association with given name is found but is already started.
+						</para>
+					</listitem>
+				</varlistentry>	
+				
+				<varlistentry>
+					<term>
+						<literal>public void startServer(String serverName)</literal>
+					</term>
+					<listitem>
+						<para>
+							Start's the server with name <code>serverName</code>. 
+						</para>
+						<para>
+							Appropriate Exception is thrown if there is no server with given name or if server with given name is found but is already started.
+						</para>
+					</listitem>
+				</varlistentry>		
+				
+				<varlistentry>
+					<term>
+						<literal>public void stopAssociation(String assocName)</literal>
+					</term>
+					<listitem>
+						<para>
+							stop's the association with name <code>assocName</code>. The underlying socket is closed.
+						</para>
+						<para>
+							Appropriate Exception is thrown if there is no association with given name. 
+						</para>
+					</listitem>
+				</varlistentry>			
+				
+				<varlistentry>
+					<term>
+						<literal>public void stopServer(String serverName)</literal>
+					</term>
+					<listitem>
+						<para>
+							stop's the server with name <code>serverName</code>. 
+						</para>
+						<para>
+							Appropriate Exception is thrown if there is no server with given name. Throws exception if the server is found for given name 
+							but there are association's for this server which are still in "started" state.
+						</para>
+					</listitem>
+				</varlistentry>
+				
+				<varlistentry>
+					<term>
+						<literal>public void removeAssociation(String assocName)</literal>
+					</term>
+					<listitem>
+						<para>
+							Removes the association with name <code>assocName</code>. 
+						</para>
+						<para>
+							Appropriate Exception is thrown if there is no association with given name. Throws exception if association is found with given name but is started. 
+						</para>
+					</listitem>
+				</varlistentry>		
+				
+				<varlistentry>
+					<term>
+						<literal>public void removeServer(String serverName)</literal>
+					</term>
+					<listitem>
+						<para>
+							Removes the server with name <code>serverName</code>. 
+						</para>
+						<para>
+							Appropriate Exception is thrown if there is no server with given name. Throws exception if server is found with given name but is started. 
+						</para>
+					</listitem>
+				</varlistentry>		
+				
+				<varlistentry>
+					<term>
+						<literal>public Association getAssociation(String assocName)</literal>
+					</term>
+					<listitem>
+						<para>
+							Returns the association with name <code>assocName</code>. 
+						</para>
+						<para>
+							Appropriate Exception is thrown if there is no Association with given name. 
+						</para>
+					</listitem>
+				</varlistentry>		
+				
+				<varlistentry>
+					<term>
+						<literal>public Map&lt;String, Association&gt; getAssociations()</literal>
+					</term>
+					<listitem>
+						<para>
+							Returns the unmodifiable Map of association. Key is association name and value is association instance 
+						</para>
+					</listitem>
+				</varlistentry>		
+				
+				<varlistentry>
+					<term>
+						<literal>public List&lt;Server&gt; getServers()</literal>
+					</term>
+					<listitem>
+						<para>
+							Returns the unmodifiable list of servers. 
+						</para>
+					</listitem>
+				</varlistentry>		
+				
+				<varlistentry>
+					<term>
+						<literal>public void removeAllResourses()</literal>
+					</term>
+					<listitem>
+						<para>
+							This method stops and removes all registered servers and associations. Management should be started before this operation can be called. Use this method only for test purposes or after total crashes.
+						</para>
+					</listitem>
+				</varlistentry>																												
+											
+			</variablelist>
+		</section>
+		
+		<section>
+			<title>Configuration</title>
+			<variablelist>
+				<varlistentry>
+					<term>
+						<literal>setPersistDir</literal>
+					</term>
+					<listitem>
+						<para>
+							 Management when started looks for file XXX_sctp.xml containing serialized state of underlying association and server.
+							 Set the directory path to direct Management to look at specified directory for underlying serialized file.
+						</para>
+						<para>
+							If directory path is not set, Management searches for system property <code>sctp.persist.dir</code> to get the path for directory. 
+							Even if <code>sctp.persist.dir</code> system property is not set, Management will look at System set property <code>user.dir</code>
+						</para>
+					</listitem>
+				</varlistentry>
+		
+				<varlistentry>
+					<term>
+						<literal>setConnectDelay</literal>
+					</term>
+					<listitem>
+						<para>
+							 Time in milli seconds that underlying SCTP socket will wait before attempting to connect to peer. This is only applivable for clien side sockets.
+                             This parameter can be updated only at the SCTP stack running time, including GUI.
+						</para>
+					</listitem>
+				</varlistentry>
+				
+				<varlistentry>
+					<term>
+						<literal>setWorkerThreads</literal>
+					</term>
+					<listitem>
+						<para>
+							 Number of threads to callback the AssociationListener. Its assured that packets with same SLS will always be queued in same Thread for callback to make sure order is maintained.
+                             This parameter can be updated only when the SCTP stack is not yet running.
+						</para>
+					</listitem>
+				</varlistentry>		
+				
+				<varlistentry>
+					<term>
+						<literal>setSingleThread</literal>
+					</term>
+					<listitem>
+						<para>
+							 Only single thread will be used to callback the AssociationListener. If this is set to true, setting number of threads by calling setWorkerThreads has no effect. 
+                             This parameter can be updated only when the SCTP stack is not yet running.
+						</para>
+					</listitem>
+				</varlistentry>							
+			</variablelist>						
+		</section>		
+		
+	</section>
+</chapter>
+
