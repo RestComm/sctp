@@ -9,9 +9,9 @@
 		<version>1.7.0-SNAPSHOT</version>
 	</parent>
 
-	<artifactId>mobicents-sctp-docs</artifactId>
+	<artifactId>restcomm-sctp-docs</artifactId>
 	<groupId>org.mobicents.protocols.sctp.docs</groupId>
-	<name>Mobicents :: SCTP :: Docs :: Parent :: ${pom.artifactId}</name>
+	<name>Restcomm :: SCTP :: Docs :: Parent :: ${pom.artifactId}</name>
 	<packaging>pom</packaging>
 
 	<properties>
@@ -26,13 +26,13 @@
 
 	<profiles>
 		<profile>
-			<id>mobicents</id>
+			<id>restcomm</id>
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
 			<modules>
-				<module>sources-mobicents</module>
-				<module>jdocbook-mobicents</module>
+				<module>sources-restcomm</module>
+				<module>jdocbook-restcomm</module>
 			</modules>
 		</profile>
 	</profiles>
