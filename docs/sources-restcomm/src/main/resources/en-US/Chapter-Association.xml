@@ -1,0 +1,221 @@
+<?xml version='1.0'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "SCTP_Stack_User_Guide.ent">
+%BOOK_ENTITIES;
+]>
+
+<chapter id="association">
+
+	<title>Association</title>
+	<para>
+		Association is a protocol relationship between endpoints. Its
+		wrapper over actual socket exposing the same API's irrespective
+		if its client side socket initiating connection or server side socket
+		accepting connection. Also the underlying scoket can be of type TCP or SCTP.
+	</para>
+	<para>
+		The Application using &THIS.PLATFORM; &THIS.APPLICATION;
+		calls management interface to create new instance of association and
+		keeps reference to this instance for lifetime of association for
+		seding the PayloadData.
+	</para>
+	<para>
+		The
+		<code>Association.java</code>
+		API looks like
+	</para>
+
+	<programlisting lang="JAVA" role="JAVA"><![CDATA[
+package org.mobicents.protocols.api;
+
+
+
+/**
+ * <p>
+ * A protocol relationship between endpoints
+ * </p>
+ * <p>
+ * The implementation of this interface is actual wrapper over Socket that
+ * know's how to communicate with peer. The user of Association shouldn't care
+ * if the underlying Socket is client or server side
+ * </p>
+ * <p>
+ * 
+ * </p>
+ * 
+ * @author amit bhayani
+ * 
+ */
+public interface Association {
+
+	/**
+	 * Return the Association channel type TCP or SCTP
+	 * 
+	 * @return
+	 */
+	public IpChannelType getIpChannelType();
+
+	/**
+	 * Return the type of Association CLIENT or SERVER
+	 * 
+	 * @return
+	 */
+	public AssociationType getAssociationType();
+
+	/**
+	 * Each association has unique name
+	 * 
+	 * @return name of association
+	 */
+	public String getName();
+
+	/**
+	 * If this association is started by management
+	 * 
+	 * @return
+	 */
+	public boolean isStarted();
+
+	/**
+	 * The AssociationListener set for this Association
+	 * 
+	 * @return
+	 */
+	public AssociationListener getAssociationListener();
+
+	/**
+	 * The {@link AssociationListener} to be registered for this Association
+	 * 
+	 * @param associationListener
+	 */
+	public void setAssociationListener(AssociationListener associationListener);
+
+	/**
+	 * The host address that underlying socket is bound to
+	 * 
+	 * @return
+	 */
+	public String getHostAddress();
+
+	/**
+	 * The host port that underlying socket is bound to
+	 * 
+	 * @return
+	 */
+	public int getHostPort();
+
+	/**
+	 * The peer address that the underlying socket connects to
+	 * 
+	 * @return
+	 */
+	public String getPeerAddress();
+
+	/**
+	 * The peer port that the underlying socket is connected to
+	 * 
+	 * @return
+	 */
+	public int getPeerPort();
+
+	/**
+	 * Server name if the association is for {@link Server}
+	 * 
+	 * @return
+	 */
+	public String getServerName();
+	
+	/**
+	 * When SCTP multi-homing configuration extra IP addresses are here
+	 * 
+	 * @return
+	 */
+	public String[] getExtraHostAddresses();
+
+	/**
+	 * Send the {@link PayloadData} to the peer
+	 * 
+	 * @param payloadData
+	 * @throws Exception
+	 */
+	public void send(PayloadData payloadData) throws Exception;
+
+}	
+		
+		]]>
+	</programlisting>
+	<para>
+		Application interested in receiving payload from underlying
+		socket registers the instance of class implementing
+		AssociationListener with this Association.
+	</para>
+	<para>
+		The
+		<code>AssociationListener.java</code>
+		API looks like
+	</para>
+
+	<programlisting lang="JAVA" role="JAVA"><![CDATA[
+package org.mobicents.protocols.api;
+
+/**
+ * <p>
+ * The listener interface for receiving the underlying socket status and
+ * received payload from peer. The class that is interested in receiving data
+ * must implement this interface, and the object created with that class is
+ * registered with {@link Association}
+ * </p>
+ * 
+ * @author amit bhayani
+ * 
+ */
+public interface AssociationListener {
+
+	/**
+	 * Invoked when underlying socket is open and connection is established with
+	 * peer. This is expected behavior when management start's the
+	 * {@link Association}
+	 * 
+	 * @param association
+	 */
+	public void onCommunicationUp(Association association);
+
+	/**
+	 * Invoked when underlying socket is shutdown and connection is ended with
+	 * peer. This is expected behavior when management stop's the
+	 * {@link Association}
+	 * 
+	 * @param association
+	 */
+	public void onCommunicationShutdown(Association association);
+
+	/**
+	 * Invoked when underlying socket lost the connection with peer due to any
+	 * reason like network between peer's died etc. This is unexpected behavior
+	 * and the underlying {@link Association} should try to re-establish the
+	 * connection
+	 * 
+	 * @param association
+	 */
+	public void onCommunicationLost(Association association);
+
+	/**
+	 * Invoked when the connection with the peer re-started. This is specific to
+	 * SCTP protocol
+	 * 
+	 * @param association
+	 */
+	public void onCommunicationRestart(Association association);
+
+	/**
+	 * Invoked when the {@link PayloadData} is received from peer
+	 * 
+	 * @param association
+	 * @param payloadData
+	 */
+	public void onPayload(Association association, PayloadData payloadData);
+
+}
+		]]>
+	</programlisting>
+</chapter>
