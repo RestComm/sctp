@@ -71,6 +71,13 @@ public class NettySctpManagementImpl implements Management {
     private static final String SINGLE_THREAD_PROP = "singlethread";
     private static final String WORKER_THREADS_PROP = "workerthreads";
 
+    private static final String CONG_CONTROL_DELAY_THRESHOLD_1 = "congControl_DelayThreshold_1";
+    private static final String CONG_CONTROL_DELAY_THRESHOLD_2 = "congControl_DelayThreshold_2";
+    private static final String CONG_CONTROL_DELAY_THRESHOLD_3 = "congControl_DelayThreshold_3";
+    private static final String CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_1 = "congControl_BackToNormalDelayThreshold_1";
+    private static final String CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_2 = "congControl_BackToNormalDelayThreshold_2";
+    private static final String CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_3 = "congControl_BackToNormalDelayThreshold_3";
+
     static final int DEFAULT_IO_THREADS = Runtime.getRuntime().availableProcessors() * 2;
 
     private final TextBuilder persistFile = TextBuilder.newInstance();
@@ -83,6 +90,9 @@ public class NettySctpManagementImpl implements Management {
 
     protected String persistDir = null;
     private int connectDelay = 5000;
+
+    protected double[] congControl_DelayThreshold = new double[] { 2.5, 8, 14 };
+    protected double[] congControl_BackToNormalDelayThreshold = new double[] { 1.5, 5.5, 10 };
 
 //    private int workerThreads = DEFAULT_IO_THREADS;
 //    private boolean singleThread = true;
@@ -998,6 +1008,99 @@ public class NettySctpManagementImpl implements Management {
         this.store();
     }
 
+    @Override
+    public double getCongControl_DelayThreshold_1() {
+        return congControl_DelayThreshold[0];
+    }
+
+    @Override
+    public double getCongControl_DelayThreshold_2() {
+        return congControl_DelayThreshold[1];
+    }
+
+    @Override
+    public double getCongControl_DelayThreshold_3() {
+        return congControl_DelayThreshold[2];
+    }
+
+    @Override
+    public void setCongControl_DelayThreshold_1(double val) throws Exception {
+        if (!this.started)
+            throw new Exception("CongControl_DelayThreshold parameter can be updated only when SCTP stack is running");
+
+        congControl_DelayThreshold[0] = val;
+
+        this.store();
+    }
+
+    @Override
+    public void setCongControl_DelayThreshold_2(double val) throws Exception {
+        if (!this.started)
+            throw new Exception("CongControl_DelayThreshold parameter can be updated only when SCTP stack is running");
+
+        congControl_DelayThreshold[1] = val;
+
+        this.store();
+    }
+
+    @Override
+    public void setCongControl_DelayThreshold_3(double val) throws Exception {
+        if (!this.started)
+            throw new Exception("CongControl_DelayThreshold parameter can be updated only when SCTP stack is running");
+
+        congControl_DelayThreshold[2] = val;
+
+        this.store();
+    }
+
+    @Override
+    public double getCongControl_BackToNormalDelayThreshold_1() {
+        return congControl_BackToNormalDelayThreshold[0];
+    }
+
+    @Override
+    public double getCongControl_BackToNormalDelayThreshold_2() {
+        return congControl_BackToNormalDelayThreshold[1];
+    }
+
+    @Override
+    public double getCongControl_BackToNormalDelayThreshold_3() {
+        return congControl_BackToNormalDelayThreshold[2];
+    }
+
+    @Override
+    public void setCongControl_BackToNormalDelayThreshold_1(double val) throws Exception {
+        if (!this.started)
+            throw new Exception(
+                    "CongControl_BackToNormalDelayThreshold parameter can be updated only when SCTP stack is running");
+
+        congControl_BackToNormalDelayThreshold[0] = val;
+
+        this.store();
+    }
+
+    @Override
+    public void setCongControl_BackToNormalDelayThreshold_2(double val) throws Exception {
+        if (!this.started)
+            throw new Exception(
+                    "CongControl_BackToNormalDelayThreshold parameter can be updated only when SCTP stack is running");
+
+        congControl_BackToNormalDelayThreshold[1] = val;
+
+        this.store();
+    }
+
+    @Override
+    public void setCongControl_BackToNormalDelayThreshold_3(double val) throws Exception {
+        if (!this.started)
+            throw new Exception(
+                    "CongControl_BackToNormalDelayThreshold parameter can be updated only when SCTP stack is running");
+
+        congControl_BackToNormalDelayThreshold[2] = val;
+
+        this.store();
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -1066,14 +1169,33 @@ public class NettySctpManagementImpl implements Management {
             reader.setBinding(binding);
 
             try {
-                this.connectDelay = reader.read(CONNECT_DELAY_PROP, Integer.class);
+                Integer vali = reader.read(CONNECT_DELAY_PROP, Integer.class);
+                if (vali != null)
+                    this.connectDelay = vali;
                 // this.workerThreads = reader.read(WORKER_THREADS_PROP, Integer.class);
                 // this.singleThread = reader.read(SINGLE_THREAD_PROP, Boolean.class);
-                Integer vali = reader.read(WORKER_THREADS_PROP, Integer.class);
+                vali = reader.read(WORKER_THREADS_PROP, Integer.class);
                 Boolean valb = reader.read(SINGLE_THREAD_PROP, Boolean.class);
             } catch (java.lang.NullPointerException npe) {
                 // ignore.
                 // For backward compatibility we can ignore if these values are not defined
+            }
+
+            Double valTH1 = reader.read(CONG_CONTROL_DELAY_THRESHOLD_1, Double.class);
+            Double valTH2 = reader.read(CONG_CONTROL_DELAY_THRESHOLD_2, Double.class);
+            Double valTH3 = reader.read(CONG_CONTROL_DELAY_THRESHOLD_3, Double.class);
+            Double valTB1 = reader.read(CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_1, Double.class);
+            Double valTB2 = reader.read(CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_2, Double.class);
+            Double valTB3 = reader.read(CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_3, Double.class);
+            if (valTH1 != null && valTH2 != null && valTH3 != null && valTB1 != null && valTB2 != null && valTB3 != null) {
+                this.congControl_DelayThreshold = new double[3];
+                this.congControl_DelayThreshold[0] = valTH1;
+                this.congControl_DelayThreshold[1] = valTH2;
+                this.congControl_DelayThreshold[2] = valTH3;
+                this.congControl_BackToNormalDelayThreshold = new double[3];
+                this.congControl_BackToNormalDelayThreshold[0] = valTB1;
+                this.congControl_BackToNormalDelayThreshold[1] = valTB2;
+                this.congControl_BackToNormalDelayThreshold[2] = valTB3;
             }
 
             this.servers = reader.read(SERVERS, FastList.class);
@@ -1114,6 +1236,17 @@ public class NettySctpManagementImpl implements Management {
             writer.write(this.connectDelay, CONNECT_DELAY_PROP, Integer.class);
             // writer.write(this.workerThreads, WORKER_THREADS_PROP, Integer.class);
             // writer.write(this.singleThread, SINGLE_THREAD_PROP, Boolean.class);
+
+            if (this.congControl_DelayThreshold != null && this.congControl_DelayThreshold.length == 3) {
+                writer.write(this.congControl_DelayThreshold[0], CONG_CONTROL_DELAY_THRESHOLD_1, Double.class);
+                writer.write(this.congControl_DelayThreshold[1], CONG_CONTROL_DELAY_THRESHOLD_2, Double.class);
+                writer.write(this.congControl_DelayThreshold[2], CONG_CONTROL_DELAY_THRESHOLD_3, Double.class);
+            }
+            if (this.congControl_BackToNormalDelayThreshold != null && this.congControl_BackToNormalDelayThreshold.length == 3) {
+                writer.write(this.congControl_BackToNormalDelayThreshold[0], CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_1, Double.class);
+                writer.write(this.congControl_BackToNormalDelayThreshold[1], CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_2, Double.class);
+                writer.write(this.congControl_BackToNormalDelayThreshold[2], CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_3, Double.class);
+            }
 
             writer.write(this.servers, SERVERS, FastList.class);
             writer.write(this.associations, ASSOCIATIONS, AssociationMap.class);

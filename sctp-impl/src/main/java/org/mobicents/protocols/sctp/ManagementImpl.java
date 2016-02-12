@@ -36,12 +36,14 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
 import javolution.text.TextBuilder;
 import javolution.util.FastList;
 import javolution.util.FastMap;
 import javolution.xml.XMLObjectReader;
 import javolution.xml.XMLObjectWriter;
 import javolution.xml.stream.XMLStreamException;
+
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationType;
@@ -997,4 +999,76 @@ public class ManagementImpl implements Management {
 	protected ExecutorService getExecutorService(int index) {
 		return this.executorServices[index];
 	}
+
+    @Override
+    public double getCongControl_DelayThreshold_1() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public double getCongControl_DelayThreshold_2() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public double getCongControl_DelayThreshold_3() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public void setCongControl_DelayThreshold_1(double val) throws Exception {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void setCongControl_DelayThreshold_2(double val) throws Exception {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void setCongControl_DelayThreshold_3(double val) throws Exception {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public double getCongControl_BackToNormalDelayThreshold_1() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public double getCongControl_BackToNormalDelayThreshold_2() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public double getCongControl_BackToNormalDelayThreshold_3() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public void setCongControl_BackToNormalDelayThreshold_1(double val) throws Exception {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void setCongControl_BackToNormalDelayThreshold_2(double val) throws Exception {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void setCongControl_BackToNormalDelayThreshold_3(double val) throws Exception {
+        // TODO Auto-generated method stub
+        
+    }
 }

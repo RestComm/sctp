@@ -57,9 +57,6 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
 
     protected long lastCongestionMonitorSecond;
 
-    private double[] delayThreshold = new double[] { 2.5, 8, 14 };
-    private double[] backToNormalMemoryThreshold = new double[] { 1.5, 5.5, 10 };
-
     /**
      * 
      */
@@ -219,12 +216,12 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
     private void onCongestionMonitor(double delaySec) {
         int newAlarmLevel = this.association.getCongestionLevel();
         for (int i1 = this.association.getCongestionLevel() - 1; i1 >= 0; i1--) {
-            if (delaySec <= backToNormalMemoryThreshold[i1]) {
+            if (delaySec <= this.association.getManagement().congControl_BackToNormalDelayThreshold[i1]) {
                 newAlarmLevel = i1;
             }
         }
         for (int i1 = this.association.getCongestionLevel(); i1 < 3; i1++) {
-            if (delaySec >= delayThreshold[i1]) {
+            if (delaySec >= this.association.getManagement().congControl_DelayThreshold[i1]) {
                 newAlarmLevel = i1 + 1;
             }
         }

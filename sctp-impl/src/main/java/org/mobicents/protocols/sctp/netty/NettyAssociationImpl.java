@@ -171,6 +171,10 @@ public class NettyAssociationImpl implements Association {
 
     }
 
+    public NettySctpManagementImpl getManagement() {
+        return management;
+    }
+
     /*
      * (non-Javadoc)
      * 

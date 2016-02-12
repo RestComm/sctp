@@ -368,32 +368,160 @@ public interface Management {
 	public void setConnectDelay(int connectDelay) throws Exception;
 
 	/**
-	 * Number of threads configured to callback {@link AssociationListener}
-	 * methods.
+	 * This method is not used more.
 	 * 
 	 * @return
 	 */
 	public int getWorkerThreads();
 
 	/**
-	 * Number of threads configured for callback {@link AssociationListener}
+     * This method is not used more.
 	 * 
 	 * @param workerThreads
 	 */
 	public void setWorkerThreads(int workerThreads) throws Exception;
 
 	/**
-	 * If set as single thread, number of workers thread set has no effect and
-	 * entire protocol stack runs on single thread
+     * This method is not used more.
 	 * 
 	 * @return
 	 */
 	public boolean isSingleThread();
 
 	/**
-	 * Set protocol stack as single thread
+     * This method is not used more.
 	 * 
 	 * @param singleThread
 	 */
 	public void setSingleThread(boolean singleThread) throws Exception;
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes more then value 0, 1 or 2 of the array
+     * CongControl_DelayThreshold, the Association's congestion level becomes to 1, 2 or 3.
+     * Threshold 1.
+     *
+     * @return
+     */
+    public double getCongControl_DelayThreshold_1();
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes more then value 0, 1 or 2 of the array
+     * CongControl_DelayThreshold, the Association's congestion level becomes to 1, 2 or 3.
+     * Threshold 2.
+     *
+     * @return
+     */
+    public double getCongControl_DelayThreshold_2();
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes more then value 0, 1 or 2 of the array
+     * CongControl_DelayThreshold, the Association's congestion level becomes to 1, 2 or 3.
+     * Threshold 3.
+     *
+     * @return
+     */
+    public double getCongControl_DelayThreshold_3();
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes more then value 0, 1 or 2 of the array
+     * CongControl_DelayThreshold, the Association's congestion level becomes to 1, 2 or 3. Array must have 3 values.
+     * Threshold 1.
+     * 
+     * @param val
+     * @throws Exception
+     */
+    public void setCongControl_DelayThreshold_1(double val) throws Exception;
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes more then value 0, 1 or 2 of the array
+     * CongControl_DelayThreshold, the Association's congestion level becomes to 1, 2 or 3. Array must have 3 values.
+     * Threshold 2.
+     * 
+     * @param val
+     * @throws Exception
+     */
+    public void setCongControl_DelayThreshold_2(double val) throws Exception;
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes more then value 0, 1 or 2 of the array
+     * CongControl_DelayThreshold, the Association's congestion level becomes to 1, 2 or 3. Array must have 3 values.
+     * Threshold 3.
+     * 
+     * @param val
+     * @throws Exception
+     */
+    public void setCongControl_DelayThreshold_3(double val) throws Exception;
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes less then value 0, 1 or 2 of the array
+     * CongControl_BackToNormalDelayThreshold, the Association's congestion level reduces to 0, 1 or 2.
+     * Threshold 1.
+     *
+     * @return
+     */
+    public double getCongControl_BackToNormalDelayThreshold_1();
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes less then value 0, 1 or 2 of the array
+     * CongControl_BackToNormalDelayThreshold, the Association's congestion level reduces to 0, 1 or 2.
+     * Threshold 2.
+     *
+     * @return
+     */
+    public double getCongControl_BackToNormalDelayThreshold_2();
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes less then value 0, 1 or 2 of the array
+     * CongControl_BackToNormalDelayThreshold, the Association's congestion level reduces to 0, 1 or 2.
+     * Threshold 3.
+     *
+     * @return
+     */
+    public double getCongControl_BackToNormalDelayThreshold_3();
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes less then value 0, 1 or 2 of the array
+     * CongControl_BackToNormalDelayThreshold, the Association's congestion level reduces to 0, 1 or 2. Array must have 3
+     * values.
+     * Threshold 1.
+     * 
+     * @param val
+     * @throws Exception
+     */
+    public void setCongControl_BackToNormalDelayThreshold_1(double val) throws Exception;
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes less then value 0, 1 or 2 of the array
+     * CongControl_BackToNormalDelayThreshold, the Association's congestion level reduces to 0, 1 or 2. Array must have 3
+     * values.
+     * Threshold 2.
+     * 
+     * @param val
+     * @throws Exception
+     */
+    public void setCongControl_BackToNormalDelayThreshold_2(double val) throws Exception;
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes less then value 0, 1 or 2 of the array
+     * CongControl_BackToNormalDelayThreshold, the Association's congestion level reduces to 0, 1 or 2. Array must have 3
+     * values.
+     * Threshold 3.
+     * 
+     * @param val
+     * @throws Exception
+     */
+    public void setCongControl_BackToNormalDelayThreshold_3(double val) throws Exception;
+
 }
