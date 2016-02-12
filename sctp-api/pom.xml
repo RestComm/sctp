@@ -8,7 +8,7 @@
 	</parent>
 
 	<artifactId>sctp-api</artifactId>
-	<name>Mobicents :: SCTP :: API :: ${pom.artifactId}</name>
+	<name>Restcomm :: SCTP :: API :: ${pom.artifactId}</name>
 
 
 	<dependencies>

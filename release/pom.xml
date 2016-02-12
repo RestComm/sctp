@@ -5,13 +5,13 @@
 	
 	<parent>
 		<groupId>org.mobicents</groupId>
-		<artifactId>mobicents-parent</artifactId>
-		<version>2.22</version>
+		<artifactId>restcomm-parent</artifactId>
+		<version>2.27.32</version>
 	</parent>
 	
 	<artifactId>sctp-release</artifactId>
-  <version>2.22</version>
-	<name>Mobicents :: Release :: ${pom.artifactId}</name>
+  	<version>2.22</version>
+	<name>Restcomm :: Release :: ${pom.artifactId}</name>
 	<profiles>
 		<profile>
 			<id>release</id>

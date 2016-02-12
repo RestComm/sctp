@@ -1,0 +1,207 @@
+<?xml version='1.0'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "SCTP_Stack_User_Guide.ent">
+%BOOK_ENTITIES;
+]>
+
+<chapter id="example">
+
+	<title>Example</title>
+	<para>
+		This chapter tours around the core constructs of &THIS.PLATFORM; &THIS.APPLICATION; with simple examples to let you get started quickly. 
+		You will be able to write a client and a server on top of &THIS.PLATFORM; &THIS.APPLICATION; right away when you are at the end of this chapter.
+	</para>
+	
+  <section>
+    <title>Before Getting Started</title>
+    <para>
+      The minimum requirements to run the examples which are introduced in
+      this chapter are only two; the latest version of &THIS.PLATFORM; &THIS.APPLICATION; and JDK 1.7 or
+      above with SCTP support. At time of writing this guide linux kernel has native support for SCTP (lksctp) and also Solaris includes SCTP. 
+    </para>
+  </section>	
+    <section>
+    <title>Initiating Management</title>
+    <para>
+    	The primitive step in uisng &THIS.PLATFORM; &THIS.APPLICATION; is to create instance of <classname>Management</classname> class and set appropriate parameters.
+    </para>
+    
+    <programlisting>
+    
+		private static final String SERVER_NAME = "testserver";
+		private static final String SERVER_HOST = "127.0.0.1";
+		private static final int SERVER_PORT = 2345;
+	
+		private static final String SERVER_ASSOCIATION_NAME = "serverAsscoiation";
+		private static final String CLIENT_ASSOCIATION_NAME = "clientAsscoiation";
+	
+		private static final String CLIENT_HOST = "127.0.0.1";
+		private static final int CLIENT_PORT = 2346;
+		...
+		....
+		....    	
+    
+		Management management = new ManagementImpl("SCTPTest");<co id="example.discard.co1"/>
+		management.setConnectDelay(10000);// Try connecting every 10 secs<co id="example.discard.co2"/>
+		management.setSingleThread(true);<co id="example.discard.co3"/>
+		management.start();    
+    
+	</programlisting>
+    <calloutlist>
+      <callout arearefs="example.discard.co1">
+        <para>
+          Crate new instance of <classname>ManagementImpl</classname> and setting the management name. The management will search for SCTPTest_SCTP.xml file to load the previously
+          configured Serever's or Association's. If file is not found it will create one.
+        </para>
+      </callout>
+      <callout arearefs="example.discard.co2">
+        <para>
+         connectDelay is only useful for Associations acting as client side trying to connect to peer. The value specified is time in milliseconds 
+         the unedrlying socket will try to connect to peer if the existing connection is broken or even if its fresh connection attempt.
+        </para>
+      </callout>
+      <callout arearefs="example.discard.co3">
+        <para>
+         Setting management to single thread. All the callback's (irrespective of streamNumber of packet) to the listener will be via single thread. However there is one dedicated thread 
+         only for I/O. 
+        </para>
+      </callout>
+    </calloutlist>    
+    
+  </section>
+  
+  <section>
+    <title>Adding Server and server Association</title>
+    <para>
+    	Once the Managment is setup, application can create <classname>Server</classname> and add server <classname>Association</classname>
+    </para>
+    
+    <programlisting>
+    	Server server = this.management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT);
+		Association serverAssociation = this.management.addServerAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_NAME, SERVER_ASSOCIATION_NAME);<co id="example.discard.co11"/>
+				
+		serverAssociation.setAssociationListener(new ServerAssociationListener());<co id="example.discard.co12"/>
+				
+		this.management.startAssociation(SERVER_ASSOCIATION_NAME);
+		this.management.startServer(SERVER_NAME);
+		
+	</programlisting>
+    <calloutlist>
+      <callout arearefs="example.discard.co11">
+        <para>
+          Add the server and server association. Multiple server's can be added to each management and each server can have multiple server association's
+        </para>
+      </callout>
+      <callout arearefs="example.discard.co12">
+        <para>
+         The instance of <classname>AssociationListener</classname> should be registered with newly created Associaton before starting it.
+         There is no dependency on order of starting server and server association.
+        </para>
+      </callout>
+     
+    </calloutlist>    
+    
+    <para>
+    	Below is example of class implementing <classname>AssociationListener</classname> 
+    </para>
+    
+    <programlisting>
+	class ServerAssociationListener implements AssociationListener {
+		
+		private final byte[] SERVER_MESSAGE = "Server says Hi".getBytes();
+		
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see
+		 * org.mobicents.protocols.sctp.AssociationListener#onCommunicationUp
+		 * (org.mobicents.protocols.sctp.Association)
+		 */
+		@Override
+		public void onCommunicationUp(Association association) {
+			System.out.println(this + " onCommunicationUp");
+
+			serverAssocUp = true;
+
+			PayloadData payloadData = new PayloadData(SERVER_MESSAGE.length, SERVER_MESSAGE, true, false, 3, 1);
+
+			try {
+				association.send(payloadData);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see
+		 * org.mobicents.protocols.sctp.AssociationListener#onCommunicationShutdown
+		 * (org.mobicents.protocols.sctp.Association)
+		 */
+		@Override
+		public void onCommunicationShutdown(Association association) {
+			System.out.println(this + " onCommunicationShutdown");
+			serverAssocDown = true;
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see
+		 * org.mobicents.protocols.sctp.AssociationListener#onCommunicationLost
+		 * (org.mobicents.protocols.sctp.Association)
+		 */
+		@Override
+		public void onCommunicationLost(Association association) {
+			System.out.println(this + " onCommunicationLost");
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see
+		 * org.mobicents.protocols.sctp.AssociationListener#onCommunicationRestart
+		 * (org.mobicents.protocols.sctp.Association)
+		 */
+		@Override
+		public void onCommunicationRestart(Association association) {
+			System.out.println(this + " onCommunicationRestart");
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see
+		 * org.mobicents.protocols.sctp.AssociationListener#onPayload(org.mobicents
+		 * .protocols.sctp.Association,
+		 * org.mobicents.protocols.sctp.PayloadData)
+		 */
+		@Override
+		public void onPayload(Association association, PayloadData payloadData) {
+			System.out.println(this + " onPayload");
+
+			serverMessage = new byte[payloadData.getDataLength()];
+			System.arraycopy(payloadData.getData(), 0, serverMessage, 0, payloadData.getDataLength());
+
+			System.out.println(this + "received " + new String(serverMessage));
+		}
+
+	}
+	</programlisting>    
+  </section>  
+  <section>
+    <title>Adding Association</title>
+    <para>
+    	Once the Managment is setup, application can create client side <classname>Association</classname>.
+    </para>
+    <programlisting>
+		Association clientAssociation = this.management.addAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_HOST, SERVER_PORT, CLIENT_ASSOCIATION_NAME);
+		clientAssociation.setAssociationListener(new ClientAssociationListenerImpl());
+		this.management.startAssociation(CLIENT_ASSOCIATION_NAME);				
+	</programlisting>
+	    
+  </section>  
+  
+  
+</chapter>
