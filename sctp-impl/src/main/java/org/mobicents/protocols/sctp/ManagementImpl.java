@@ -52,6 +52,7 @@ import org.mobicents.protocols.api.Management;
 import org.mobicents.protocols.api.ManagementEventListener;
 import org.mobicents.protocols.api.Server;
 import org.mobicents.protocols.api.ServerListener;
+import org.mobicents.protocols.sctp.netty.NettySctpManagementImpl;
 
 /**
  * @author amit bhayani
@@ -403,11 +404,23 @@ public class ManagementImpl implements Management {
 			reader.setBinding(binding);
 
             try {
-                this.connectDelay = reader.read(CONNECT_DELAY_PROP, Integer.class);
+                Integer vali = reader.read(CONNECT_DELAY_PROP, Integer.class);
+                if (vali != null)
+                    this.connectDelay = vali;
 //                this.workerThreads = reader.read(WORKER_THREADS_PROP, Integer.class);
 //                this.singleThread = reader.read(SINGLE_THREAD_PROP, Boolean.class);
-                Integer vali = reader.read(WORKER_THREADS_PROP, Integer.class);
+                vali = reader.read(WORKER_THREADS_PROP, Integer.class);
                 Boolean valb = reader.read(SINGLE_THREAD_PROP, Boolean.class);
+
+                Double valTH1 = reader.read(NettySctpManagementImpl.CONG_CONTROL_DELAY_THRESHOLD_1, Double.class);
+                Double valTH2 = reader.read(NettySctpManagementImpl.CONG_CONTROL_DELAY_THRESHOLD_2, Double.class);
+                Double valTH3 = reader.read(NettySctpManagementImpl.CONG_CONTROL_DELAY_THRESHOLD_3, Double.class);
+                Double valTB1 = reader
+                        .read(NettySctpManagementImpl.CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_1, Double.class);
+                Double valTB2 = reader
+                        .read(NettySctpManagementImpl.CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_2, Double.class);
+                Double valTB3 = reader
+                        .read(NettySctpManagementImpl.CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_3, Double.class);
             } catch (java.lang.NullPointerException npe) {
                 // ignore.
                 // For backward compatibility we can ignore if these values are not defined

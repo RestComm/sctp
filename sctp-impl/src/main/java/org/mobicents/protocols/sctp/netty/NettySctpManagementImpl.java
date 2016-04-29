@@ -71,12 +71,12 @@ public class NettySctpManagementImpl implements Management {
     private static final String SINGLE_THREAD_PROP = "singlethread";
     private static final String WORKER_THREADS_PROP = "workerthreads";
 
-    private static final String CONG_CONTROL_DELAY_THRESHOLD_1 = "congControl_DelayThreshold_1";
-    private static final String CONG_CONTROL_DELAY_THRESHOLD_2 = "congControl_DelayThreshold_2";
-    private static final String CONG_CONTROL_DELAY_THRESHOLD_3 = "congControl_DelayThreshold_3";
-    private static final String CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_1 = "congControl_BackToNormalDelayThreshold_1";
-    private static final String CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_2 = "congControl_BackToNormalDelayThreshold_2";
-    private static final String CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_3 = "congControl_BackToNormalDelayThreshold_3";
+    public static final String CONG_CONTROL_DELAY_THRESHOLD_1 = "congControl_DelayThreshold_1";
+    public static final String CONG_CONTROL_DELAY_THRESHOLD_2 = "congControl_DelayThreshold_2";
+    public static final String CONG_CONTROL_DELAY_THRESHOLD_3 = "congControl_DelayThreshold_3";
+    public static final String CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_1 = "congControl_BackToNormalDelayThreshold_1";
+    public static final String CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_2 = "congControl_BackToNormalDelayThreshold_2";
+    public static final String CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_3 = "congControl_BackToNormalDelayThreshold_3";
 
     static final int DEFAULT_IO_THREADS = Runtime.getRuntime().availableProcessors() * 2;
 
