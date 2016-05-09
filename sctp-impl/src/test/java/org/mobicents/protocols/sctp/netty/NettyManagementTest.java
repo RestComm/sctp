@@ -29,7 +29,6 @@ import static org.junit.Assert.fail;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationListener;
@@ -41,8 +40,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import com.sun.nio.sctp.SctpChannel;
-import com.sun.nio.sctp.SctpSocketOption;
 import com.sun.nio.sctp.SctpStandardSocketOptions;
 
 /**
