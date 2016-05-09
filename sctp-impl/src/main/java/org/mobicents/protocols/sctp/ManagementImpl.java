@@ -54,6 +54,8 @@ import org.mobicents.protocols.api.Server;
 import org.mobicents.protocols.api.ServerListener;
 import org.mobicents.protocols.sctp.netty.NettySctpManagementImpl;
 
+import com.sun.nio.sctp.SctpStandardSocketOptions.InitMaxStreams;
+
 /**
  * @author amit bhayani
  * 
@@ -421,6 +423,16 @@ public class ManagementImpl implements Management {
                         .read(NettySctpManagementImpl.CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_2, Double.class);
                 Double valTB3 = reader
                         .read(NettySctpManagementImpl.CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_3, Double.class);
+
+                Boolean valB = reader.read(NettySctpManagementImpl.OPTION_SCTP_DISABLE_FRAGMENTS, Boolean.class);
+                Integer valI = reader.read(NettySctpManagementImpl.OPTION_SCTP_FRAGMENT_INTERLEAVE, Integer.class);
+                Integer valI_In = reader.read(NettySctpManagementImpl.OPTION_SCTP_INIT_MAXSTREAMS_IN, Integer.class);
+                Integer valI_Out = reader.read(NettySctpManagementImpl.OPTION_SCTP_INIT_MAXSTREAMS_OUT, Integer.class);
+                valB = reader.read(NettySctpManagementImpl.OPTION_SCTP_NODELAY, Boolean.class);
+                valI = reader.read(NettySctpManagementImpl.OPTION_SO_SNDBUF, Integer.class);
+                valI = reader.read(NettySctpManagementImpl.OPTION_SO_RCVBUF, Integer.class);
+                valI = reader.read(NettySctpManagementImpl.OPTION_SO_LINGER, Integer.class);
+
             } catch (java.lang.NullPointerException npe) {
                 // ignore.
                 // For backward compatibility we can ignore if these values are not defined
@@ -1081,6 +1093,90 @@ public class ManagementImpl implements Management {
 
     @Override
     public void setCongControl_BackToNormalDelayThreshold_3(double val) throws Exception {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public Boolean getOptionSctpDisableFragments() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void setOptionSctpDisableFragments(Boolean optionSctpDisableFragments) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public Integer getOptionSctpFragmentInterleave() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void setOptionSctpFragmentInterleave(Integer optionSctpFragmentInterleave) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public InitMaxStreams getOptionSctpInitMaxstreams() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void setOptionSctpInitMaxstreams(InitMaxStreams optionSctpInitMaxstreams) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public Boolean getOptionSctpNodelay() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void setOptionSctpNodelay(Boolean optionSctpNodelay) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public Integer getOptionSoSndbuf() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void setOptionSoSndbuf(Integer optionSoSndbuf) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public Integer getOptionSoRcvbuf() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void setOptionSoRcvbuf(Integer optionSoRcvbuf) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public Integer getOptionSoLinger() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void setOptionSoLinger(Integer optionSoLinger) {
         // TODO Auto-generated method stub
         
     }

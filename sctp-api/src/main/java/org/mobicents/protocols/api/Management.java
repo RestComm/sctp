@@ -25,6 +25,8 @@ package org.mobicents.protocols.api;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.nio.sctp.SctpStandardSocketOptions;
+
 /**
  * <p>
  * {@link Management} class manages the underlying {@link Association} and
@@ -523,5 +525,141 @@ public interface Management {
      * @throws Exception
      */
     public void setCongControl_BackToNormalDelayThreshold_3(double val) throws Exception;
+
+    /**
+     * SCTP option: Enables or disables message fragmentation.
+     * If enabled no SCTP message fragmentation will be performed.
+     * Instead if a message being sent exceeds the current PMTU size,
+     * the message will NOT be sent and an error will be indicated to the user.
+     *
+     * @return
+     */
+    public Boolean getOptionSctpDisableFragments();
+
+    /**
+     * SCTP option: Enables or disables message fragmentation.
+     * If enabled no SCTP message fragmentation will be performed.
+     * Instead if a message being sent exceeds the current PMTU size,
+     * the message will NOT be sent and an error will be indicated to the user.
+     *
+     * @param optionSctpDisableFragments
+     */
+    public void setOptionSctpDisableFragments(Boolean optionSctpDisableFragments);
+
+    /**
+     * SCTP option: Fragmented interleave controls how the presentation of messages occur for the message receiver.
+     * There are three levels of fragment interleave defined
+     * level 0 - Prevents the interleaving of any messages
+     * level 1 - Allows interleaving of messages that are from different associations
+     * level 2 - Allows complete interleaving of messages.
+     *
+     * @return
+     */
+    public Integer getOptionSctpFragmentInterleave();
+
+    /**
+     * SCTP option: Fragmented interleave controls how the presentation of messages occur for the message receiver.
+     * There are three levels of fragment interleave defined
+     * level 0 - Prevents the interleaving of any messages
+     * level 1 - Allows interleaving of messages that are from different associations
+     * level 2 - Allows complete interleaving of messages.
+     *
+     * @param optionSctpFragmentInterleave
+     */
+    public void setOptionSctpFragmentInterleave(Integer optionSctpFragmentInterleave);
+
+    /**
+     * SCTP option: The maximum number of streams requested by the local endpoint during association initialization
+     * For an SctpServerChannel this option determines the maximum number of inbound/outbound streams
+     * accepted sockets will negotiate with their connecting peer.
+     *
+     * @return
+     */
+    public SctpStandardSocketOptions.InitMaxStreams getOptionSctpInitMaxstreams();
+
+    /**
+     * SCTP option: The maximum number of streams requested by the local endpoint during association initialization
+     * For an SctpServerChannel this option determines the maximum number of inbound/outbound streams
+     * accepted sockets will negotiate with their connecting peer.
+     *
+     * @param optionSctpInitMaxstreams
+     */
+    public void setOptionSctpInitMaxstreams(SctpStandardSocketOptions.InitMaxStreams optionSctpInitMaxstreams);
+
+    /**
+     * SCTP option: Enables or disables a Nagle-like algorithm.
+     * The value of this socket option is a Boolean that represents whether the option is enabled or disabled.
+     * SCTP uses an algorithm like The Nagle Algorithm to coalesce short segments and improve network efficiency.
+     *
+     * @return
+     */
+    public Boolean getOptionSctpNodelay();
+
+    /**
+     * SCTP option: Enables or disables a Nagle-like algorithm.
+     * The value of this socket option is a Boolean that represents whether the option is enabled or disabled.
+     * SCTP uses an algorithm like The Nagle Algorithm to coalesce short segments and improve network efficiency.
+     *
+     * @param optionSctpNodelay
+     */
+    public void setOptionSctpNodelay(Boolean optionSctpNodelay);
+
+    /**
+     * SCTP option: The size of the socket send buffer.
+     *
+     * @return
+     */
+    public Integer getOptionSoSndbuf();
+
+    /**
+     * SCTP option: The size of the socket send buffer.
+     *
+     * @param optionSoSndbuf
+     */
+    public void setOptionSoSndbuf(Integer optionSoSndbuf);
+
+    /**
+     * SCTP option: The size of the socket receive buffer.
+     *
+     * @return
+     */
+    public Integer getOptionSoRcvbuf();
+
+    /**
+     * SCTP option: The size of the socket receive buffer.
+     *
+     * @param optionSoRcvbuf
+     */
+    public void setOptionSoRcvbuf(Integer optionSoRcvbuf);
+
+    /**
+     * SCTP option: Linger on close if data is present.
+     * The value of this socket option is an Integer that controls the action taken when unsent data is queued on the socket
+     * and a method to close the socket is invoked.
+     * If the value of the socket option is zero or greater, then it represents a timeout value, in seconds, known as the linger interval.
+     * The linger interval is the timeout for the close method to block while the operating system attempts to transmit the unsent data
+     * or it decides that it is unable to transmit the data.
+     * If the value of the socket option is less than zero then the option is disabled.
+     * In that case the close method does not wait until unsent data is transmitted;
+     * if possible the operating system will transmit any unsent data before the connection is closed.
+     *
+     * @return
+     */
+    public Integer getOptionSoLinger();
+
+    /**
+     * SCTP option: Linger on close if data is present.
+     * The value of this socket option is an Integer that controls the action taken when unsent data is queued on the socket
+     * and a method to close the socket is invoked.
+     * If the value of the socket option is zero or greater, then it represents a timeout value, in seconds, known as the linger interval.
+     * The linger interval is the timeout for the close method to block while the operating system attempts to transmit the unsent data
+     * or it decides that it is unable to transmit the data.
+     * If the value of the socket option is less than zero then the option is disabled.
+     * In that case the close method does not wait until unsent data is transmitted;
+     * if possible the operating system will transmit any unsent data before the connection is closed.
+     *
+     * @param optionSoLinger
+     */
+    public void setOptionSoLinger(Integer optionSoLinger);
 
 }

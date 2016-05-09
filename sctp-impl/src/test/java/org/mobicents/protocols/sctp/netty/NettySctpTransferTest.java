@@ -23,6 +23,7 @@ package org.mobicents.protocols.sctp.netty;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
@@ -32,6 +33,8 @@ import org.mobicents.protocols.api.PayloadData;
 import org.testng.annotations.*;
 
 import com.sun.nio.sctp.SctpChannel;
+import com.sun.nio.sctp.SctpSocketOption;
+import com.sun.nio.sctp.SctpStandardSocketOptions;
 
 /**
  * @author amit bhayani
@@ -83,7 +86,7 @@ public class NettySctpTransferTest {
 	}
 
 	public void setUp(IpChannelType ipChannelType) throws Exception {
-		this.clientMaxInboundStreams = 0;
+	    this.clientMaxInboundStreams = 0;
 		this.serverMaxOutboundStreams = 0;
 		
 		this.clientAssocUp = false;

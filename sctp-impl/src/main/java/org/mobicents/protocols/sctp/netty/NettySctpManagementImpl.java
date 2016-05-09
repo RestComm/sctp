@@ -52,6 +52,8 @@ import org.mobicents.protocols.api.Server;
 import org.mobicents.protocols.api.ServerListener;
 import org.mobicents.protocols.sctp.AssociationMap;
 
+import com.sun.nio.sctp.SctpStandardSocketOptions;
+
 /**
  * @author <a href="mailto:amit.bhayani@telestax.com">Amit Bhayani</a>
  * 
@@ -77,6 +79,15 @@ public class NettySctpManagementImpl implements Management {
     public static final String CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_1 = "congControl_BackToNormalDelayThreshold_1";
     public static final String CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_2 = "congControl_BackToNormalDelayThreshold_2";
     public static final String CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_3 = "congControl_BackToNormalDelayThreshold_3";
+
+    public static final String OPTION_SCTP_DISABLE_FRAGMENTS = "optionSctpDisableFragments";
+    public static final String OPTION_SCTP_FRAGMENT_INTERLEAVE = "optionSctpFragmentInterleave";
+    public static final String OPTION_SCTP_INIT_MAXSTREAMS_IN = "optionSctpInitMaxstreamsIn";
+    public static final String OPTION_SCTP_INIT_MAXSTREAMS_OUT = "optionSctpInitMaxstreamsOut";
+    public static final String OPTION_SCTP_NODELAY = "optionSctpNodelay";
+    public static final String OPTION_SO_SNDBUF = "optionSoSndbuf";
+    public static final String OPTION_SO_RCVBUF = "optionSoRcvbuf";
+    public static final String OPTION_SO_LINGER = "optionSoLinger";
 
     static final int DEFAULT_IO_THREADS = Runtime.getRuntime().availableProcessors() * 2;
 
@@ -109,6 +120,42 @@ public class NettySctpManagementImpl implements Management {
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
     private ScheduledExecutorService clientExecutor;
+
+    // SctpStandardSocketOptions
+
+    // SCTP option: Enables or disables message fragmentation.
+    // If enabled no SCTP message fragmentation will be performed.
+    // Instead if a message being sent exceeds the current PMTU size,
+    // the message will NOT be sent and an error will be indicated to the user.
+    private Boolean optionSctpDisableFragments = null;
+    // SCTP option: Fragmented interleave controls how the presentation of messages occur for the message receiver.
+    // There are three levels of fragment interleave defined
+    // level 0 - Prevents the interleaving of any messages
+    // level 1 - Allows interleaving of messages that are from different associations
+    // level 2 - Allows complete interleaving of messages.
+    private Integer optionSctpFragmentInterleave = null;
+    // SCTP option: The maximum number of streams requested by the local endpoint during association initialization
+    // For an SctpServerChannel this option determines the maximum number of inbound/outbound streams
+    // accepted sockets will negotiate with their connecting peer.
+    private SctpStandardSocketOptions.InitMaxStreams optionSctpInitMaxstreams = null;
+    // SCTP option: Enables or disables a Nagle-like algorithm.
+    // The value of this socket option is a Boolean that represents whether the option is enabled or disabled.
+    // SCTP uses an algorithm like The Nagle Algorithm to coalesce short segments and improve network efficiency.
+    private Boolean optionSctpNodelay = true;
+    // SCTP option: The size of the socket send buffer.
+    private Integer optionSoSndbuf = null;
+    // SCTP option: The size of the socket receive buffer.
+    private Integer optionSoRcvbuf = null;
+    // SCTP option: Linger on close if data is present.
+    // The value of this socket option is an Integer that controls the action taken when unsent data is queued on the socket
+    // and a method to close the socket is invoked.
+    // If the value of the socket option is zero or greater, then it represents a timeout value, in seconds, known as the linger interval.
+    // The linger interval is the timeout for the close method to block while the operating system attempts to transmit the unsent data
+    // or it decides that it is unable to transmit the data.
+    // If the value of the socket option is less than zero then the option is disabled.
+    // In that case the close method does not wait until unsent data is transmitted;
+    // if possible the operating system will transmit any unsent data before the connection is closed. 
+    private Integer optionSoLinger = null;
 
     /**
 	 * 
@@ -1152,14 +1199,94 @@ public class NettySctpManagementImpl implements Management {
 //        this.singleThread = singleThread;
 
     }
-    
+
+    @Override
+    public Boolean getOptionSctpDisableFragments() {
+        return optionSctpDisableFragments;
+    }
+
+    @Override
+    public void setOptionSctpDisableFragments(Boolean optionSctpDisableFragments) {
+        this.optionSctpDisableFragments = optionSctpDisableFragments;
+
+        this.store();
+    }
+
+    @Override
+    public Integer getOptionSctpFragmentInterleave() {
+        return optionSctpFragmentInterleave;
+    }
+
+    @Override
+    public void setOptionSctpFragmentInterleave(Integer optionSctpFragmentInterleave) {
+        this.optionSctpFragmentInterleave = optionSctpFragmentInterleave;
+
+        this.store();
+    }
+
+    @Override
+    public SctpStandardSocketOptions.InitMaxStreams getOptionSctpInitMaxstreams() {
+        return optionSctpInitMaxstreams;
+    }
+
+    @Override
+    public void setOptionSctpInitMaxstreams(SctpStandardSocketOptions.InitMaxStreams optionSctpInitMaxstreams) {
+        this.optionSctpInitMaxstreams = optionSctpInitMaxstreams;
+
+        this.store();
+    }
+
+    @Override
+    public Boolean getOptionSctpNodelay() {
+        return optionSctpNodelay;
+    }
+
+    @Override
+    public void setOptionSctpNodelay(Boolean optionSctpNodelay) {
+        this.optionSctpNodelay = optionSctpNodelay;
+
+        this.store();
+    }
+
+    @Override
+    public Integer getOptionSoSndbuf() {
+        return optionSoSndbuf;
+    }
+
+    @Override
+    public void setOptionSoSndbuf(Integer optionSoSndbuf) {
+        this.optionSoSndbuf = optionSoSndbuf;
+
+        this.store();
+    }
+
+    @Override
+    public Integer getOptionSoRcvbuf() {
+        return optionSoRcvbuf;
+    }
+
+    @Override
+    public void setOptionSoRcvbuf(Integer optionSoRcvbuf) {
+        this.optionSoRcvbuf = optionSoRcvbuf;
+
+        this.store();
+    }
+
+    @Override
+    public Integer getOptionSoLinger() {
+        return optionSoLinger;
+    }
+
+    @Override
+    public void setOptionSoLinger(Integer optionSoLinger) {
+        this.optionSoLinger = optionSoLinger;
+
+        this.store();
+    }
+
     protected FastList<ManagementEventListener> getManagementEventListeners() {
         return managementEventListeners;
     }
-
-    // protected NettyClientOpsThread getNettyClientOpsThread() {
-    // return nettyClientOpsThread;
-    // }
 
     @SuppressWarnings("unchecked")
     private void load() throws FileNotFoundException {
@@ -1197,6 +1324,30 @@ public class NettySctpManagementImpl implements Management {
                 this.congControl_BackToNormalDelayThreshold[1] = valTB2;
                 this.congControl_BackToNormalDelayThreshold[2] = valTB3;
             }
+
+            Boolean valB = reader.read(OPTION_SCTP_DISABLE_FRAGMENTS, Boolean.class);
+            if (valB != null)
+                this.optionSctpDisableFragments = valB;
+            Integer valI = reader.read(OPTION_SCTP_FRAGMENT_INTERLEAVE, Integer.class);
+            if (valI != null)
+                this.optionSctpFragmentInterleave = valI;
+            Integer valI_In = reader.read(OPTION_SCTP_INIT_MAXSTREAMS_IN, Integer.class);
+            Integer valI_Out = reader.read(OPTION_SCTP_INIT_MAXSTREAMS_OUT, Integer.class);
+            if (valI_In != null && valI_Out != null) {
+                this.optionSctpInitMaxstreams = SctpStandardSocketOptions.InitMaxStreams.create(valI_In, valI_Out);
+            }
+            valB = reader.read(OPTION_SCTP_NODELAY, Boolean.class);
+            if (valB != null)
+                this.optionSctpNodelay = valB;
+            valI = reader.read(OPTION_SO_SNDBUF, Integer.class);
+            if (valI != null)
+                this.optionSoSndbuf = valI;
+            valI = reader.read(OPTION_SO_RCVBUF, Integer.class);
+            if (valI != null)
+                this.optionSoRcvbuf = valI;
+            valI = reader.read(OPTION_SO_LINGER, Integer.class);
+            if (valI != null)
+                this.optionSoLinger = valI;
 
             this.servers = reader.read(SERVERS, FastList.class);
 
@@ -1246,6 +1397,29 @@ public class NettySctpManagementImpl implements Management {
                 writer.write(this.congControl_BackToNormalDelayThreshold[0], CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_1, Double.class);
                 writer.write(this.congControl_BackToNormalDelayThreshold[1], CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_2, Double.class);
                 writer.write(this.congControl_BackToNormalDelayThreshold[2], CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_3, Double.class);
+            }
+
+            if (this.optionSctpDisableFragments != null) {
+                writer.write(this.optionSctpDisableFragments, OPTION_SCTP_DISABLE_FRAGMENTS, Boolean.class);
+            }
+            if (this.optionSctpFragmentInterleave != null) {
+                writer.write(this.optionSctpFragmentInterleave, OPTION_SCTP_FRAGMENT_INTERLEAVE, Integer.class);
+            }
+            if (this.optionSctpInitMaxstreams != null) {
+                writer.write(this.optionSctpInitMaxstreams.maxInStreams(), OPTION_SCTP_INIT_MAXSTREAMS_IN, Integer.class);
+                writer.write(this.optionSctpInitMaxstreams.maxOutStreams(), OPTION_SCTP_INIT_MAXSTREAMS_OUT, Integer.class);
+            }
+            if (this.optionSctpNodelay != null) {
+                writer.write(this.optionSctpNodelay, OPTION_SCTP_NODELAY, Boolean.class);
+            }
+            if (this.optionSoSndbuf != null) {
+                writer.write(this.optionSoSndbuf, OPTION_SO_SNDBUF, Integer.class);
+            }
+            if (this.optionSoRcvbuf != null) {
+                writer.write(this.optionSoRcvbuf, OPTION_SO_RCVBUF, Integer.class);
+            }
+            if (this.optionSoLinger != null) {
+                writer.write(this.optionSoLinger, OPTION_SO_LINGER, Integer.class);
             }
 
             writer.write(this.servers, SERVERS, FastList.class);

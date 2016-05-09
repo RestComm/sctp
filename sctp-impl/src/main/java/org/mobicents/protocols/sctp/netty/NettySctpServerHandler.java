@@ -32,6 +32,9 @@ import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationType;
 import org.mobicents.protocols.api.IpChannelType;
 
+import com.sun.nio.sctp.SctpChannel;
+import com.sun.nio.sctp.SctpStandardSocketOptions;
+
 /**
  * @author <a href="mailto:amit.bhayani@telestax.com">Amit Bhayani</a>
  * 
@@ -152,6 +155,12 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
                 return;
             }
 
+            if (this.serverImpl.getIpChannelType() == IpChannelType.SCTP) {
+                // applying of stack level SCTP options
+                SctpChannel ch = (SctpChannel) channel;
+                applySctpOptions(ch);
+            }
+
             this.association = anonymAssociation;
             this.channel = channel;
             this.ctx = ctx;
@@ -172,6 +181,69 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
             logger.warn(String.format("Received connect request from non provisioned %s:%d address. Closing Channel", host,
                     port));
             ctx.close();
+        }
+    }
+
+    private void applySctpOptions(SctpChannel ch) {
+        if (this.managementImpl.getOptionSctpNodelay() != null) {
+            try {
+                ch.setOption(SctpStandardSocketOptions.SCTP_NODELAY, this.managementImpl.getOptionSctpNodelay());
+            } catch (Exception e) {
+                logger.error("Error when setting of option SCTP_NODELAY [" + this.managementImpl.getOptionSctpNodelay()
+                        + "], Association: " + this, e);
+            }
+        }
+        if (this.managementImpl.getOptionSctpDisableFragments() != null) {
+            try {
+                ch.setOption(SctpStandardSocketOptions.SCTP_DISABLE_FRAGMENTS, this.managementImpl.getOptionSctpDisableFragments());
+            } catch (Exception e) {
+                logger.error(
+                        "Error when setting of option SCTP_DISABLE_FRAGMENTS ["
+                                + this.managementImpl.getOptionSctpDisableFragments() + "], Association: " + this, e);
+            }
+        }
+        if (this.managementImpl.getOptionSctpFragmentInterleave() != null) {
+            try {
+                ch.setOption(SctpStandardSocketOptions.SCTP_FRAGMENT_INTERLEAVE, this.managementImpl.getOptionSctpFragmentInterleave());
+            } catch (Exception e) {
+                logger.error(
+                        "Error when setting of option SCTP_FRAGMENT_INTERLEAVE ["
+                                + this.managementImpl.getOptionSctpFragmentInterleave() + "], Association: " + this, e);
+            }
+        }
+        if (this.managementImpl.getOptionSctpInitMaxstreams() != null) {
+            try {
+                ch.setOption(SctpStandardSocketOptions.SCTP_INIT_MAXSTREAMS, this.managementImpl.getOptionSctpInitMaxstreams());
+            } catch (Exception e) {
+                logger.error(
+                        "Error when setting of option SCTP_INIT_MAXSTREAMS ["
+                                + this.managementImpl.getOptionSctpInitMaxstreams() + "], Association: " + this, e);
+            }
+        }
+        if (this.managementImpl.getOptionSoSndbuf() != null) {
+            try {
+                ch.setOption(SctpStandardSocketOptions.SO_SNDBUF, this.managementImpl.getOptionSoSndbuf());
+            } catch (Exception e) {
+                logger.error(
+                        "Error when setting of option SCTP_INIT_MAXSTREAMS [" + this.managementImpl.getOptionSoSndbuf()
+                                + "], Association: " + this, e);
+            }
+        }
+        if (this.managementImpl.getOptionSoRcvbuf() != null) {
+            try {
+                ch.setOption(SctpStandardSocketOptions.SO_RCVBUF, this.managementImpl.getOptionSoRcvbuf());
+            } catch (Exception e) {
+                logger.error("Error when setting of option SO_RCVBUF [" + this.managementImpl.getOptionSoRcvbuf()
+                        + "], Association: " + this, e);
+            }
+        }
+        if (this.managementImpl.getOptionSoLinger() != null) {
+            try {
+                ch.setOption(SctpStandardSocketOptions.SO_LINGER, this.managementImpl.getOptionSoLinger());
+            } catch (Exception e) {
+                logger.error("Error when setting of option SO_LINGER [" + this.managementImpl.getOptionSoLinger()
+                        + "], Association: " + this, e);
+            }
         }
     }
 
