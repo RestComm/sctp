@@ -6,7 +6,7 @@
 	<parent>
 		<artifactId>restcomm-sctp-docs</artifactId>
 		<groupId>org.mobicents.protocols.sctp.docs</groupId>
-		<version>1.7.0-SNAPSHOT</version>
+		<version>netty-2.1.7.3</version>
 	</parent>
 
 	<artifactId>restcomm-sctp-docs-sources-restcomm</artifactId>
