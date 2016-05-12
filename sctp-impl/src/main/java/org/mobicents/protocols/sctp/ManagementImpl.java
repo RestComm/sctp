@@ -424,14 +424,15 @@ public class ManagementImpl implements Management {
                 Double valTB3 = reader
                         .read(NettySctpManagementImpl.CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_3, Double.class);
 
-                Boolean valB = reader.read(NettySctpManagementImpl.OPTION_SCTP_DISABLE_FRAGMENTS, Boolean.class);
-                Integer valI = reader.read(NettySctpManagementImpl.OPTION_SCTP_FRAGMENT_INTERLEAVE, Integer.class);
-                Integer valI_In = reader.read(NettySctpManagementImpl.OPTION_SCTP_INIT_MAXSTREAMS_IN, Integer.class);
-                Integer valI_Out = reader.read(NettySctpManagementImpl.OPTION_SCTP_INIT_MAXSTREAMS_OUT, Integer.class);
-                valB = reader.read(NettySctpManagementImpl.OPTION_SCTP_NODELAY, Boolean.class);
-                valI = reader.read(NettySctpManagementImpl.OPTION_SO_SNDBUF, Integer.class);
-                valI = reader.read(NettySctpManagementImpl.OPTION_SO_RCVBUF, Integer.class);
-                valI = reader.read(NettySctpManagementImpl.OPTION_SO_LINGER, Integer.class);
+                // TODO: revive this test when we introduce of parameters persistense 
+//                Boolean valB = reader.read(NettySctpManagementImpl.OPTION_SCTP_DISABLE_FRAGMENTS, Boolean.class);
+//                Integer valI = reader.read(NettySctpManagementImpl.OPTION_SCTP_FRAGMENT_INTERLEAVE, Integer.class);
+//                Integer valI_In = reader.read(NettySctpManagementImpl.OPTION_SCTP_INIT_MAXSTREAMS_IN, Integer.class);
+//                Integer valI_Out = reader.read(NettySctpManagementImpl.OPTION_SCTP_INIT_MAXSTREAMS_OUT, Integer.class);
+//                valB = reader.read(NettySctpManagementImpl.OPTION_SCTP_NODELAY, Boolean.class);
+//                valI = reader.read(NettySctpManagementImpl.OPTION_SO_SNDBUF, Integer.class);
+//                valI = reader.read(NettySctpManagementImpl.OPTION_SO_RCVBUF, Integer.class);
+//                valI = reader.read(NettySctpManagementImpl.OPTION_SO_LINGER, Integer.class);
 
             } catch (java.lang.NullPointerException npe) {
                 // ignore.
@@ -1122,18 +1123,6 @@ public class ManagementImpl implements Management {
     }
 
     @Override
-    public InitMaxStreams getOptionSctpInitMaxstreams() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public void setOptionSctpInitMaxstreams(InitMaxStreams optionSctpInitMaxstreams) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
     public Boolean getOptionSctpNodelay() {
         // TODO Auto-generated method stub
         return null;
@@ -1177,6 +1166,24 @@ public class ManagementImpl implements Management {
 
     @Override
     public void setOptionSoLinger(Integer optionSoLinger) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public Integer getOptionSctpInitMaxstreams_MaxOutStreams() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Integer getOptionSctpInitMaxstreams_MaxInStreams() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void setOptionSctpInitMaxstreams(Integer maxInStreams, Integer maxOutStreams) {
         // TODO Auto-generated method stub
         
     }

@@ -635,66 +635,13 @@ public class NettyAssociationImpl implements Association {
     }
 
     private void applySctpOptions(Bootstrap b) {
-        if (this.management.getOptionSctpNodelay() != null) {
-            try {
-                b.option(SctpChannelOption.SCTP_NODELAY, this.management.getOptionSctpNodelay());
-            } catch (Exception e) {
-                logger.error("Error when setting of option SCTP_NODELAY [" + this.management.getOptionSctpNodelay()
-                        + "], Association: " + this, e);
-            }
-        }
-        if (this.management.getOptionSctpDisableFragments() != null) {
-            try {
-                b.option(SctpChannelOption.SCTP_DISABLE_FRAGMENTS, this.management.getOptionSctpDisableFragments());
-            } catch (Exception e) {
-                logger.error(
-                        "Error when setting of option SCTP_DISABLE_FRAGMENTS ["
-                                + this.management.getOptionSctpDisableFragments() + "], Association: " + this, e);
-            }
-        }
-        if (this.management.getOptionSctpFragmentInterleave() != null) {
-            try {
-                b.option(SctpChannelOption.SCTP_FRAGMENT_INTERLEAVE, this.management.getOptionSctpFragmentInterleave());
-            } catch (Exception e) {
-                logger.error(
-                        "Error when setting of option SCTP_FRAGMENT_INTERLEAVE ["
-                                + this.management.getOptionSctpFragmentInterleave() + "], Association: " + this, e);
-            }
-        }
-        if (this.management.getOptionSctpInitMaxstreams() != null) {
-            try {
-                b.option(SctpChannelOption.SCTP_INIT_MAXSTREAMS, this.management.getOptionSctpInitMaxstreams());
-            } catch (Exception e) {
-                logger.error(
-                        "Error when setting of option SCTP_INIT_MAXSTREAMS ["
-                                + this.management.getOptionSctpInitMaxstreams() + "], Association: " + this, e);
-            }
-        }
-        if (this.management.getOptionSoSndbuf() != null) {
-            try {
-                b.option(SctpChannelOption.SO_SNDBUF, this.management.getOptionSoSndbuf());
-            } catch (Exception e) {
-                logger.error(
-                        "Error when setting of option SCTP_INIT_MAXSTREAMS [" + this.management.getOptionSoSndbuf()
-                                + "], Association: " + this, e);
-            }
-        }
-        if (this.management.getOptionSoRcvbuf() != null) {
-            try {
-                b.option(SctpChannelOption.SO_RCVBUF, this.management.getOptionSoRcvbuf());
-            } catch (Exception e) {
-                logger.error("Error when setting of option SO_RCVBUF [" + this.management.getOptionSoRcvbuf()
-                        + "], Association: " + this, e);
-            }
-        }
-        if (this.management.getOptionSoLinger() != null) {
-            try {
-                b.option(SctpChannelOption.SO_LINGER, this.management.getOptionSoLinger());
-            } catch (Exception e) {
-                logger.error("Error when setting of option SO_LINGER [" + this.management.getOptionSoLinger()
-                        + "], Association: " + this, e);
-            }
-        }
+        b.option(SctpChannelOption.SCTP_NODELAY, this.management.getOptionSctpNodelay());
+        b.option(SctpChannelOption.SCTP_DISABLE_FRAGMENTS, this.management.getOptionSctpDisableFragments());
+        b.option(SctpChannelOption.SCTP_FRAGMENT_INTERLEAVE, this.management.getOptionSctpFragmentInterleave());
+        b.option(SctpChannelOption.SCTP_INIT_MAXSTREAMS, this.management.getOptionSctpInitMaxstreams());
+        b.option(SctpChannelOption.SO_SNDBUF, this.management.getOptionSoSndbuf());
+        b.option(SctpChannelOption.SO_RCVBUF, this.management.getOptionSoRcvbuf());
+        b.option(SctpChannelOption.SO_LINGER, this.management.getOptionSoLinger());
     }
 
     /**

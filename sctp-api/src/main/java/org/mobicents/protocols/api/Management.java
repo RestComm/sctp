@@ -1,31 +1,27 @@
 /*
- * JBoss, Home of Professional Open Source
- * Copyright 2011, Red Hat, Inc. and/or its affiliates, and individual
- * contributors as indicated by the @authors tag. All rights reserved.
- * See the copyright.txt in the distribution for a full listing
- * of individual contributors.
- * 
- * This copyrighted material is made available to anyone wishing to use,
- * modify, copy, or redistribute it subject to the terms and conditions
- * of the GNU General Public License, v. 2.0.
- * 
+ * TeleStax, Open Source Cloud Communications
+ * Copyright 2011-2014, Telestax Inc and individual contributors
+ * by the @authors tag.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation; either version 3 of
+ * the License, or (at your option) any later version.
+ *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
- * General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License,
- * v. 2.0 along with this distribution; if not, write to the Free 
- * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
  */
 
 package org.mobicents.protocols.api;
 
 import java.util.List;
 import java.util.Map;
-
-import com.sun.nio.sctp.SctpStandardSocketOptions;
 
 /**
  * <p>
@@ -570,21 +566,28 @@ public interface Management {
 
     /**
      * SCTP option: The maximum number of streams requested by the local endpoint during association initialization
-     * For an SctpServerChannel this option determines the maximum number of inbound/outbound streams
+     * For an SctpServerChannel this option determines the maximum number of outbound streams
      * accepted sockets will negotiate with their connecting peer.
      *
      * @return
      */
-    public SctpStandardSocketOptions.InitMaxStreams getOptionSctpInitMaxstreams();
+    public Integer getOptionSctpInitMaxstreams_MaxOutStreams();
+
+    /**
+     * SCTP option: The maximum number of streams requested by the local endpoint during association initialization
+     * For an SctpServerChannel this option determines the maximum number of inbound streams
+     * accepted sockets will negotiate with their connecting peer.
+     *
+     * @return
+     */
+    public Integer getOptionSctpInitMaxstreams_MaxInStreams();
 
     /**
      * SCTP option: The maximum number of streams requested by the local endpoint during association initialization
      * For an SctpServerChannel this option determines the maximum number of inbound/outbound streams
      * accepted sockets will negotiate with their connecting peer.
-     *
-     * @param optionSctpInitMaxstreams
      */
-    public void setOptionSctpInitMaxstreams(SctpStandardSocketOptions.InitMaxStreams optionSctpInitMaxstreams);
+    public void setOptionSctpInitMaxstreams(Integer maxInStreams, Integer maxOutStreams);
 
     /**
      * SCTP option: Enables or disables a Nagle-like algorithm.

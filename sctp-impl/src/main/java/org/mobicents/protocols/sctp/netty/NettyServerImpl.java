@@ -20,10 +20,12 @@
 
 package org.mobicents.protocols.sctp.netty;
 
+import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ServerChannel;
+import io.netty.channel.sctp.SctpChannelOption;
 import io.netty.channel.sctp.SctpServerChannel;
 import io.netty.channel.sctp.nio.NioSctpServerChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -287,6 +289,7 @@ public class NettyServerImpl implements Server {
             b.channel(NioSctpServerChannel.class);
             b.option(ChannelOption.SO_BACKLOG, 100);
             b.childHandler(new NettySctpServerChannelInitializer(this, this.management));
+            this.applySctpOptions(b);
         } else {
             b.channel(NioServerSocketChannel.class);
             b.option(ChannelOption.SO_BACKLOG, 100);
@@ -325,6 +328,16 @@ public class NettyServerImpl implements Server {
                 logger.info(String.format("ServerSocketChannel bound to=%s ", this.serverChannelTcp.localAddress()));
             }
         }
+    }
+
+    private void applySctpOptions(ServerBootstrap b) {
+        b.childOption(SctpChannelOption.SCTP_NODELAY, this.management.getOptionSctpNodelay());
+        b.childOption(SctpChannelOption.SCTP_DISABLE_FRAGMENTS, this.management.getOptionSctpDisableFragments());
+        b.childOption(SctpChannelOption.SCTP_FRAGMENT_INTERLEAVE, this.management.getOptionSctpFragmentInterleave());
+        b.childOption(SctpChannelOption.SCTP_INIT_MAXSTREAMS, this.management.getOptionSctpInitMaxstreams());
+        b.childOption(SctpChannelOption.SO_SNDBUF, this.management.getOptionSoSndbuf());
+        b.childOption(SctpChannelOption.SO_RCVBUF, this.management.getOptionSoRcvbuf());
+        b.childOption(SctpChannelOption.SO_LINGER, this.management.getOptionSoLinger());
     }
 
     @Override

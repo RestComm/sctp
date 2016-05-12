@@ -53,6 +53,7 @@ import org.mobicents.protocols.api.ServerListener;
 import org.mobicents.protocols.sctp.AssociationMap;
 
 import com.sun.nio.sctp.SctpStandardSocketOptions;
+import com.sun.nio.sctp.SctpStandardSocketOptions.InitMaxStreams;
 
 /**
  * @author <a href="mailto:amit.bhayani@telestax.com">Amit Bhayani</a>
@@ -80,14 +81,15 @@ public class NettySctpManagementImpl implements Management {
     public static final String CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_2 = "congControl_BackToNormalDelayThreshold_2";
     public static final String CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_3 = "congControl_BackToNormalDelayThreshold_3";
 
-    public static final String OPTION_SCTP_DISABLE_FRAGMENTS = "optionSctpDisableFragments";
-    public static final String OPTION_SCTP_FRAGMENT_INTERLEAVE = "optionSctpFragmentInterleave";
-    public static final String OPTION_SCTP_INIT_MAXSTREAMS_IN = "optionSctpInitMaxstreamsIn";
-    public static final String OPTION_SCTP_INIT_MAXSTREAMS_OUT = "optionSctpInitMaxstreamsOut";
-    public static final String OPTION_SCTP_NODELAY = "optionSctpNodelay";
-    public static final String OPTION_SO_SNDBUF = "optionSoSndbuf";
-    public static final String OPTION_SO_RCVBUF = "optionSoRcvbuf";
-    public static final String OPTION_SO_LINGER = "optionSoLinger";
+    // TODO: make options configurable in future
+//    public static final String OPTION_SCTP_DISABLE_FRAGMENTS = "optionSctpDisableFragments";
+//    public static final String OPTION_SCTP_FRAGMENT_INTERLEAVE = "optionSctpFragmentInterleave";
+//    public static final String OPTION_SCTP_INIT_MAXSTREAMS_IN = "optionSctpInitMaxstreamsIn";
+//    public static final String OPTION_SCTP_INIT_MAXSTREAMS_OUT = "optionSctpInitMaxstreamsOut";
+//    public static final String OPTION_SCTP_NODELAY = "optionSctpNodelay";
+//    public static final String OPTION_SO_SNDBUF = "optionSoSndbuf";
+//    public static final String OPTION_SO_RCVBUF = "optionSoRcvbuf";
+//    public static final String OPTION_SO_LINGER = "optionSoLinger";
 
     static final int DEFAULT_IO_THREADS = Runtime.getRuntime().availableProcessors() * 2;
 
@@ -1224,14 +1226,32 @@ public class NettySctpManagementImpl implements Management {
         this.store();
     }
 
-    @Override
-    public SctpStandardSocketOptions.InitMaxStreams getOptionSctpInitMaxstreams() {
+    public InitMaxStreams getOptionSctpInitMaxstreams() {
         return optionSctpInitMaxstreams;
     }
 
     @Override
-    public void setOptionSctpInitMaxstreams(SctpStandardSocketOptions.InitMaxStreams optionSctpInitMaxstreams) {
-        this.optionSctpInitMaxstreams = optionSctpInitMaxstreams;
+    public Integer getOptionSctpInitMaxstreams_MaxOutStreams() {
+        if (optionSctpInitMaxstreams != null)
+            return optionSctpInitMaxstreams.maxOutStreams();
+        else
+            return null;
+    }
+
+    @Override
+    public Integer getOptionSctpInitMaxstreams_MaxInStreams() {
+        if (optionSctpInitMaxstreams != null)
+            return optionSctpInitMaxstreams.maxInStreams();
+        else
+            return null;
+    }
+
+    @Override
+    public void setOptionSctpInitMaxstreams(Integer maxInStreams, Integer maxOutStreams) {
+        if (maxOutStreams == null || maxInStreams == null)
+            this.optionSctpInitMaxstreams = null;
+        else
+            this.optionSctpInitMaxstreams = SctpStandardSocketOptions.InitMaxStreams.create(maxInStreams, maxOutStreams);
 
         this.store();
     }
@@ -1325,29 +1345,30 @@ public class NettySctpManagementImpl implements Management {
                 this.congControl_BackToNormalDelayThreshold[2] = valTB3;
             }
 
-            Boolean valB = reader.read(OPTION_SCTP_DISABLE_FRAGMENTS, Boolean.class);
-            if (valB != null)
-                this.optionSctpDisableFragments = valB;
-            Integer valI = reader.read(OPTION_SCTP_FRAGMENT_INTERLEAVE, Integer.class);
-            if (valI != null)
-                this.optionSctpFragmentInterleave = valI;
-            Integer valI_In = reader.read(OPTION_SCTP_INIT_MAXSTREAMS_IN, Integer.class);
-            Integer valI_Out = reader.read(OPTION_SCTP_INIT_MAXSTREAMS_OUT, Integer.class);
-            if (valI_In != null && valI_Out != null) {
-                this.optionSctpInitMaxstreams = SctpStandardSocketOptions.InitMaxStreams.create(valI_In, valI_Out);
-            }
-            valB = reader.read(OPTION_SCTP_NODELAY, Boolean.class);
-            if (valB != null)
-                this.optionSctpNodelay = valB;
-            valI = reader.read(OPTION_SO_SNDBUF, Integer.class);
-            if (valI != null)
-                this.optionSoSndbuf = valI;
-            valI = reader.read(OPTION_SO_RCVBUF, Integer.class);
-            if (valI != null)
-                this.optionSoRcvbuf = valI;
-            valI = reader.read(OPTION_SO_LINGER, Integer.class);
-            if (valI != null)
-                this.optionSoLinger = valI;
+            // TODO: add storing of parameters
+//            Boolean valB = reader.read(OPTION_SCTP_DISABLE_FRAGMENTS, Boolean.class);
+//            if (valB != null)
+//                this.optionSctpDisableFragments = valB;
+//            Integer valI = reader.read(OPTION_SCTP_FRAGMENT_INTERLEAVE, Integer.class);
+//            if (valI != null)
+//                this.optionSctpFragmentInterleave = valI;
+//            Integer valI_In = reader.read(OPTION_SCTP_INIT_MAXSTREAMS_IN, Integer.class);
+//            Integer valI_Out = reader.read(OPTION_SCTP_INIT_MAXSTREAMS_OUT, Integer.class);
+//            if (valI_In != null && valI_Out != null) {
+//                this.optionSctpInitMaxstreams = SctpStandardSocketOptions.InitMaxStreams.create(valI_In, valI_Out);
+//            }
+//            valB = reader.read(OPTION_SCTP_NODELAY, Boolean.class);
+//            if (valB != null)
+//                this.optionSctpNodelay = valB;
+//            valI = reader.read(OPTION_SO_SNDBUF, Integer.class);
+//            if (valI != null)
+//                this.optionSoSndbuf = valI;
+//            valI = reader.read(OPTION_SO_RCVBUF, Integer.class);
+//            if (valI != null)
+//                this.optionSoRcvbuf = valI;
+//            valI = reader.read(OPTION_SO_LINGER, Integer.class);
+//            if (valI != null)
+//                this.optionSoLinger = valI;
 
             this.servers = reader.read(SERVERS, FastList.class);
 
@@ -1399,28 +1420,29 @@ public class NettySctpManagementImpl implements Management {
                 writer.write(this.congControl_BackToNormalDelayThreshold[2], CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_3, Double.class);
             }
 
-            if (this.optionSctpDisableFragments != null) {
-                writer.write(this.optionSctpDisableFragments, OPTION_SCTP_DISABLE_FRAGMENTS, Boolean.class);
-            }
-            if (this.optionSctpFragmentInterleave != null) {
-                writer.write(this.optionSctpFragmentInterleave, OPTION_SCTP_FRAGMENT_INTERLEAVE, Integer.class);
-            }
-            if (this.optionSctpInitMaxstreams != null) {
-                writer.write(this.optionSctpInitMaxstreams.maxInStreams(), OPTION_SCTP_INIT_MAXSTREAMS_IN, Integer.class);
-                writer.write(this.optionSctpInitMaxstreams.maxOutStreams(), OPTION_SCTP_INIT_MAXSTREAMS_OUT, Integer.class);
-            }
-            if (this.optionSctpNodelay != null) {
-                writer.write(this.optionSctpNodelay, OPTION_SCTP_NODELAY, Boolean.class);
-            }
-            if (this.optionSoSndbuf != null) {
-                writer.write(this.optionSoSndbuf, OPTION_SO_SNDBUF, Integer.class);
-            }
-            if (this.optionSoRcvbuf != null) {
-                writer.write(this.optionSoRcvbuf, OPTION_SO_RCVBUF, Integer.class);
-            }
-            if (this.optionSoLinger != null) {
-                writer.write(this.optionSoLinger, OPTION_SO_LINGER, Integer.class);
-            }
+            // TODO: add storing of parameters
+//            if (this.optionSctpDisableFragments != null) {
+//                writer.write(this.optionSctpDisableFragments, OPTION_SCTP_DISABLE_FRAGMENTS, Boolean.class);
+//            }
+//            if (this.optionSctpFragmentInterleave != null) {
+//                writer.write(this.optionSctpFragmentInterleave, OPTION_SCTP_FRAGMENT_INTERLEAVE, Integer.class);
+//            }
+//            if (this.optionSctpInitMaxstreams != null) {
+//                writer.write(this.optionSctpInitMaxstreams.maxInStreams(), OPTION_SCTP_INIT_MAXSTREAMS_IN, Integer.class);
+//                writer.write(this.optionSctpInitMaxstreams.maxOutStreams(), OPTION_SCTP_INIT_MAXSTREAMS_OUT, Integer.class);
+//            }
+//            if (this.optionSctpNodelay != null) {
+//                writer.write(this.optionSctpNodelay, OPTION_SCTP_NODELAY, Boolean.class);
+//            }
+//            if (this.optionSoSndbuf != null) {
+//                writer.write(this.optionSoSndbuf, OPTION_SO_SNDBUF, Integer.class);
+//            }
+//            if (this.optionSoRcvbuf != null) {
+//                writer.write(this.optionSoRcvbuf, OPTION_SO_RCVBUF, Integer.class);
+//            }
+//            if (this.optionSoLinger != null) {
+//                writer.write(this.optionSoLinger, OPTION_SO_LINGER, Integer.class);
+//            }
 
             writer.write(this.servers, SERVERS, FastList.class);
             writer.write(this.associations, ASSOCIATIONS, AssociationMap.class);
