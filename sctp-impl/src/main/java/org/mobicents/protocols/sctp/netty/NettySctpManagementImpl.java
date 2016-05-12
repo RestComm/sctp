@@ -1211,8 +1211,6 @@ public class NettySctpManagementImpl implements Management {
     @Override
     public void setOptionSctpDisableFragments(Boolean optionSctpDisableFragments) {
         this.optionSctpDisableFragments = optionSctpDisableFragments;
-
-        this.store();
     }
 
     @Override
@@ -1223,8 +1221,6 @@ public class NettySctpManagementImpl implements Management {
     @Override
     public void setOptionSctpFragmentInterleave(Integer optionSctpFragmentInterleave) {
         this.optionSctpFragmentInterleave = optionSctpFragmentInterleave;
-
-        this.store();
     }
 
     public InitMaxStreams getOptionSctpInitMaxstreams() {
@@ -1249,15 +1245,11 @@ public class NettySctpManagementImpl implements Management {
     @Override
     public void setOptionSctpInitMaxstreams_MaxOutStreams(Integer val) {
         this.optionSctpInitMaxstreams_MaxOutStreams = val;
-
-        this.store();
     }
 
     @Override
     public void setOptionSctpInitMaxstreams_MaxInStreams(Integer val) {
         this.optionSctpInitMaxstreams_MaxInStreams = val;
-
-        this.store();
     }
 
     @Override
@@ -1268,8 +1260,6 @@ public class NettySctpManagementImpl implements Management {
     @Override
     public void setOptionSctpNodelay(Boolean optionSctpNodelay) {
         this.optionSctpNodelay = optionSctpNodelay;
-
-        this.store();
     }
 
     @Override
@@ -1280,8 +1270,6 @@ public class NettySctpManagementImpl implements Management {
     @Override
     public void setOptionSoSndbuf(Integer optionSoSndbuf) {
         this.optionSoSndbuf = optionSoSndbuf;
-
-        this.store();
     }
 
     @Override
@@ -1292,8 +1280,6 @@ public class NettySctpManagementImpl implements Management {
     @Override
     public void setOptionSoRcvbuf(Integer optionSoRcvbuf) {
         this.optionSoRcvbuf = optionSoRcvbuf;
-
-        this.store();
     }
 
     @Override
@@ -1304,8 +1290,6 @@ public class NettySctpManagementImpl implements Management {
     @Override
     public void setOptionSoLinger(Integer optionSoLinger) {
         this.optionSoLinger = optionSoLinger;
-
-        this.store();
     }
 
     protected FastList<ManagementEventListener> getManagementEventListeners() {
