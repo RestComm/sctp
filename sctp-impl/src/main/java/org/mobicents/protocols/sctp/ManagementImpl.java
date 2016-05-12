@@ -54,8 +54,6 @@ import org.mobicents.protocols.api.Server;
 import org.mobicents.protocols.api.ServerListener;
 import org.mobicents.protocols.sctp.netty.NettySctpManagementImpl;
 
-import com.sun.nio.sctp.SctpStandardSocketOptions.InitMaxStreams;
-
 /**
  * @author amit bhayani
  * 
@@ -1183,7 +1181,13 @@ public class ManagementImpl implements Management {
     }
 
     @Override
-    public void setOptionSctpInitMaxstreams(Integer maxInStreams, Integer maxOutStreams) {
+    public void setOptionSctpInitMaxstreams_MaxOutStreams(Integer maxOutStreams) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void setOptionSctpInitMaxstreams_MaxInStreams(Integer maxInStreams) {
         // TODO Auto-generated method stub
         
     }

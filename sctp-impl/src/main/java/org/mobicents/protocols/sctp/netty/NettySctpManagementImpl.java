@@ -139,7 +139,8 @@ public class NettySctpManagementImpl implements Management {
     // SCTP option: The maximum number of streams requested by the local endpoint during association initialization
     // For an SctpServerChannel this option determines the maximum number of inbound/outbound streams
     // accepted sockets will negotiate with their connecting peer.
-    private SctpStandardSocketOptions.InitMaxStreams optionSctpInitMaxstreams = null;
+    private Integer optionSctpInitMaxstreams_MaxOutStreams = null;
+    private Integer optionSctpInitMaxstreams_MaxInStreams = null;
     // SCTP option: Enables or disables a Nagle-like algorithm.
     // The value of this socket option is a Boolean that represents whether the option is enabled or disabled.
     // SCTP uses an algorithm like The Nagle Algorithm to coalesce short segments and improve network efficiency.
@@ -1227,31 +1228,34 @@ public class NettySctpManagementImpl implements Management {
     }
 
     public InitMaxStreams getOptionSctpInitMaxstreams() {
-        return optionSctpInitMaxstreams;
+        if (optionSctpInitMaxstreams_MaxInStreams != null && optionSctpInitMaxstreams_MaxOutStreams != null) {
+            return SctpStandardSocketOptions.InitMaxStreams.create(optionSctpInitMaxstreams_MaxInStreams,
+                    optionSctpInitMaxstreams_MaxOutStreams);
+        } else {
+            return null;
+        }
     }
 
     @Override
     public Integer getOptionSctpInitMaxstreams_MaxOutStreams() {
-        if (optionSctpInitMaxstreams != null)
-            return optionSctpInitMaxstreams.maxOutStreams();
-        else
-            return null;
+        return optionSctpInitMaxstreams_MaxOutStreams;
     }
 
     @Override
     public Integer getOptionSctpInitMaxstreams_MaxInStreams() {
-        if (optionSctpInitMaxstreams != null)
-            return optionSctpInitMaxstreams.maxInStreams();
-        else
-            return null;
+        return optionSctpInitMaxstreams_MaxInStreams;
     }
 
     @Override
-    public void setOptionSctpInitMaxstreams(Integer maxInStreams, Integer maxOutStreams) {
-        if (maxOutStreams == null || maxInStreams == null)
-            this.optionSctpInitMaxstreams = null;
-        else
-            this.optionSctpInitMaxstreams = SctpStandardSocketOptions.InitMaxStreams.create(maxInStreams, maxOutStreams);
+    public void setOptionSctpInitMaxstreams_MaxOutStreams(Integer val) {
+        this.optionSctpInitMaxstreams_MaxOutStreams = val;
+
+        this.store();
+    }
+
+    @Override
+    public void setOptionSctpInitMaxstreams_MaxInStreams(Integer val) {
+        this.optionSctpInitMaxstreams_MaxInStreams = val;
 
         this.store();
     }

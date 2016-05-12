@@ -584,10 +584,17 @@ public interface Management {
 
     /**
      * SCTP option: The maximum number of streams requested by the local endpoint during association initialization
-     * For an SctpServerChannel this option determines the maximum number of inbound/outbound streams
+     * For an SctpServerChannel this option determines the maximum number of outbound streams
      * accepted sockets will negotiate with their connecting peer.
      */
-    public void setOptionSctpInitMaxstreams(Integer maxInStreams, Integer maxOutStreams);
+    public void setOptionSctpInitMaxstreams_MaxOutStreams(Integer maxOutStreams);
+
+    /**
+     * SCTP option: The maximum number of streams requested by the local endpoint during association initialization
+     * For an SctpServerChannel this option determines the maximum number of inbound streams
+     * accepted sockets will negotiate with their connecting peer.
+     */
+    public void setOptionSctpInitMaxstreams_MaxInStreams(Integer maxInStreams);
 
     /**
      * SCTP option: Enables or disables a Nagle-like algorithm.
