@@ -1,18 +1,18 @@
 Manifest-Version: 1.0
 Archiver-Version: Plexus Archiver
 Created-By: Apache Maven Bundle Plugin
-Built-By: jean
-Build-Jdk: 1.7.0_80
+Built-By: jenkins
+Build-Jdk: 1.7.0_79
 Implementation-Title: org.mobicents.protocols.sctp.docs:restcomm-sctp-
  docs-sources
-Implementation-Version: 1.7.0-SNAPSHOT
+Implementation-Version: netty-2.1.7.5
 Tool: Bnd-1.15.0
 Bundle-Name: Restcomm :: SCTP :: Docs :: Sources :: restcomm-sctp-docs
  -sources
 Implementation-URL: http://www.restcomm.org
 Implementation-Vendor-Id: TeleStax, Inc.
-Bundle-Version: 1.7.0.SNAPSHOT
-Bnd-LastModified: 1455102658348
+Bundle-Version: 0.0.0.netty-2_1_7_5
+Bnd-LastModified: 1463157768980
 Bundle-ManifestVersion: 2
 Bundle-License: http://www.gnu.org/licenses/lgpl.html
 Bundle-Description: Restcomm :: Parent pom for 2.x releases
