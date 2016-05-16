@@ -1,0 +1,44 @@
+= Setup
+
+[[_source_code]]
+== {this-platform} {this-application}  Source Code
+
+
+
+[[_release_source_building]]
+=== Release Source Code Building
+
+
+. Downloading the source code
++
+IMPORTANT: Subversion is used to manage its source code.
+Instructions for using Subversion, including install, can be found at http://git-scm.com/				    	
++
+Use Git to checkout a specific release source, the Git repository URL is {this-trunk-source-code-url},  then switch to the specific release version, lets consider {project-version}. 
++
+[source]
+----
+[usr]$ git clone git@github.com:RestComm/sctp.git
+----
+
+. Building the source code
++
+IMPORTANT: Maven 2.0.9 (or higher) is used to build the release.
+Instructions for using Maven2, including install, can be found at http://maven.apache.org
++
+Use Maven to build the binaries.
++
+[source]
+----
+
+				    [usr]$ cd sctp-1.7.0-SNAPSHOT
+				    [usr]$ mvn install
+----
++
+Once the process finishes you should have the `binary` jar files in the [path]_target_ directory of `module`. 
+
+
+[[_trunk_source_building]]
+=== Development Trunk Source Building
+
+Similar process as for <<_release_source_building>>, the only change is the GIT source code URL, which is {this-trunk-source-code-url}.

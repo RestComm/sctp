@@ -12,7 +12,7 @@ Bundle-Name: Restcomm :: SCTP :: Docs :: Sources :: restcomm-sctp-docs
 Implementation-URL: http://www.restcomm.org
 Implementation-Vendor-Id: TeleStax, Inc.
 Bundle-Version: 1.7.0.SNAPSHOT
-Bnd-LastModified: 1455102658348
+Bnd-LastModified: 1463400827136
 Bundle-ManifestVersion: 2
 Bundle-License: http://www.gnu.org/licenses/lgpl.html
 Bundle-Description: Restcomm :: Parent pom for 2.x releases
