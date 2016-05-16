@@ -1,0 +1,13 @@
+= Design Overview
+
+The internal structure of {this-platform} {this-application} looks like 
+
+.Architecture
+image::images/SCTPInternalArchitecture.jpg[]
+
+The prime responsibility of {this-platform} {this-application} is abstract Application from underlying SCTP sockets and expose same API (`Association.java`) irrespective if the underlying SCTP is acting as  server side waiting for client to connect or client side initiating connection.
+ 
+
+The management (`Management.java`) controls the associations and servers.
+The Application can execute commands to create/delete associations/servers.
+ 
