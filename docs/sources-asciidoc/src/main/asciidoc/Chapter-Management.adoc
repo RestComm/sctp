@@ -12,6 +12,26 @@ The `Management.java`			API looks like
 [source,java]
 ----
 
+/*
+ * TeleStax, Open Source Cloud Communications
+ * Copyright 2011-2014, Telestax Inc and individual contributors
+ * by the @authors tag.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation; either version 3 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
+ */
+
 package org.mobicents.protocols.api;
 
 import java.util.List;
@@ -64,6 +84,20 @@ public interface Management {
 	public void setPersistDir(String persistDir);
 
 	/**
+	* The AssociationListener set for this Association
+	* 
+	* @return
+	*/
+	public ServerListener getServerListener();
+
+	/**
+	 * The {@link AssociationListener} to be registered for this Association
+	 * 
+	 * @param associationListener
+	 */
+	public void setServerListener(ServerListener serverListener);
+
+	/**
 	 * Adding ManagementEventListener.
 	 * This listener is notified when adding/removing servers and associations 
 	 * @param listener
@@ -94,6 +128,12 @@ public interface Management {
 	 * @throws Exception
 	 */
 	public void stop() throws Exception;
+	
+	/**
+	 * returns true if Management is started
+	 * @return
+	 */
+	public boolean isStarted();
 
 	/**
 	 * This method stops and removes all registered servers and associations
@@ -115,6 +155,32 @@ public interface Management {
 	 *            port that this server will bind to
 	 * @param ipChannelType
 	 *            IP channel type: SCTP or TCP
+	 * @param acceptAnonymousConnections
+	 *            true: this Server accepts Anonymous connections, false: no
+	 * @param maxConcurrentConnectionsCount
+	 *            A count of concurrent connections that can accept a Server. 0 means an unlimited count.
+	 * @param extraHostAddresses
+	 *            When SCTP multi-homing configuration extra IP addresses can be put here
+	 *            If multi-homing absence this parameter can be null 
+	 * @return new Server instance
+	 * @throws Exception
+	 *             Exception if management not started or server name already
+	 *             taken or some other server already has same ip:port
+	 */
+	public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, boolean acceptAnonymousConnections,
+			int maxConcurrentConnectionsCount, String[] extraHostAddresses) throws Exception;
+
+	/**
+	 * Add new {@link Server}. Server can not accept anonymous connections.
+	 * 
+	 * @param serverName
+	 *            name of the Server. Should be unique name
+	 * @param hostAddress
+	 *            IP address that this server will bind to
+	 * @param port
+	 *            port that this server will bind to
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
 	 * @param extraHostAddresses
 	 *            When SCTP multi-homing configuration extra IP addresses can be put here
 	 *            If multi-homing absence this parameter can be null 
@@ -126,7 +192,7 @@ public interface Management {
 	public Server addServer(String serverName, String hostAddress, int port, IpChannelType ipChannelType, String[] extraHostAddresses) throws Exception;
 
 	/**
-	 * Add new {@link Server}. IP channel type is SCTP.
+	 * Add new {@link Server}. IP channel type is SCTP. Server can not accept anonymous connections.
 	 * 
 	 * @param serverName
 	 *            name of the Server. Should be unique name
@@ -225,6 +291,7 @@ public interface Management {
 	 * 
 	 * @param hostAddress
 	 * @param hostPort
+	 * 		If hostPort==0 this mean the local port will be any vacant port
 	 * @param peerAddress
 	 * @param peerPort
 	 * @param assocName
@@ -239,6 +306,7 @@ public interface Management {
 	 * 
 	 * @param hostAddress
 	 * @param hostPort
+	 * 		If hostPort==0 this mean the local port will be any vacant port
 	 * @param peerAddress
 	 * @param peerPort
 	 * @param assocName
@@ -309,37 +377,315 @@ public interface Management {
 	 * 
 	 * @param connectDelay
 	 */
-	public void setConnectDelay(int connectDelay);
+	public void setConnectDelay(int connectDelay) throws Exception;
 
 	/**
-	 * Number of threads configured to callback {@link AssociationListener}
-	 * methods.
+	 * This method is not used more.
 	 * 
 	 * @return
 	 */
 	public int getWorkerThreads();
 
 	/**
-	 * Number of threads configured for callback {@link AssociationListener}
+     * This method is not used more.
 	 * 
 	 * @param workerThreads
 	 */
-	public void setWorkerThreads(int workerThreads);
+	public void setWorkerThreads(int workerThreads) throws Exception;
 
 	/**
-	 * If set as single thread, number of workers thread set has no effect and
-	 * entire protocol stack runs on single thread
+     * This method is not used more.
 	 * 
 	 * @return
 	 */
 	public boolean isSingleThread();
 
 	/**
-	 * Set protocol stack as single thread
+     * This method is not used more.
 	 * 
 	 * @param singleThread
 	 */
-	public void setSingleThread(boolean singleThread);
+	public void setSingleThread(boolean singleThread) throws Exception;
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes more then value 0, 1 or 2 of the array
+     * CongControl_DelayThreshold, the Association's congestion level becomes to 1, 2 or 3.
+     * Threshold 1.
+     *
+     * @return
+     */
+    public double getCongControl_DelayThreshold_1();
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes more then value 0, 1 or 2 of the array
+     * CongControl_DelayThreshold, the Association's congestion level becomes to 1, 2 or 3.
+     * Threshold 2.
+     *
+     * @return
+     */
+    public double getCongControl_DelayThreshold_2();
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes more then value 0, 1 or 2 of the array
+     * CongControl_DelayThreshold, the Association's congestion level becomes to 1, 2 or 3.
+     * Threshold 3.
+     *
+     * @return
+     */
+    public double getCongControl_DelayThreshold_3();
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes more then value 0, 1 or 2 of the array
+     * CongControl_DelayThreshold, the Association's congestion level becomes to 1, 2 or 3. Array must have 3 values.
+     * Threshold 1.
+     * 
+     * @param val
+     * @throws Exception
+     */
+    public void setCongControl_DelayThreshold_1(double val) throws Exception;
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes more then value 0, 1 or 2 of the array
+     * CongControl_DelayThreshold, the Association's congestion level becomes to 1, 2 or 3. Array must have 3 values.
+     * Threshold 2.
+     * 
+     * @param val
+     * @throws Exception
+     */
+    public void setCongControl_DelayThreshold_2(double val) throws Exception;
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes more then value 0, 1 or 2 of the array
+     * CongControl_DelayThreshold, the Association's congestion level becomes to 1, 2 or 3. Array must have 3 values.
+     * Threshold 3.
+     * 
+     * @param val
+     * @throws Exception
+     */
+    public void setCongControl_DelayThreshold_3(double val) throws Exception;
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes less then value 0, 1 or 2 of the array
+     * CongControl_BackToNormalDelayThreshold, the Association's congestion level reduces to 0, 1 or 2.
+     * Threshold 1.
+     *
+     * @return
+     */
+    public double getCongControl_BackToNormalDelayThreshold_1();
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes less then value 0, 1 or 2 of the array
+     * CongControl_BackToNormalDelayThreshold, the Association's congestion level reduces to 0, 1 or 2.
+     * Threshold 2.
+     *
+     * @return
+     */
+    public double getCongControl_BackToNormalDelayThreshold_2();
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes less then value 0, 1 or 2 of the array
+     * CongControl_BackToNormalDelayThreshold, the Association's congestion level reduces to 0, 1 or 2.
+     * Threshold 3.
+     *
+     * @return
+     */
+    public double getCongControl_BackToNormalDelayThreshold_3();
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes less then value 0, 1 or 2 of the array
+     * CongControl_BackToNormalDelayThreshold, the Association's congestion level reduces to 0, 1 or 2. Array must have 3
+     * values.
+     * Threshold 1.
+     * 
+     * @param val
+     * @throws Exception
+     */
+    public void setCongControl_BackToNormalDelayThreshold_1(double val) throws Exception;
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes less then value 0, 1 or 2 of the array
+     * CongControl_BackToNormalDelayThreshold, the Association's congestion level reduces to 0, 1 or 2. Array must have 3
+     * values.
+     * Threshold 2.
+     * 
+     * @param val
+     * @throws Exception
+     */
+    public void setCongControl_BackToNormalDelayThreshold_2(double val) throws Exception;
+
+    /**
+     * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
+     * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes less then value 0, 1 or 2 of the array
+     * CongControl_BackToNormalDelayThreshold, the Association's congestion level reduces to 0, 1 or 2. Array must have 3
+     * values.
+     * Threshold 3.
+     * 
+     * @param val
+     * @throws Exception
+     */
+    public void setCongControl_BackToNormalDelayThreshold_3(double val) throws Exception;
+
+    /**
+     * SCTP option: Enables or disables message fragmentation.
+     * If enabled no SCTP message fragmentation will be performed.
+     * Instead if a message being sent exceeds the current PMTU size,
+     * the message will NOT be sent and an error will be indicated to the user.
+     *
+     * @return
+     */
+    public Boolean getOptionSctpDisableFragments();
+
+    /**
+     * SCTP option: Enables or disables message fragmentation.
+     * If enabled no SCTP message fragmentation will be performed.
+     * Instead if a message being sent exceeds the current PMTU size,
+     * the message will NOT be sent and an error will be indicated to the user.
+     *
+     * @param optionSctpDisableFragments
+     */
+    public void setOptionSctpDisableFragments(Boolean optionSctpDisableFragments);
+
+    /**
+     * SCTP option: Fragmented interleave controls how the presentation of messages occur for the message receiver.
+     * There are three levels of fragment interleave defined
+     * level 0 - Prevents the interleaving of any messages
+     * level 1 - Allows interleaving of messages that are from different associations
+     * level 2 - Allows complete interleaving of messages.
+     *
+     * @return
+     */
+    public Integer getOptionSctpFragmentInterleave();
+
+    /**
+     * SCTP option: Fragmented interleave controls how the presentation of messages occur for the message receiver.
+     * There are three levels of fragment interleave defined
+     * level 0 - Prevents the interleaving of any messages
+     * level 1 - Allows interleaving of messages that are from different associations
+     * level 2 - Allows complete interleaving of messages.
+     *
+     * @param optionSctpFragmentInterleave
+     */
+    public void setOptionSctpFragmentInterleave(Integer optionSctpFragmentInterleave);
+
+    /**
+     * SCTP option: The maximum number of streams requested by the local endpoint during association initialization
+     * For an SctpServerChannel this option determines the maximum number of outbound streams
+     * accepted sockets will negotiate with their connecting peer.
+     *
+     * @return
+     */
+    public Integer getOptionSctpInitMaxstreams_MaxOutStreams();
+
+    /**
+     * SCTP option: The maximum number of streams requested by the local endpoint during association initialization
+     * For an SctpServerChannel this option determines the maximum number of inbound streams
+     * accepted sockets will negotiate with their connecting peer.
+     *
+     * @return
+     */
+    public Integer getOptionSctpInitMaxstreams_MaxInStreams();
+
+    /**
+     * SCTP option: The maximum number of streams requested by the local endpoint during association initialization
+     * For an SctpServerChannel this option determines the maximum number of outbound streams
+     * accepted sockets will negotiate with their connecting peer.
+     */
+    public void setOptionSctpInitMaxstreams_MaxOutStreams(Integer maxOutStreams);
+
+    /**
+     * SCTP option: The maximum number of streams requested by the local endpoint during association initialization
+     * For an SctpServerChannel this option determines the maximum number of inbound streams
+     * accepted sockets will negotiate with their connecting peer.
+     */
+    public void setOptionSctpInitMaxstreams_MaxInStreams(Integer maxInStreams);
+
+    /**
+     * SCTP option: Enables or disables a Nagle-like algorithm.
+     * The value of this socket option is a Boolean that represents whether the option is enabled or disabled.
+     * SCTP uses an algorithm like The Nagle Algorithm to coalesce short segments and improve network efficiency.
+     *
+     * @return
+     */
+    public Boolean getOptionSctpNodelay();
+
+    /**
+     * SCTP option: Enables or disables a Nagle-like algorithm.
+     * The value of this socket option is a Boolean that represents whether the option is enabled or disabled.
+     * SCTP uses an algorithm like The Nagle Algorithm to coalesce short segments and improve network efficiency.
+     *
+     * @param optionSctpNodelay
+     */
+    public void setOptionSctpNodelay(Boolean optionSctpNodelay);
+
+    /**
+     * SCTP option: The size of the socket send buffer.
+     *
+     * @return
+     */
+    public Integer getOptionSoSndbuf();
+
+    /**
+     * SCTP option: The size of the socket send buffer.
+     *
+     * @param optionSoSndbuf
+     */
+    public void setOptionSoSndbuf(Integer optionSoSndbuf);
+
+    /**
+     * SCTP option: The size of the socket receive buffer.
+     *
+     * @return
+     */
+    public Integer getOptionSoRcvbuf();
+
+    /**
+     * SCTP option: The size of the socket receive buffer.
+     *
+     * @param optionSoRcvbuf
+     */
+    public void setOptionSoRcvbuf(Integer optionSoRcvbuf);
+
+    /**
+     * SCTP option: Linger on close if data is present.
+     * The value of this socket option is an Integer that controls the action taken when unsent data is queued on the socket
+     * and a method to close the socket is invoked.
+     * If the value of the socket option is zero or greater, then it represents a timeout value, in seconds, known as the linger interval.
+     * The linger interval is the timeout for the close method to block while the operating system attempts to transmit the unsent data
+     * or it decides that it is unable to transmit the data.
+     * If the value of the socket option is less than zero then the option is disabled.
+     * In that case the close method does not wait until unsent data is transmitted;
+     * if possible the operating system will transmit any unsent data before the connection is closed.
+     *
+     * @return
+     */
+    public Integer getOptionSoLinger();
+
+    /**
+     * SCTP option: Linger on close if data is present.
+     * The value of this socket option is an Integer that controls the action taken when unsent data is queued on the socket
+     * and a method to close the socket is invoked.
+     * If the value of the socket option is zero or greater, then it represents a timeout value, in seconds, known as the linger interval.
+     * The linger interval is the timeout for the close method to block while the operating system attempts to transmit the unsent data
+     * or it decides that it is unable to transmit the data.
+     * If the value of the socket option is less than zero then the option is disabled.
+     * In that case the close method does not wait until unsent data is transmitted;
+     * if possible the operating system will transmit any unsent data before the connection is closed.
+     *
+     * @param optionSoLinger
+     */
+    public void setOptionSoLinger(Integer optionSoLinger);
+
 }
 ----
 
@@ -435,12 +781,42 @@ Management API is divided into two sections 1) managing the resources and 2) con
   This is only applivable for clien side sockets.
   This parameter can be updated only at the SCTP stack running time, including GUI. 
 
-`setWorkerThreads`::
-  Number of threads to callback the AssociationListener.
-  Its assured that packets with same SLS will always be queued in same Thread for callback to make sure order is maintained.
-  This parameter can be updated only when the SCTP stack is not yet running. 
+`congControl_DelayThreshold_1`, `congControl_DelayThreshold_2`, `congControl_DelayThreshold_3`::
+  Delay time in seconds between a time when an outgoing message has been submitted for sending to a IP peer and time when the message has been sent to IP network. The more this time the more panding messages are
+  in an outgoing buffer and the more is IP network congestion. These parameters are thresholds
+  that trigger Association congestion level to the next level.
+  This parameter can be updated only at the SCTP stack running time, including GUI. 
 
-`setSingleThread`::
-  Only single thread will be used to callback the AssociationListener.
-  If this is set to true, setting number of threads by calling setWorkerThreads has no effect.
-  This parameter can be updated only when the SCTP stack is not yet running. 
+`congControl_BackToNormalDelayThreshold_1`, `congControl_BackToNormalDelayThreshold_2`, `congControl_BackToNormalDelayThreshold_3`::
+  These parameters are thresholds that trigger Association congestion level back the previous level.
+  This parameter can be updated only at the SCTP stack running time, including GUI.
+
+`optionSctpDisableFragments`
+  SCTP stack level option: Enables or disables message fragmentation.
+
+`optionSctpFragmentInterleave`
+  SCTP stack level option: Fragmented interleave controls how the presentation of messages occur for the message receiver.
+
+.There are three levels of fragment interleave defined:
+* level 0 - Prevents the interleaving of any messages
+* level 1 - Allows interleaving of messages that are from different associations
+* level 2 - Allows complete interleaving of messages.
+
+`optionSctpInitMaxstreams_MaxOutStreams`
+  SCTP stack level option: The maximum number of outbound streams requested by the local endpoint during association initialization
+
+`optionSctpInitMaxstreams_MaxInStreams`
+  SCTP stack level option: The maximum number of inbound streams requested by the local endpoint during association initialization
+
+`optionSctpNodelay`
+  SCTP stack level option: Enables or disables a Nagle-like algorithm (true means disabling).
+
+`optionSoSndbuf`
+  SCTP stack level option: The size of the socket send buffer.
+
+`optionSoRcvbuf`
+  SCTP stack level option: The size of the socket receive buffer.
+
+`optionSoLinger`
+  SCTP stack level option: Linger on close if data is present.
+

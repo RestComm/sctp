@@ -23,15 +23,15 @@ Use Git to checkout a specific release source, the Git repository URL is {this-t
 
 . Building the source code
 +
-IMPORTANT: Maven 2.0.9 (or higher) is used to build the release.
+IMPORTANT: Maven 3.0.0 (or higher) is used to build the release.
 Instructions for using Maven2, including install, can be found at http://maven.apache.org
 +
 Use Maven to build the binaries.
 +
-[source]
+[source,subs="verbatim,attributes"]
 ----
 
-				    [usr]$ cd sctp-1.7.0-SNAPSHOT
+				    [usr]$ cd {project-version}
 				    [usr]$ mvn install
 ----
 +

@@ -20,6 +20,8 @@ For example {this-platform} {this-application} provides
 * Persistence mechanism capable of initiating the SCTP Association if the system is restarted after crash or gracefull shutdown
 * Tries re-initiate  the connection if for some reason the connection is lost between the peers
 * Configuration to make the module behave as single thread or multi-threaded depending on requirement's of application
+* Support for anonymous SCTP/TCP associations
+* Starting from version 2.0 both netty 4 and nio library are supported. ManagementImpl management class is used for nio and NettySctpManagementImpl management class is used for netty. Usage of netty library is preferred.
 
 Below diagram shows various layers involved  
 
