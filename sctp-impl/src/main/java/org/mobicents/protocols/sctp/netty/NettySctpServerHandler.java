@@ -32,9 +32,6 @@ import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationType;
 import org.mobicents.protocols.api.IpChannelType;
 
-import com.sun.nio.sctp.SctpChannel;
-import com.sun.nio.sctp.SctpStandardSocketOptions;
-
 /**
  * @author <a href="mailto:amit.bhayani@telestax.com">Amit Bhayani</a>
  * 
