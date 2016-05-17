@@ -59,6 +59,7 @@ public class ManagementImpl implements Management {
 
 	private static final Logger logger = Logger.getLogger(ManagementImpl.class);
 
+	private static final String DISABLE_CONFIG_PERSISTANCE_KEY = "ss7.disableDefaultConfigPersistance";
 	private static final String SCTP_PERSIST_DIR_KEY = "sctp.persist.dir";
 	private static final String USER_DIR_KEY = "user.dir";
 	private static final String PERSIST_FILE_NAME = "sctp.xml";
@@ -393,8 +394,16 @@ public class ManagementImpl implements Management {
 		return this.started;
 	}
 
+	private boolean isConfigPersistanceDisabled() {
+		String disableConfigPersistanceString = System.getProperty(DISABLE_CONFIG_PERSISTANCE_KEY, "false");
+		return Boolean.valueOf(disableConfigPersistanceString);
+	}
+	
 	@SuppressWarnings("unchecked")
 	public void load() throws FileNotFoundException {
+		if (isConfigPersistanceDisabled()) {
+			return;
+		}
 		XMLObjectReader reader = null;
 		try {
 			reader = XMLObjectReader.newInstance(new FileInputStream(persistFile.toString()));
@@ -438,6 +447,9 @@ public class ManagementImpl implements Management {
 	}
 
 	public void store() {
+		if (isConfigPersistanceDisabled()) {
+			return;
+		}
 		try {
 			XMLObjectWriter writer = XMLObjectWriter.newInstance(new FileOutputStream(persistFile.toString()));
 			writer.setBinding(binding);

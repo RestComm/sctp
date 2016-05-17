@@ -3,3 +3,8 @@ target
 /.project
 /ManagementTest_sctp.xml
 /sctptest.log
+
+# Ignore AppNGIN-generated build.xml and ivy.xml
+build.xml
+ivy.xml
+
