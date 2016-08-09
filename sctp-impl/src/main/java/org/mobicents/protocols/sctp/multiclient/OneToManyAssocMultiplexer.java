@@ -126,6 +126,16 @@ public class OneToManyAssocMultiplexer {
         pendingAssocs.add(association);
     }
 
+    protected void unregisterAssociation(ManageableAssociation association) {
+        if (!started.get()) {
+            throw new IllegalStateException("OneToManyAssocMultiplexer is stopped!");
+        }
+
+        if (!pendingAssocs.remove(association)) {
+            connectedAssocs.remove(association);
+        }
+    }
+
     protected void start() throws IOException {
         if (!started.compareAndSet(false, true)) {
             return;

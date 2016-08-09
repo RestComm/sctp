@@ -176,9 +176,13 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
             // Finally, wake up our selecting thread so it can make the required
             // changes
             this.management.getSocketSelector().wakeup();
-        }
+        } else if (multiplexer != null) {
+            multiplexer.unregisterAssociation(this);
+            if (logger.isDebugEnabled()) {
+                logger.debug("close() - association=" + getName() + " is unregistered from the multiplexer");
+            }
+       }
     }
-
     public IpChannelType getIpChannelType() {
         return IpChannelType.SCTP;
     }
@@ -552,6 +556,12 @@ public class OneToOneAssociationImpl extends ManageableAssociation {
                 logger.error(String.format(
                         "Exception while calling onCommunicationShutdown on AssociationListener for Association=%s", this.name),
                         e);
+            }
+        }
+        if (multiplexer != null) {
+            multiplexer.unregisterAssociation(this);
+            if (logger.isDebugEnabled()) {
+                logger.debug("close() - association=" + getName() + " is unregistered from the multiplexer");
             }
         }
         // Finally clear the txQueue

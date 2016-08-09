@@ -419,6 +419,12 @@ public class OneToManyAssociationImpl extends ManageableAssociation {
     }
 
     protected void close() {
+        if (multiplexer != null) {
+            multiplexer.unregisterAssociation(this);
+            if (logger.isDebugEnabled()) {
+                logger.debug("close() - association=" + getName() + " is unregistered from the multiplexer");
+            }
+        }
         try {
             this.markAssociationDown();
             this.associationListener.onCommunicationShutdown(this);
