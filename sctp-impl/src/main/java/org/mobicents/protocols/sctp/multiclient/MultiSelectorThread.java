@@ -42,181 +42,187 @@ import org.apache.log4j.Logger;
 
 public class MultiSelectorThread implements Runnable {
 
-	protected static final Logger logger = Logger.getLogger(MultiSelectorThread.class);
+    protected static final Logger logger = Logger.getLogger(MultiSelectorThread.class);
 
-	protected Selector selector;
+    protected Selector selector;
 
-	protected MultiManagementImpl management = null;
+    protected MultiManagementImpl management = null;
 
-	protected volatile boolean started = true;
+    protected volatile boolean started = true;
 
-	/**
-	 * Creates the MultiSelector instance for the given MultiManagementImpl (SCTP stack) and Selector
-	 * 
-	 * @param selector
-	 * @param management
-	 */
-	protected MultiSelectorThread(Selector selector, MultiManagementImpl management) {
-		super();
-		this.selector = selector;
-		this.management = management;
-	}
+    /**
+     * Creates the MultiSelector instance for the given MultiManagementImpl (SCTP stack) and Selector
+     * 
+     * @param selector
+     * @param management
+     */
+    protected MultiSelectorThread(Selector selector, MultiManagementImpl management) {
+        super();
+        this.selector = selector;
+        this.management = management;
+    }
 
-	/**
-	 * @param started
-	 *            the started to set
-	 */
-	protected void setStarted(boolean started) {
-		this.started = started;
-	}
+    /**
+     * @param started the started to set
+     */
+    protected void setStarted(boolean started) {
+        this.started = started;
+    }
 
-	@Override
-	public void run() {
-		if (logger.isInfoEnabled()) {
-			logger.info(String.format("SelectorThread for Management=%s started.", this.management.getName()));
-		}
-		while (this.started) {
-			try {
-				FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
+    @Override
+    public void run() {
+        if (logger.isInfoEnabled()) {
+            logger.info(String.format("SelectorThread for Management=%s started.", this.management.getName()));
+        }
+        while (this.started) {
+            try {
+                FastList<MultiChangeRequest> pendingChanges = this.management.getPendingChanges();
 
-				// Process any pending changes
-				synchronized (pendingChanges) {
-					Iterator<MultiChangeRequest> changes = pendingChanges.iterator();
-					while (changes.hasNext()) {
-						MultiChangeRequest change = changes.next();
-						
-						SelectionKey key = change.getSocketChannel() == null ? null :  change.getSocketChannel().keyFor(this.selector);
-						if (logger.isDebugEnabled()) {
-							if (key != null && key.isValid()) {
-								logger.debug("change=" + change + ": key=" + key + " of socketChannel=" + change.getSocketChannel() + " for selector=" + this.selector
-										+ " key interesOps=" + key.interestOps());
-							}
-						}
-						switch (change.getType()) {
-						case MultiChangeRequest.CHANGEOPS:
-							pendingChanges.remove(change);
-							if (key == null ) {
-								logger.warn("change=" + change + ": key is null", new NullPointerException("Selection key is null"));
-							} else if (!key.isValid()) {
-								logger.warn("change=" + change + ": key=" + key + " key is invalid", new InternalError("Selection key is invalid"));
-							} else {
-								key.interestOps(change.getOps());
-							}
-							break;
-						case MultiChangeRequest.ADD_OPS  :
-							pendingChanges.remove(change);
-							if (key == null ) {
-								logger.warn("change=" + change + ": key is null", new NullPointerException("Selection key is null"));
-							} else if (!key.isValid()) {
-								logger.warn("change=" + change + ": key=" + key + " key is invalid", new InternalError("Selection key is invalid"));
-							} else {
-								key.interestOps(key.interestOps() | change.getOps());
-							}
-							break;
-						case MultiChangeRequest.REGISTER:
-							pendingChanges.remove(change);
-							
-							SelectionKey key1 = change.getSocketChannel().register(this.selector, change.getOps());
+                // Process any pending changes
+                synchronized (pendingChanges) {
+                    Iterator<MultiChangeRequest> changes = pendingChanges.iterator();
+                    while (changes.hasNext()) {
+                        MultiChangeRequest change = changes.next();
 
-							if (change.isMultiAssocRequest()) {
-								key1.attach(change.getAssocMultiplexer());
-								if (logger.isDebugEnabled()) {
-									logger.debug("Key=" + key1 + "is registered to channel=" + change.getSocketChannel() + " of the association=" + change.getAssocMultiplexer());
-								}
-							} else {
-								key1.attach(change.getAssociation());
-								if (logger.isDebugEnabled()) {
-									logger.debug("Key=" + key1 + "is registered to channel=" + change.getSocketChannel() + " of the association=" + change.getAssociation());
-								}
-							}
-							break;
-						case MultiChangeRequest.CONNECT:
-							if (!change.getAssociation().isStarted()) {
-								pendingChanges.remove(change);
-							} else {
-								if (change.getExecutionTime() <= System.currentTimeMillis()) {
-									pendingChanges.remove(change);
-									change.getAssociation().reconnect();
-								}
-							}
-							break;
-						case MultiChangeRequest.CLOSE:
-							pendingChanges.remove(change);
-							if (!change.isMultiAssocRequest()) {
-								change.getAssociation().close();
-							}
-							break;
-						}
-					}
-				}
+                        SelectionKey key = change.getSocketChannel() == null ? null
+                                : change.getSocketChannel().keyFor(this.selector);
+                        if (logger.isDebugEnabled()) {
+                            if (key != null && key.isValid()) {
+                                logger.debug(
+                                        "change=" + change + ": key=" + key + " of socketChannel=" + change.getSocketChannel()
+                                                + " for selector=" + this.selector + " key interesOps=" + key.interestOps());
+                            }
+                        }
+                        switch (change.getType()) {
+                            case MultiChangeRequest.CHANGEOPS:
+                                pendingChanges.remove(change);
+                                if (key == null) {
+                                    logger.warn("change=" + change + ": key is null",
+                                            new NullPointerException("Selection key is null"));
+                                } else if (!key.isValid()) {
+                                    logger.warn("change=" + change + ": key=" + key + " key is invalid",
+                                            new InternalError("Selection key is invalid"));
+                                } else {
+                                    key.interestOps(change.getOps());
+                                }
+                                break;
+                            case MultiChangeRequest.ADD_OPS:
+                                pendingChanges.remove(change);
+                                if (key == null) {
+                                    logger.warn("change=" + change + ": key is null",
+                                            new NullPointerException("Selection key is null"));
+                                } else if (!key.isValid()) {
+                                    logger.warn("change=" + change + ": key=" + key + " key is invalid",
+                                            new InternalError("Selection key is invalid"));
+                                } else {
+                                    key.interestOps(key.interestOps() | change.getOps());
+                                }
+                                break;
+                            case MultiChangeRequest.REGISTER:
+                                pendingChanges.remove(change);
 
-				// Wait for an event one of the registered channels
-				this.selector.select(500);
+                                SelectionKey key1 = change.getSocketChannel().register(this.selector, change.getOps());
 
-				// Iterate over the set of keys for which events are available
-				Iterator<SelectionKey> selectedKeys = this.selector.selectedKeys().iterator();
+                                if (change.isMultiAssocRequest()) {
+                                    key1.attach(change.getAssocMultiplexer());
+                                    if (logger.isDebugEnabled()) {
+                                        logger.debug("Key=" + key1 + "is registered to channel=" + change.getSocketChannel()
+                                                + " of the association=" + change.getAssocMultiplexer());
+                                    }
+                                } else {
+                                    key1.attach(change.getAssociation());
+                                    if (logger.isDebugEnabled()) {
+                                        logger.debug("Key=" + key1 + "is registered to channel=" + change.getSocketChannel()
+                                                + " of the association=" + change.getAssociation());
+                                    }
+                                }
+                                break;
+                            case MultiChangeRequest.CONNECT:
+                                if (!change.getAssociation().isStarted()) {
+                                    pendingChanges.remove(change);
+                                } else {
+                                    if (change.getExecutionTime() <= System.currentTimeMillis()) {
+                                        pendingChanges.remove(change);
+                                        change.getAssociation().reconnect();
+                                    }
+                                }
+                                break;
+                            case MultiChangeRequest.CLOSE:
+                                pendingChanges.remove(change);
+                                if (!change.isMultiAssocRequest()) {
+                                    change.getAssociation().close();
+                                }
+                                break;
+                        }
+                    }
+                }
 
-				while (selectedKeys.hasNext()) {
-					SelectionKey key = selectedKeys.next();
-					selectedKeys.remove();
+                // Wait for an event one of the registered channels
+                this.selector.select(500);
 
-					if (!key.isValid()) {
-						continue;
-					}
+                // Iterate over the set of keys for which events are available
+                Iterator<SelectionKey> selectedKeys = this.selector.selectedKeys().iterator();
 
-					// Check what event is available and deal with it
-					if (key.isConnectable()) {
-						logger.error("Illegal selectionKey state: connectable");
-					} 
-					if (key.isAcceptable()) {
-						logger.error("Illegal selectionKey state: acceptable");
-					} 
-					if (key.isReadable()) {
-						this.read(key);						
-					} 
-					if (key.isWritable()) {
-						this.write(key);
-					}
-				}
-			} catch (CancelledKeyException cke) {
-				//having this exception when closing a channel can be normal, but we log it on WARN level
-				logger.warn("Selecting a cancelled ready key: " + cke.getMessage());
-			} catch (Exception e) {
-				logger.error("Error while selecting the ready keys", e);
-				e.printStackTrace();
-			}
-		}
+                while (selectedKeys.hasNext()) {
+                    SelectionKey key = selectedKeys.next();
+                    selectedKeys.remove();
 
-		try {
-			this.selector.close();
-		} catch (IOException e) {
-			logger.error(String.format("Error while closing Selector for SCTP Management=%s", this.management.getName()));
-		}
+                    if (!key.isValid()) {
+                        continue;
+                    }
 
-		if (logger.isInfoEnabled()) {
-			logger.info(String.format("SelectorThread for Management=%s stopped.", this.management.getName()));
-		}
-	}
+                    // Check what event is available and deal with it
+                    if (key.isConnectable()) {
+                        logger.error("Illegal selectionKey state: connectable");
+                    }
+                    if (key.isAcceptable()) {
+                        logger.error("Illegal selectionKey state: acceptable");
+                    }
+                    if (key.isReadable()) {
+                        this.read(key);
+                    }
+                    if (key.isWritable()) {
+                        this.write(key);
+                    }
+                }
+            } catch (CancelledKeyException cke) {
+                // having this exception when closing a channel can be normal, but we log it on WARN level
+                logger.warn("Selecting a cancelled ready key: " + cke.getMessage());
+            } catch (Exception e) {
+                logger.error("Error while selecting the ready keys", e);
+                e.printStackTrace();
+            }
+        }
 
-	private void read(SelectionKey key) throws IOException {
-		if (key.attachment() instanceof OneToManyAssocMultiplexer) {
-			OneToManyAssocMultiplexer multiplexer = (OneToManyAssocMultiplexer) key.attachment();
-			multiplexer.read();
-		} else if (key.attachment() instanceof OneToOneAssociationImpl) {
-			OneToOneAssociationImpl association = (OneToOneAssociationImpl) key.attachment();
-			association.read();
-		}
-	}
+        try {
+            this.selector.close();
+        } catch (IOException e) {
+            logger.error(String.format("Error while closing Selector for SCTP Management=%s", this.management.getName()));
+        }
 
-	private void write(SelectionKey key) throws IOException {
-		if (key.attachment() instanceof OneToManyAssocMultiplexer) {
-			OneToManyAssocMultiplexer multiplexer = (OneToManyAssocMultiplexer) key.attachment();
-			multiplexer.write(key);
-		} else if (key.attachment() instanceof OneToOneAssociationImpl) {
-			OneToOneAssociationImpl association = (OneToOneAssociationImpl) key.attachment();
-			association.write(key);
-		}
-	}
+        if (logger.isInfoEnabled()) {
+            logger.info(String.format("SelectorThread for Management=%s stopped.", this.management.getName()));
+        }
+    }
+
+    private void read(SelectionKey key) throws IOException {
+        if (key.attachment() instanceof OneToManyAssocMultiplexer) {
+            OneToManyAssocMultiplexer multiplexer = (OneToManyAssocMultiplexer) key.attachment();
+            multiplexer.read();
+        } else if (key.attachment() instanceof OneToOneAssociationImpl) {
+            OneToOneAssociationImpl association = (OneToOneAssociationImpl) key.attachment();
+            association.read();
+        }
+    }
+
+    private void write(SelectionKey key) throws IOException {
+        if (key.attachment() instanceof OneToManyAssocMultiplexer) {
+            OneToManyAssocMultiplexer multiplexer = (OneToManyAssocMultiplexer) key.attachment();
+            multiplexer.write(key);
+        } else if (key.attachment() instanceof OneToOneAssociationImpl) {
+            OneToOneAssociationImpl association = (OneToOneAssociationImpl) key.attachment();
+            association.write(key);
+        }
+    }
 
 }
-

@@ -33,29 +33,29 @@ import org.mobicents.protocols.api.PayloadData;
  */
 public class MultiWorker implements Runnable {
 
-	private Association association;
-	private AssociationListener associationListener = null;
-	private PayloadData payloadData = null;
+    private Association association;
+    private AssociationListener associationListener = null;
+    private PayloadData payloadData = null;
 
-	/**
-	 * @param association
-	 * @param associationListener
-	 * @param payloadData
-	 */
-	protected MultiWorker(Association association, AssociationListener associationListener, PayloadData payloadData) {
-		super();
-		this.association = association;
-		this.associationListener = associationListener;
-		this.payloadData = payloadData;
-	}
+    /**
+     * @param association
+     * @param associationListener
+     * @param payloadData
+     */
+    protected MultiWorker(Association association, AssociationListener associationListener, PayloadData payloadData) {
+        super();
+        this.association = association;
+        this.associationListener = associationListener;
+        this.payloadData = payloadData;
+    }
 
-	@Override
-	public void run() {
-		try {
-			this.associationListener.onPayload(this.association, this.payloadData);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+    @Override
+    public void run() {
+        try {
+            this.associationListener.onPayload(this.association, this.payloadData);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 }
