@@ -53,7 +53,7 @@ class MultiAssociationHandler extends AbstractNotificationHandler<OneToManyAssoc
      * not be resolved the method returns the value of the defaultResult parameter.
      *
      * @param not - Notification that need to be delegated
-     * @param defaultResult - Default return value used when Association instance can not be resolved
+     * @param defaultResult - Default return value used when Association instance cannot be resolved
      * @param multiplexer - The OneToManyAssocMultiplexer that is attached to this MultiAssociationHandler instance
      * @return - If delegation is successful it returns the return result of the handler method of the corresponding
      *         OneToManyAssociationImpl instance otherwise ű returns the value of the defaultResult parameter.
@@ -121,7 +121,7 @@ class MultiAssociationHandler extends AbstractNotificationHandler<OneToManyAssoc
         }
         ManageableAssociation assoc = multiplexer.findPendingAssociationByAddress(notification.address());
         if (assoc == null) {
-            logger.warn("Can not handle sendfailed notification: no pending manageable association found for address="
+            logger.warn("Cannot handle sendfailed notification: no pending manageable association found for address="
                     + notification.address() + " by the multiplexer");
             return HandlerResult.RETURN;
         }

@@ -133,7 +133,15 @@ public abstract class ManageableAssociation implements Association {
     }
 
     protected boolean isConnectedToPeerAddresses(String peerAddresses) {
-        return peerAddresses.contains(getAssocInfo().getPeerInfo().getPeerSocketAddress().toString());
+        PeerAddressInfo peer = getAssocInfo().getPeerInfo();
+        if (peerAddresses.contains(peer.getPeerSocketAddress().toString())) {
+            return true;
+        } else if (peer.getSecondaryPeerSocketAddress() != null) {
+            if (peerAddresses.contains(peer.getSecondaryPeerSocketAddress().toString())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected PayloadData getInitPayloadData() {
