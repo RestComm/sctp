@@ -97,6 +97,20 @@ public interface Management {
 	 */
 	public void removeManagementEventListener(ManagementEventListener listener);
 
+    /**
+     * Adding CongestionListener.
+     * This listener is notified when adding/removing servers and associations 
+     * @param listener
+     */
+    public void addCongestionListener(CongestionListener listener);
+
+    /**
+     * Removing CongestionListener.
+     * This listener is notified when adding/removing servers and associations 
+     * @param listener
+     */
+    public void removeCongestionListener(CongestionListener listener);
+
 	/**
 	 * Start the management. No management operation can be executed unless
 	 * {@link Management} is started. If {@link Server} and {@link Association}

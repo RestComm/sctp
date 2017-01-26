@@ -47,6 +47,7 @@ import javolution.xml.stream.XMLStreamException;
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationType;
+import org.mobicents.protocols.api.CongestionListener;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.Management;
 import org.mobicents.protocols.api.ManagementEventListener;
@@ -1188,6 +1189,18 @@ public class ManagementImpl implements Management {
 
     @Override
     public void setOptionSctpInitMaxstreams_MaxInStreams(Integer maxInStreams) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void addCongestionListener(CongestionListener listener) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void removeCongestionListener(CongestionListener listener) {
         // TODO Auto-generated method stub
         
     }

@@ -45,6 +45,7 @@ import javolution.xml.stream.XMLStreamException;
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationType;
+import org.mobicents.protocols.api.CongestionListener;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.Management;
 import org.mobicents.protocols.api.ManagementEventListener;
@@ -115,6 +116,7 @@ public class NettySctpManagementImpl implements Management {
     private ServerListener serverListener = null;
 
     private FastList<ManagementEventListener> managementEventListeners = new FastList<ManagementEventListener>();
+    private FastList<CongestionListener> congestionListeners = new FastList<CongestionListener>();
     protected FastList<Server> servers = new FastList<Server>();
     protected AssociationMap<String, Association> associations = new AssociationMap<String, Association>();
     private volatile boolean started = false;
@@ -268,6 +270,32 @@ public class NettySctpManagementImpl implements Management {
             newManagementEventListeners.addAll(this.managementEventListeners);
             newManagementEventListeners.remove(listener);
             this.managementEventListeners = newManagementEventListeners;
+        }
+    }
+
+    @Override
+    public void addCongestionListener(CongestionListener listener) {
+        synchronized (this) {
+            if (this.congestionListeners.contains(listener))
+                return;
+
+            FastList<CongestionListener> newCongestionListeners = new FastList<CongestionListener>();
+            newCongestionListeners.addAll(this.congestionListeners);
+            newCongestionListeners.add(listener);
+            this.congestionListeners = newCongestionListeners;
+        }
+    }
+
+    @Override
+    public void removeCongestionListener(CongestionListener listener) {
+        synchronized (this) {
+            if (!this.congestionListeners.contains(listener))
+                return;
+
+            FastList<CongestionListener> newCongestionListeners = new FastList<CongestionListener>();
+            newCongestionListeners.addAll(this.congestionListeners);
+            newCongestionListeners.remove(listener);
+            this.congestionListeners = newCongestionListeners;
         }
     }
 
@@ -1294,6 +1322,10 @@ public class NettySctpManagementImpl implements Management {
 
     protected FastList<ManagementEventListener> getManagementEventListeners() {
         return managementEventListeners;
+    }
+
+    protected FastList<CongestionListener> getCongestionListeners() {
+        return congestionListeners;
     }
 
     @SuppressWarnings("unchecked")

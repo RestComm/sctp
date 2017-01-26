@@ -55,7 +55,7 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
     protected Channel channel = null;
     protected ChannelHandlerContext ctx = null;
 
-    protected long lastCongestionMonitorSecond;
+    protected long lastCongestionMonitorSecondPart;
 
     /**
      * 
@@ -204,9 +204,9 @@ public class NettySctpChannelInboundHandlerAdapter extends ChannelInboundHandler
             ChannelFuture future = ch.writeAndFlush(message);
 
             long curMillisec = System.currentTimeMillis();
-            long sec = curMillisec / 1000;
-            if (lastCongestionMonitorSecond < sec) {
-                lastCongestionMonitorSecond = sec;
+            long secPart = curMillisec / 500;
+            if (lastCongestionMonitorSecondPart < secPart) {
+                lastCongestionMonitorSecondPart = secPart;
                 CongestionMonitor congestionMonitor = new CongestionMonitor();
                 future.addListener(congestionMonitor);
             }

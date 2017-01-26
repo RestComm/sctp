@@ -46,6 +46,7 @@ import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationListener;
 import org.mobicents.protocols.api.AssociationType;
+import org.mobicents.protocols.api.CongestionListener;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.ManagementEventListener;
 import org.mobicents.protocols.api.PayloadData;
@@ -364,6 +365,14 @@ public class NettyAssociationImpl implements Association {
         if (this.congLevel != val) {
             logger.warn("Outgoing congestion control: SCTP: Changing of congestion level for Association=" + this.name + " "
                     + this.congLevel + "->" + val);
+        }
+
+        for (CongestionListener lstr : this.management.getCongestionListeners()) {
+            try {
+                lstr.onCongLevelChanged(this, this.congLevel, val);
+            } catch (Throwable ee) {
+                logger.error("Exception while invoking onAssociationAdded", ee);
+            }
         }
 
         this.congLevel = val;
