@@ -1472,4 +1472,15 @@ public class NettySctpManagementImpl implements Management {
             logger.error("Error while persisting the Rule state in file", e);
         }
     }
+
+    @Override
+    public int getBufferSize() {
+        // this parameter is only needed for non-netty version
+        return 0;
+    }
+
+    @Override
+    public void setBufferSize(int bufferSize) throws Exception {
+        // this parameter is only needed for non-netty version
+    }
 }

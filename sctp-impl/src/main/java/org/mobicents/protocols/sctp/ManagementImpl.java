@@ -108,6 +108,8 @@ public class ManagementImpl implements Management {
 
 	private int connectDelay = 5000;
 
+	private int bufferSize = 8192;
+
 	private ExecutorService[] executorServices = null;
 
 	private FastList<ManagementEventListener> managementEventListeners = new FastList<ManagementEventListener>();
@@ -220,6 +222,21 @@ public class ManagementImpl implements Management {
 
 //		this.store();
 	}
+
+    @Override
+    public int getBufferSize() {
+        return bufferSize;
+    }
+
+    @Override
+    public void setBufferSize(int bufferSize) throws Exception {
+        if (this.started)
+            throw new Exception("BufferSize parameter can be updated only when SCTP stack is NOT running");
+        if (bufferSize < 1000 || bufferSize > 1000000)
+            throw new Exception("BufferSize must be between 1000 and 1000000 bytes");
+
+        this.bufferSize = bufferSize;
+    }
 
 	public ServerListener getServerListener() {
 		return serverListener;
