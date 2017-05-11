@@ -408,7 +408,6 @@ public interface Management {
 	public void setSingleThread(boolean singleThread) throws Exception;
 
     /**
-<<<<<<< master
      * For outgoing messages congestion control we need to have 3 thresholds - delays of outgoing messages before it will be
      * sent to IP channel (3 levels - 1, 2, 3). If a delay time in seconds becomes more then value 0, 1 or 2 of the array
      * CongControl_DelayThreshold, the Association's congestion level becomes to 1, 2 or 3.
