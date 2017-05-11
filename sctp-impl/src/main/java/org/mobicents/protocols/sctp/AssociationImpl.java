@@ -125,15 +125,21 @@ public class AssociationImpl implements Association {
 
 	public AssociationImpl() {
 		super();
-		// clean transmission buffer
-		txBuffer.clear();
-		txBuffer.rewind();
-		txBuffer.flip();
+	}
 
-		// clean receiver buffer
-		rxBuffer.clear();
-		rxBuffer.rewind();
-		rxBuffer.flip();
+	protected void initChannels() {
+        rxBuffer = ByteBuffer.allocateDirect(management.getBufferSize());
+        txBuffer = ByteBuffer.allocateDirect(management.getBufferSize());
+
+        // clean transmission buffer
+        txBuffer.clear();
+        txBuffer.rewind();
+        txBuffer.flip();
+
+        // clean receiver buffer
+        rxBuffer.clear();
+        rxBuffer.rewind();
+        rxBuffer.flip();
 	}
 
 	/**
@@ -416,10 +422,8 @@ public class AssociationImpl implements Association {
 	 *            the management to set
 	 */
 	protected void setManagement(ManagementImpl management) {
-		this.management = management;
-
-		rxBuffer = ByteBuffer.allocateDirect(management.getBufferSize());
-		txBuffer = ByteBuffer.allocateDirect(management.getBufferSize());
+        this.management = management;
+        this.initChannels();
 	}
 
 	private AbstractSelectableChannel getSocketChannel() {
