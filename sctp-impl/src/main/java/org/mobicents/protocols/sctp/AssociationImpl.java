@@ -109,8 +109,8 @@ public class AssociationImpl implements Association {
 	private SocketChannel socketChannelTcp;
 
 	// The buffer into which we'll read data when it's available
-	private ByteBuffer rxBuffer = ByteBuffer.allocateDirect(8192);
-	private ByteBuffer txBuffer = ByteBuffer.allocateDirect(8192);
+	private ByteBuffer rxBuffer;
+	private ByteBuffer txBuffer;
 
 	private volatile MessageInfo msgInfo;
 
@@ -415,6 +415,9 @@ public class AssociationImpl implements Association {
 	 */
 	protected void setManagement(ManagementImpl management) {
 		this.management = management;
+
+		rxBuffer = ByteBuffer.allocateDirect(management.getBufferSize());
+		txBuffer = ByteBuffer.allocateDirect(management.getBufferSize());
 	}
 
 	private AbstractSelectableChannel getSocketChannel() {

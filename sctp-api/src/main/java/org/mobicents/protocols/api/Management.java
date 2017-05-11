@@ -396,4 +396,21 @@ public interface Management {
 	 * @param singleThread
 	 */
 	public void setSingleThread(boolean singleThread) throws Exception;
+
+    /**
+     * Get a sending / receiving buffer size per an association (in bytes).
+     * Default value is 8192.
+     * 
+     * @return
+     */
+	public int getBufferSize();
+
+    /**
+     * Set a sending / receiving buffer size per an association (in bytes).
+     * Default value is 8192.
+     * 
+     * @param bufferSize
+     */
+    public void setBufferSize(int bufferSize) throws Exception;
+
 }

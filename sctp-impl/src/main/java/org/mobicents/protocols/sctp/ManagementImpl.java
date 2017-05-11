@@ -36,12 +36,14 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
 import javolution.text.TextBuilder;
 import javolution.util.FastList;
 import javolution.util.FastMap;
 import javolution.xml.XMLObjectReader;
 import javolution.xml.XMLObjectWriter;
 import javolution.xml.stream.XMLStreamException;
+
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationType;
@@ -103,6 +105,8 @@ public class ManagementImpl implements Management {
 	private int maxIOErrors = 3;
 
 	private int connectDelay = 5000;
+
+	private int bufferSize = 8192;
 
 	private ExecutorService[] executorServices = null;
 
@@ -216,6 +220,21 @@ public class ManagementImpl implements Management {
 
 //		this.store();
 	}
+
+    @Override
+    public int getBufferSize() {
+        return bufferSize;
+    }
+
+    @Override
+    public void setBufferSize(int bufferSize) throws Exception {
+        if (this.started)
+            throw new Exception("BufferSize parameter can be updated only when SCTP stack is NOT running");
+        if (bufferSize < 1000 || bufferSize > 1000000)
+            throw new Exception("BufferSize must be between 1000 and 1000000 bytes");
+
+        this.bufferSize = bufferSize;
+    }
 
 	public ServerListener getServerListener() {
 		return serverListener;
