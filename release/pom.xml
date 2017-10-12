@@ -10,9 +10,9 @@
 	</parent>
 	
 	<artifactId>sctp-release</artifactId>
-<!--
+
   	<version>2.22</version>
--->
+
 	<name>Restcomm :: Release :: ${pom.artifactId}</name>
 	<profiles>
 		<profile>
