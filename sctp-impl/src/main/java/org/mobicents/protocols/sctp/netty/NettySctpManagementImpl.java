@@ -1329,95 +1329,100 @@ public class NettySctpManagementImpl implements Management {
     }
 
     @SuppressWarnings("unchecked")
-    private void load() throws FileNotFoundException {
+    protected void load() throws FileNotFoundException {
         XMLObjectReader reader = null;
         try {
             reader = XMLObjectReader.newInstance(new FileInputStream(persistFile.toString()));
             reader.setBinding(binding);
-
-            try {
-                Integer vali = reader.read(CONNECT_DELAY_PROP, Integer.class);
-                if (vali != null)
-                    this.connectDelay = vali;
-                // this.workerThreads = reader.read(WORKER_THREADS_PROP, Integer.class);
-                // this.singleThread = reader.read(SINGLE_THREAD_PROP, Boolean.class);
-                vali = reader.read(WORKER_THREADS_PROP, Integer.class);
-                Boolean valb = reader.read(SINGLE_THREAD_PROP, Boolean.class);
-            } catch (java.lang.NullPointerException npe) {
-                // ignore.
-                // For backward compatibility we can ignore if these values are not defined
-            }
-
-            Double valTH1 = reader.read(CONG_CONTROL_DELAY_THRESHOLD_1, Double.class);
-            Double valTH2 = reader.read(CONG_CONTROL_DELAY_THRESHOLD_2, Double.class);
-            Double valTH3 = reader.read(CONG_CONTROL_DELAY_THRESHOLD_3, Double.class);
-            Double valTB1 = reader.read(CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_1, Double.class);
-            Double valTB2 = reader.read(CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_2, Double.class);
-            Double valTB3 = reader.read(CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_3, Double.class);
-            if (valTH1 != null && valTH2 != null && valTH3 != null && valTB1 != null && valTB2 != null && valTB3 != null) {
-                this.congControl_DelayThreshold = new double[3];
-                this.congControl_DelayThreshold[0] = valTH1;
-                this.congControl_DelayThreshold[1] = valTH2;
-                this.congControl_DelayThreshold[2] = valTH3;
-                this.congControl_BackToNormalDelayThreshold = new double[3];
-                this.congControl_BackToNormalDelayThreshold[0] = valTB1;
-                this.congControl_BackToNormalDelayThreshold[1] = valTB2;
-                this.congControl_BackToNormalDelayThreshold[2] = valTB3;
-            }
-
-            // TODO: add storing of parameters
-//            Boolean valB = reader.read(OPTION_SCTP_DISABLE_FRAGMENTS, Boolean.class);
-//            if (valB != null)
-//                this.optionSctpDisableFragments = valB;
-//            Integer valI = reader.read(OPTION_SCTP_FRAGMENT_INTERLEAVE, Integer.class);
-//            if (valI != null)
-//                this.optionSctpFragmentInterleave = valI;
-//            Integer valI_In = reader.read(OPTION_SCTP_INIT_MAXSTREAMS_IN, Integer.class);
-//            Integer valI_Out = reader.read(OPTION_SCTP_INIT_MAXSTREAMS_OUT, Integer.class);
-//            if (valI_In != null && valI_Out != null) {
-//                this.optionSctpInitMaxstreams = SctpStandardSocketOptions.InitMaxStreams.create(valI_In, valI_Out);
-//            }
-//            valB = reader.read(OPTION_SCTP_NODELAY, Boolean.class);
-//            if (valB != null)
-//                this.optionSctpNodelay = valB;
-//            valI = reader.read(OPTION_SO_SNDBUF, Integer.class);
-//            if (valI != null)
-//                this.optionSoSndbuf = valI;
-//            valI = reader.read(OPTION_SO_RCVBUF, Integer.class);
-//            if (valI != null)
-//                this.optionSoRcvbuf = valI;
-//            valI = reader.read(OPTION_SO_LINGER, Integer.class);
-//            if (valI != null)
-//                this.optionSoLinger = valI;
-
-            this.servers = reader.read(SERVERS, FastList.class);
-
-            for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
-                Server serverTemp = n.getValue();
-                ((NettyServerImpl) serverTemp).setManagement(this);
-                if (serverTemp.isStarted()) {
-                    try {
-                        ((NettyServerImpl) serverTemp).start();
-                    } catch (Exception e) {
-                        logger.error(String.format("Error while initiating Server=%s", serverTemp.getName()), e);
-                    }
-                }
-            }
-
-            this.associations = reader.read(ASSOCIATIONS, AssociationMap.class);
-            for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n
-                    .getNext()) != end;) {
-                NettyAssociationImpl associationTemp = (NettyAssociationImpl) n.getValue();
-                associationTemp.setManagement(this);
-            }
+            load(reader);
+            
 
         } catch (XMLStreamException ex) {
             // this.logger.info(
             // "Error while re-creating Linksets from persisted file", ex);
         }
     }
+    
+    protected void load(XMLObjectReader reader) throws XMLStreamException
+    {
+    	try {
+            Integer vali = reader.read(CONNECT_DELAY_PROP, Integer.class);
+            if (vali != null)
+                this.connectDelay = vali;
+            // this.workerThreads = reader.read(WORKER_THREADS_PROP, Integer.class);
+            // this.singleThread = reader.read(SINGLE_THREAD_PROP, Boolean.class);
+            vali = reader.read(WORKER_THREADS_PROP, Integer.class);
+            Boolean valb = reader.read(SINGLE_THREAD_PROP, Boolean.class);
+        } catch (java.lang.NullPointerException npe) {
+            // ignore.
+            // For backward compatibility we can ignore if these values are not defined
+        }
 
-    private void store() {
+        Double valTH1 = reader.read(CONG_CONTROL_DELAY_THRESHOLD_1, Double.class);
+        Double valTH2 = reader.read(CONG_CONTROL_DELAY_THRESHOLD_2, Double.class);
+        Double valTH3 = reader.read(CONG_CONTROL_DELAY_THRESHOLD_3, Double.class);
+        Double valTB1 = reader.read(CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_1, Double.class);
+        Double valTB2 = reader.read(CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_2, Double.class);
+        Double valTB3 = reader.read(CONG_CONTROL_BACK_TO_NORMAL_DELAY_THRESHOLD_3, Double.class);
+        if (valTH1 != null && valTH2 != null && valTH3 != null && valTB1 != null && valTB2 != null && valTB3 != null) {
+            this.congControl_DelayThreshold = new double[3];
+            this.congControl_DelayThreshold[0] = valTH1;
+            this.congControl_DelayThreshold[1] = valTH2;
+            this.congControl_DelayThreshold[2] = valTH3;
+            this.congControl_BackToNormalDelayThreshold = new double[3];
+            this.congControl_BackToNormalDelayThreshold[0] = valTB1;
+            this.congControl_BackToNormalDelayThreshold[1] = valTB2;
+            this.congControl_BackToNormalDelayThreshold[2] = valTB3;
+        }
+
+        // TODO: add storing of parameters
+//        Boolean valB = reader.read(OPTION_SCTP_DISABLE_FRAGMENTS, Boolean.class);
+//        if (valB != null)
+//            this.optionSctpDisableFragments = valB;
+//        Integer valI = reader.read(OPTION_SCTP_FRAGMENT_INTERLEAVE, Integer.class);
+//        if (valI != null)
+//            this.optionSctpFragmentInterleave = valI;
+//        Integer valI_In = reader.read(OPTION_SCTP_INIT_MAXSTREAMS_IN, Integer.class);
+//        Integer valI_Out = reader.read(OPTION_SCTP_INIT_MAXSTREAMS_OUT, Integer.class);
+//        if (valI_In != null && valI_Out != null) {
+//            this.optionSctpInitMaxstreams = SctpStandardSocketOptions.InitMaxStreams.create(valI_In, valI_Out);
+//        }
+//        valB = reader.read(OPTION_SCTP_NODELAY, Boolean.class);
+//        if (valB != null)
+//            this.optionSctpNodelay = valB;
+//        valI = reader.read(OPTION_SO_SNDBUF, Integer.class);
+//        if (valI != null)
+//            this.optionSoSndbuf = valI;
+//        valI = reader.read(OPTION_SO_RCVBUF, Integer.class);
+//        if (valI != null)
+//            this.optionSoRcvbuf = valI;
+//        valI = reader.read(OPTION_SO_LINGER, Integer.class);
+//        if (valI != null)
+//            this.optionSoLinger = valI;
+
+        this.servers = reader.read(SERVERS, FastList.class);
+
+        for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+            Server serverTemp = n.getValue();
+            ((NettyServerImpl) serverTemp).setManagement(this);
+            if (serverTemp.isStarted()) {
+                try {
+                    ((NettyServerImpl) serverTemp).start();
+                } catch (Exception e) {
+                    logger.error(String.format("Error while initiating Server=%s", serverTemp.getName()), e);
+                }
+            }
+        }
+
+        this.associations = reader.read(ASSOCIATIONS, AssociationMap.class);
+        for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n
+                .getNext()) != end;) {
+            NettyAssociationImpl associationTemp = (NettyAssociationImpl) n.getValue();
+            associationTemp.setManagement(this);
+        }
+    }
+
+    public void store() {
         try {
             XMLObjectWriter writer = XMLObjectWriter.newInstance(new FileOutputStream(persistFile.toString()));
             writer.setBinding(binding);
