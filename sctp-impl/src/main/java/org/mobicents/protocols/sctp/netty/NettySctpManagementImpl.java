@@ -743,8 +743,8 @@ public class NettySctpManagementImpl implements Management {
             throw new Exception("Peer address cannot be null");
         }
 
-        if (peerPort < 1) {
-            throw new Exception("Peer port cannot be less than 1");
+        if (peerPort < 0) {
+            throw new Exception("Peer port cannot be less than 0");
         }
 
         if (serverName == null) {
@@ -776,8 +776,8 @@ public class NettySctpManagementImpl implements Management {
             for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n
                     .getNext()) != end;) {
                 Association associationTemp = n.getValue();
-
-                if (peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
+                
+                if (associationTemp.getServerName().equals(server.getName()) && peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
                     throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d",
                             associationTemp.getName(), peerAddress, peerPort));
                 }

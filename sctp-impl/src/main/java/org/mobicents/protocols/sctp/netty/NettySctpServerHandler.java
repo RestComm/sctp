@@ -88,7 +88,7 @@ public class NettySctpServerHandler extends NettySctpChannelInboundHandlerAdapte
             if (serverImpl.getName().equals(association.getServerName())
                     && association.getAssociationType() == AssociationType.SERVER) {
                 // compare port and ip of remote with provisioned
-                if ((port == association.getPeerPort()) && (host.equals(association.getPeerAddress()))) {
+                if ((port == association.getPeerPort() || association.getPeerPort()==0) && (host.equals(association.getPeerAddress()))) {
                     provisioned = true;
 
                     if (!association.isStarted()) {
