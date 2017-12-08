@@ -23,6 +23,7 @@
 package org.mobicents.protocols.sctp;
 
 import static org.junit.Assert.assertTrue;
+import io.netty.buffer.Unpooled;
 
 import java.util.Arrays;
 
@@ -221,7 +222,7 @@ public class SctpTransferTest {
 			clientMaxOutboundStreams = maxOutboundStreams;
 			clientAssocUp = true;
 
-			PayloadData payloadData = new PayloadData(CLIENT_MESSAGE.length, CLIENT_MESSAGE, true, false, 3, 1);
+			PayloadData payloadData = new PayloadData(CLIENT_MESSAGE.length, Unpooled.copiedBuffer(CLIENT_MESSAGE), true, false, 3, 1);
 
 			try {
 				association.send(payloadData);
@@ -278,7 +279,7 @@ public class SctpTransferTest {
 		@Override
 		public void onPayload(Association association, PayloadData payloadData) {
 			clientMessage = new byte[payloadData.getDataLength()];
-			System.arraycopy(payloadData.getData(), 0, clientMessage, 0, payloadData.getDataLength());
+			payloadData.getByteBuf().readBytes(clientMessage);
 			logger.debug("CLIENT received " + new String(clientMessage));
 		}
 
@@ -313,7 +314,7 @@ public class SctpTransferTest {
 			serverMaxOutboundStreams = maxOutboundStreams;
 					
 
-			PayloadData payloadData = new PayloadData(SERVER_MESSAGE.length, SERVER_MESSAGE, true, false, 3, 1);
+			PayloadData payloadData = new PayloadData(SERVER_MESSAGE.length, Unpooled.copiedBuffer(SERVER_MESSAGE), true, false, 3, 1);
 
 			try {
 				association.send(payloadData);
@@ -370,7 +371,7 @@ public class SctpTransferTest {
 		@Override
 		public void onPayload(Association association, PayloadData payloadData) {
 			serverMessage = new byte[payloadData.getDataLength()];
-			System.arraycopy(payloadData.getData(), 0, serverMessage, 0, payloadData.getDataLength());
+			payloadData.getByteBuf().readBytes(serverMessage);
 			logger.debug("SERVER received " + new String(serverMessage));
 		}
 

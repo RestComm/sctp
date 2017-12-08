@@ -112,6 +112,10 @@ public class PayloadData {
         return array;
     }
 
+    public void releaseBuffer() {
+    	ReferenceCountUtil.release(byteBuf);
+    }
+    
 	/**
 	 * @return the complete
 	 */

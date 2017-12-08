@@ -22,7 +22,10 @@
 
 package org.mobicents.protocols.sctp;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
+import io.netty.util.ReferenceCountUtil;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -112,8 +115,7 @@ public class AssociationImpl implements Association {
 
 	// The buffer into which we'll read data when it's available
 	private ByteBuffer rxBuffer;
-	private ByteBuffer txBuffer;
-
+	
 	private volatile MessageInfo msgInfo;
 
 	/**
@@ -129,12 +131,6 @@ public class AssociationImpl implements Association {
 
 	protected void initChannels() {
         rxBuffer = ByteBuffer.allocateDirect(management.getBufferSize());
-        txBuffer = ByteBuffer.allocateDirect(management.getBufferSize());
-
-        // clean transmission buffer
-        txBuffer.clear();
-        txBuffer.rewind();
-        txBuffer.flip();
 
         // clean receiver buffer
         rxBuffer.clear();
@@ -559,12 +555,11 @@ public class AssociationImpl implements Association {
 			return null;
 		}
 
-		rxBuffer.flip();
-		byte[] data = new byte[len];
-		rxBuffer.get(data);
+		rxBuffer.flip();		
+		ByteBuf byteBuf = Unpooled.copiedBuffer(rxBuffer);
 		rxBuffer.clear();
 
-		PayloadData payload = new PayloadData(len, data, messageInfo.isComplete(), messageInfo.isUnordered(),
+		PayloadData payload = new PayloadData(len, byteBuf, messageInfo.isComplete(), messageInfo.isUnordered(),
 				messageInfo.payloadProtocolID(), messageInfo.streamNumber());
 
 		return payload;
@@ -583,41 +578,28 @@ public class AssociationImpl implements Association {
 		}
 
 		rxBuffer.flip();
-		byte[] data = new byte[len];
-		rxBuffer.get(data);
+		ByteBuf byteBuf = Unpooled.copiedBuffer(rxBuffer);
 		rxBuffer.clear();
 
-		PayloadData payload = new PayloadData(len, data, true, false, 0, 0);
+		PayloadData payload = new PayloadData(len, byteBuf, true, false, 0, 0);
 
 		return payload;
 	}
 
 	protected void write(SelectionKey key) {
 
-		try {
-
-			if (txBuffer.hasRemaining()) {
-				// All data wasn't sent in last doWrite. Try to send it now
-				// this.socketChannel.send(txBuffer, msgInfo);
-				this.doSend();
-			}
-
+		try {			
 			// TODO Do we need to synchronize ConcurrentLinkedQueue?
 			// synchronized (this.txQueue) {
-			if (!txQueue.isEmpty() && !txBuffer.hasRemaining()) {
+			if (!txQueue.isEmpty()) {
 				while (!txQueue.isEmpty()) {
 					// Lets read all the messages in txQueue and send
 
-					txBuffer.clear();
 					PayloadData payloadData = txQueue.poll();
 
 					if (logger.isDebugEnabled()) {
 						logger.debug(String.format("Tx : Ass=%s %s", this.name, payloadData));
 					}
-
-					// load ByteBuffer
-					// TODO: BufferOverflowException ?
-					txBuffer.put(payloadData.getData());
 
 					if (this.ipChannelType == IpChannelType.SCTP) {
 						int seqControl = payloadData.getStreamNumber();
@@ -630,8 +612,7 @@ public class AssociationImpl implements Association {
 							} catch (Exception e) {
 
 							}
-							txBuffer.clear();
-							txBuffer.flip();
+							
 							continue;
 						}
 
@@ -641,16 +622,13 @@ public class AssociationImpl implements Association {
 						msgInfo.unordered(payloadData.isUnordered());
 					}
 
-					txBuffer.flip();
-
-					this.doSend();
-
-					if (txBuffer.hasRemaining()) {
-						// Couldn't send all data. Lets return now and try to
-						// send
-						// this message in next cycle
-						return;
+					try
+					{
+						this.doSend(payloadData.getByteBuf());
 					}
+					finally {
+						payloadData.releaseBuffer();
+					}					
 
 				}// end of while
 			}
@@ -678,19 +656,19 @@ public class AssociationImpl implements Association {
 		}// try-catch
 	}
 
-	private int doSend() throws IOException {
+	private int doSend(ByteBuf buffer) throws IOException {
 		if (this.ipChannelType == IpChannelType.SCTP)
-			return this.doSendSctp();
+			return this.doSendSctp(buffer);
 		else
-			return this.doSendTcp();
+			return this.doSendTcp(buffer);
 	}
 
-	private int doSendSctp() throws IOException {
-		return this.socketChannelSctp.send(txBuffer, msgInfo);
+	private int doSendSctp(ByteBuf buffer) throws IOException {
+		return this.socketChannelSctp.send(buffer.nioBuffer(), msgInfo);
 	}
 
-	private int doSendTcp() throws IOException {
-		return this.socketChannelTcp.write(txBuffer);
+	private int doSendTcp(ByteBuf buffer) throws IOException {
+		return this.socketChannelTcp.write(buffer.nioBuffer());
 	}
 
     @Override

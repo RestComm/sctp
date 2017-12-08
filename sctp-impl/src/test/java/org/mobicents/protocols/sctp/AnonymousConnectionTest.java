@@ -23,8 +23,12 @@
 package org.mobicents.protocols.sctp;
 
 import static org.junit.Assert.*;
+import io.netty.buffer.Unpooled;
+
 import java.util.Arrays;
+
 import javolution.util.FastList;
+
 import org.apache.log4j.Logger;
 import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationListener;
@@ -309,7 +313,7 @@ public class AnonymousConnectionTest implements ServerListener {
 		assertTrue(this.assDataSrv.get(1).ass.isStarted());
 
 		// test7 - transfer data via conn2
-		PayloadData pd = new PayloadData(CLIENT_MESSAGE2.length, CLIENT_MESSAGE2, true, false, 3, 1);
+		PayloadData pd = new PayloadData(CLIENT_MESSAGE2.length, Unpooled.copiedBuffer(CLIENT_MESSAGE2), true, false, 3, 1);
 		this.clientAssociation2.send(pd);
 		Thread.sleep(500);
 
@@ -380,7 +384,7 @@ public class AnonymousConnectionTest implements ServerListener {
 			
 			assData.assocUp = true;
 
-			PayloadData payloadData = new PayloadData(SERVER_MESSAGE.length, SERVER_MESSAGE, true, false, 3, 1);
+			PayloadData payloadData = new PayloadData(SERVER_MESSAGE.length, Unpooled.copiedBuffer(SERVER_MESSAGE), true, false, 3, 1);
 
 			try {
 				association.send(payloadData);
@@ -408,7 +412,7 @@ public class AnonymousConnectionTest implements ServerListener {
 		@Override
 		public void onPayload(Association association, PayloadData payloadData) {
 			assData.rsvdMsg = new byte[payloadData.getDataLength()];
-			System.arraycopy(payloadData.getData(), 0, assData.rsvdMsg, 0, payloadData.getDataLength());
+			payloadData.getByteBuf().readBytes(assData.rsvdMsg);
 			logger.debug("SERVER received " + new String(assData.rsvdMsg));
 		}
 
@@ -435,7 +439,7 @@ public class AnonymousConnectionTest implements ServerListener {
 			
 			assData.assocUp = true;
 
-			PayloadData payloadData = new PayloadData(CLIENT_MESSAGE.length, CLIENT_MESSAGE, true, false, 3, 1);
+			PayloadData payloadData = new PayloadData(CLIENT_MESSAGE.length, Unpooled.copiedBuffer(CLIENT_MESSAGE), true, false, 3, 1);
 
 			try {
 				association.send(payloadData);
@@ -463,7 +467,7 @@ public class AnonymousConnectionTest implements ServerListener {
 		@Override
 		public void onPayload(Association association, PayloadData payloadData) {
 			assData.rsvdMsg = new byte[payloadData.getDataLength()];
-			System.arraycopy(payloadData.getData(), 0, assData.rsvdMsg, 0, payloadData.getDataLength());
+			payloadData.getByteBuf().readBytes(assData.rsvdMsg);
 			logger.debug("CLIENT received " + new String(assData.rsvdMsg));
 		}
 

@@ -23,6 +23,7 @@ package org.mobicents.protocols.sctp;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import io.netty.buffer.Unpooled;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -343,7 +344,7 @@ public class MaxSequenceNumberTest {
 		@Override
 		public void onPayload(Association association, PayloadData payloadData) {
 			byte[] clientMessage = new byte[payloadData.getDataLength()];
-			System.arraycopy(payloadData.getData(), 0, clientMessage, 0, payloadData.getDataLength());
+			payloadData.getByteBuf().readBytes(clientMessage);
 			logger.debug("CLIENT received " + new String(clientMessage));
 
 			clientPacketsRx++;
@@ -457,7 +458,7 @@ public class MaxSequenceNumberTest {
 		@Override
 		public void onPayload(Association association, PayloadData payloadData) {
 			byte[] serverMessage = new byte[payloadData.getDataLength()];
-			System.arraycopy(payloadData.getData(), 0, serverMessage, 0, payloadData.getDataLength());
+			payloadData.getByteBuf().readBytes(serverMessage);
 			// logger.debug("SERVER received " new String(serverMessage));
 
 			serverPacketsRx++;
@@ -510,7 +511,7 @@ public class MaxSequenceNumberTest {
 					sequenceNumber = 0;
 				}
 
-				PayloadData payloadData = new PayloadData(data.length, data, true, false, 3, sequenceNumber);
+				PayloadData payloadData = new PayloadData(data.length, Unpooled.copiedBuffer(data), true, false, 3, sequenceNumber);
 
 				sequenceNumber++;
 				try {

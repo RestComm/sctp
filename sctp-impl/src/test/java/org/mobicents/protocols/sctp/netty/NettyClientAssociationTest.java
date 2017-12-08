@@ -22,6 +22,7 @@ package org.mobicents.protocols.sctp.netty;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import io.netty.buffer.Unpooled;
 
 import java.util.Arrays;
 
@@ -196,7 +197,7 @@ public class NettyClientAssociationTest {
 
             clientAssocUp = true;
 
-            PayloadData payloadData = new PayloadData(CLIENT_MESSAGE.length, CLIENT_MESSAGE, true, false, 3, 1);
+            PayloadData payloadData = new PayloadData(CLIENT_MESSAGE.length, Unpooled.copiedBuffer(CLIENT_MESSAGE), true, false, 3, 1);
 
             try {
                 association.send(payloadData);
@@ -255,7 +256,7 @@ public class NettyClientAssociationTest {
             System.out.println(this + " onPayload");
 
             clientMessage = new byte[payloadData.getDataLength()];
-            System.arraycopy(payloadData.getData(), 0, clientMessage, 0, payloadData.getDataLength());
+            payloadData.getByteBuf().readBytes(clientMessage);
 
             System.out.println(this + "received " + new String(clientMessage));
 
@@ -287,7 +288,7 @@ public class NettyClientAssociationTest {
 
             serverAssocUp = true;
 
-            PayloadData payloadData = new PayloadData(SERVER_MESSAGE.length, SERVER_MESSAGE, true, false, 3, 1);
+            PayloadData payloadData = new PayloadData(SERVER_MESSAGE.length, Unpooled.copiedBuffer(SERVER_MESSAGE), true, false, 3, 1);
 
             try {
                 association.send(payloadData);
@@ -346,7 +347,7 @@ public class NettyClientAssociationTest {
             System.out.println(this + " onPayload");
 
             serverMessage = new byte[payloadData.getDataLength()];
-            System.arraycopy(payloadData.getData(), 0, serverMessage, 0, payloadData.getDataLength());
+            payloadData.getByteBuf().readBytes(serverMessage);
 
             System.out.println(this + "received " + new String(serverMessage));
         }

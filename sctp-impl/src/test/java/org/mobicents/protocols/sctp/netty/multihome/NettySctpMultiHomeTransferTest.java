@@ -21,6 +21,7 @@
 package org.mobicents.protocols.sctp.netty.multihome;
 
 import static org.junit.Assert.assertTrue;
+import io.netty.buffer.Unpooled;
 import javolution.util.FastList;
 
 import org.apache.log4j.Logger;
@@ -251,7 +252,7 @@ public class NettySctpMultiHomeTransferTest {
         @Override
         public void onPayload(Association association, PayloadData payloadData) {
             byte[] data = new byte[payloadData.getDataLength()];
-            System.arraycopy(payloadData.getData(), 0, data, 0, payloadData.getDataLength());
+            payloadData.getByteBuf().readBytes(data);
             String rxMssg = new String(data);
             logger.debug("CLIENT received " + rxMssg);
             clientMessage.add(rxMssg);
@@ -293,7 +294,7 @@ public class NettySctpMultiHomeTransferTest {
         public void run() {
             for (int i = 0; i < 10000 && started; i++) {
                 byte[] data = (this.message + i).getBytes();
-                PayloadData payloadData = new PayloadData(data.length, data, true, false, 3, 1);
+                PayloadData payloadData = new PayloadData(data.length, Unpooled.copiedBuffer(data), true, false, 3, 1);
 
                 try {
                     this.association.send(payloadData);
@@ -381,7 +382,7 @@ public class NettySctpMultiHomeTransferTest {
         @Override
         public void onPayload(Association association, PayloadData payloadData) {
             byte[] data = new byte[payloadData.getDataLength()];
-            System.arraycopy(payloadData.getData(), 0, data, 0, payloadData.getDataLength());
+            payloadData.getByteBuf().readBytes(data);
             String rxMssg = new String(data);
             logger.debug("SERVER received " + rxMssg);
             serverMessage.add(rxMssg);
