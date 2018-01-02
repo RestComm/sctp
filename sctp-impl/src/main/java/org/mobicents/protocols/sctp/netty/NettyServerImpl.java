@@ -123,6 +123,10 @@ public class NettyServerImpl implements Server {
         return this.ipChannelType;
     }
 
+    public void setIpChannelType(IpChannelType ipChannelType) {
+        this.ipChannelType = ipChannelType;
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -131,6 +135,10 @@ public class NettyServerImpl implements Server {
     @Override
     public boolean isAcceptAnonymousConnections() {
         return acceptAnonymousConnections;
+    }
+
+    public void setAcceptAnonymousConnections(Boolean acceptAnonymousConnections) {
+        this.acceptAnonymousConnections = acceptAnonymousConnections;
     }
 
     /*
@@ -173,6 +181,10 @@ public class NettyServerImpl implements Server {
         return this.hostAddress;
     }
 
+    public void setHostAddress(String hostAddress) {
+        this.hostAddress = hostAddress;
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -183,6 +195,10 @@ public class NettyServerImpl implements Server {
         return this.hostport;
     }
 
+    public void setHostport(int hostport) {
+        this.hostport = hostport;
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -191,6 +207,10 @@ public class NettyServerImpl implements Server {
     @Override
     public String[] getExtraHostAddresses() {
         return this.extraHostAddresses;
+    }
+
+    public void setExtraHostAddresses(String[] extraHostAddresses) {
+        this.extraHostAddresses = extraHostAddresses;
     }
 
     /*

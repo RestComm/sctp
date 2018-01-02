@@ -702,4 +702,68 @@ public interface Management {
      */
     public void setBufferSize(int bufferSize) throws Exception;
 
+    /**
+	 * Modify existed {@link Server}.
+	 * 
+	 * @param serverName
+	 *            name of the Server which will be modified
+	 * @param hostAddress
+	 *            IP address that this server will bind to
+	 * @param port
+	 *            port that this server will bind to
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
+	 * @param acceptAnonymousConnections
+	 *            true: this Server accepts Anonymous connections, false: no
+	 * @param maxConcurrentConnectionsCount
+	 *            A count of concurrent connections that can accept a Server. 0 means an unlimited count.
+	 * @param extraHostAddresses
+	 *            When SCTP multi-homing configuration extra IP addresses can be put here
+	 *            If multi-homing absence this parameter can be null 
+	 * @throws Exception
+	 *             Exception if management not started or server started
+	 */
+    
+    public void modifyServer(String serverName, String hostAddress, Integer port, IpChannelType ipChannelType, Boolean acceptAnonymousConnections, Integer maxConcurrentConnectionsCount, String[] extraHostAddresses) throws Exception;
+
+	/**
+	 * Modify server Association.
+	 * 
+	 * @param peerAddress
+	 *            the peer IP address that this association will accept
+	 *            connection from
+	 * @param peerPort
+	 *            the peer port that this association will accept connection
+	 *            from
+	 * @param serverName
+	 *            the Server that this association belongs to
+	 * @param assocName
+	 *            name of Association which will be modified
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
+	 * @return
+	 * @throws Exception
+	 */
+    public void modifyServerAssociation(String assocName, String peerAddress, Integer peerPort, String serverName, IpChannelType ipChannelType) throws Exception;
+    
+    /**
+	 * Modify Association
+	 * 
+	 * @param hostAddress
+	 * @param hostPort
+	 * 		If hostPort==0 this mean the local port will be any vacant port
+	 * @param peerAddress
+	 * @param peerPort
+	 * @param assocName
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
+	 * @param extraHostAddresses
+	 *            When SCTP multi-homing configuration extra IP addresses can be put here
+	 *            If multi-homing absence this parameter can be null 
+	 * @return
+	 * @throws Exception
+	 */
+	public void modifyAssociation(String hostAddress, Integer hostPort, String peerAddress, Integer peerPort, String assocName, IpChannelType ipChannelType,
+			String[] extraHostAddresses) throws Exception;
+
 }
