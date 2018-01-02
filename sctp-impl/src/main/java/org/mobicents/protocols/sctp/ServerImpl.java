@@ -211,8 +211,16 @@ public class ServerImpl implements Server {
 		return this.ipChannelType;
 	}
 
+	public void setIpChannelType(IpChannelType ipChannelType) {
+		this.ipChannelType = ipChannelType;
+	}
+
 	public boolean isAcceptAnonymousConnections() {
 		return acceptAnonymousConnections;
+	}
+
+	public void setAcceptAnonymousConnections(boolean acceptAnonymousConnections) {
+		this.acceptAnonymousConnections = acceptAnonymousConnections;
 	}
 
 	public int getMaxConcurrentConnectionsCount() {
@@ -248,6 +256,10 @@ public class ServerImpl implements Server {
 		return hostAddress;
 	}
 
+	public void setHostAddress(String hostAddress) {
+		this.hostAddress = hostAddress;
+	}
+
 	/**
 	 * @return the hostport
 	 */
@@ -255,9 +267,17 @@ public class ServerImpl implements Server {
 		return hostport;
 	}
 
+	public void setHostport(int hostport) {
+		this.hostport = hostport;
+	}
+
 	@Override
 	public String[] getExtraHostAddresses() {
 		return extraHostAddresses;
+	}
+
+	public void setExtraHostAddresses(String[] extraHostAddresses) {
+		this.extraHostAddresses = extraHostAddresses;
 	}
 
 	/**

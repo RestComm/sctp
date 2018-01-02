@@ -90,6 +90,8 @@ public class NettyAssociationImpl implements Association {
 
     // Is the Association been started by management?
     private volatile boolean started = false;
+
+    private volatile boolean isFirstStart = true;
     // Is the Association up (connection is established)
     protected volatile boolean up = false;
 
@@ -186,6 +188,10 @@ public class NettyAssociationImpl implements Association {
         return this.ipChannelType;
     }
 
+    public void setIpChannelType(IpChannelType ipChannelType) {
+        this.ipChannelType = ipChannelType;
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -267,6 +273,10 @@ public class NettyAssociationImpl implements Association {
         return hostAddress;
     }
 
+    public void setHostAddress(String hostAddress) {
+        this.hostAddress = hostAddress;
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -275,6 +285,10 @@ public class NettyAssociationImpl implements Association {
     @Override
     public int getHostPort() {
         return hostPort;
+    }
+
+    public void setHostPort(Integer hostPort) {
+        this.hostPort = hostPort;
     }
 
     /*
@@ -287,6 +301,10 @@ public class NettyAssociationImpl implements Association {
         return peerAddress;
     }
 
+    public void setPeerAddress(String peerAddress) {
+        this.peerAddress = peerAddress;
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -295,6 +313,10 @@ public class NettyAssociationImpl implements Association {
     @Override
     public int getPeerPort() {
         return peerPort;
+    }
+
+    public void setPeerPort(Integer peerPort) {
+        this.peerPort = peerPort;
     }
 
     /*
@@ -307,6 +329,10 @@ public class NettyAssociationImpl implements Association {
         return serverName;
     }
 
+    public void setServerName(String serverName) {
+        this.serverName = serverName;
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -315,6 +341,10 @@ public class NettyAssociationImpl implements Association {
     @Override
     public String[] getExtraHostAddresses() {
         return extraHostAddresses;
+    }
+
+    public void setExtraHostAddresses(String[] extraHostAddresses) {
+        this.extraHostAddresses = extraHostAddresses;
     }
 
     /*
@@ -460,9 +490,11 @@ public class NettyAssociationImpl implements Association {
             throw new NullPointerException(String.format("AssociationListener is null for Associatoion=%s", this.name));
         }
 
-        if (this.type == AssociationType.CLIENT) {
+        if (this.type == AssociationType.CLIENT && this.isFirstStart) {
             this.scheduleConnect();
         }
+
+        isFirstStart = false;
 
         this.started = true;
 

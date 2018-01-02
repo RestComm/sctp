@@ -1488,4 +1488,259 @@ public class NettySctpManagementImpl implements Management {
     public void setBufferSize(int bufferSize) throws Exception {
         // this parameter is only needed for non-netty version
     }
+
+	@Override
+	public void modifyServer(String serverName, String hostAddress, Integer port, IpChannelType ipChannelType, Boolean acceptAnonymousConnections, Integer maxConcurrentConnectionsCount, String[] extraHostAddresses)
+			throws Exception {
+
+		if (!this.started) {
+			throw new Exception(String.format("Management=%s MUST be started", this.name));
+		}
+
+		if (serverName == null) {
+			throw new Exception("Server name cannot be null");
+		}
+
+		if (port !=null && (port < 1 || port > 65535)) {
+			throw new Exception("Server host port cannot be less than 1 or more than 65535. But was : " + port);
+		}
+
+		synchronized (this) {
+			Server modifyServer = null;
+			for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+				NettyServerImpl currServer = (NettyServerImpl)n.getValue();
+
+				if (serverName.equals(currServer.getName())) {
+
+					if (currServer.isStarted()) {
+						throw new Exception(String.format("Server=%s is started. Stop the server before modifying", serverName));
+					}
+
+					if(hostAddress != null)
+						currServer.setHostAddress(hostAddress);
+					if(port != null)
+						currServer.setHostport(port);
+					if(ipChannelType != null)
+						currServer.setIpChannelType(ipChannelType);
+					if(acceptAnonymousConnections != null)
+						currServer.setAcceptAnonymousConnections(acceptAnonymousConnections);
+					if(maxConcurrentConnectionsCount != null)
+						currServer.setMaxConcurrentConnectionsCount(maxConcurrentConnectionsCount);
+					if(extraHostAddresses!=null)
+						currServer.setExtraHostAddresses(extraHostAddresses);
+
+					modifyServer = currServer;
+					break;
+				}
+			}
+
+			if (modifyServer == null) {
+				throw new Exception(String.format("No Server found for modifying with name=%s", serverName));
+			}
+
+			this.store();
+
+			for (ManagementEventListener lstr : managementEventListeners) {
+				try {
+					lstr.onServerModified(modifyServer);
+				} catch (Throwable ee) {
+					logger.error("Exception while invoking onServerModified", ee);
+				}
+			}
+		}
+
+	}
+
+	@Override
+	public void modifyServerAssociation(String assocName, String peerAddress, Integer peerPort, String serverName, IpChannelType ipChannelType)	throws Exception {
+		if (!this.started) {
+			throw new Exception(String.format("Management=%s not started", this.name));
+		}
+
+		if (assocName == null) {
+			throw new Exception("Association name cannot be null");
+		}
+
+		if (peerPort != null && (peerPort < 1 || peerPort > 65535)) {
+			throw new Exception("Peer port cannot be less than 1 or more than 65535. But was : " + peerPort);
+		}
+
+		synchronized (this) {
+			NettyAssociationImpl association = (NettyAssociationImpl) this.associations.get(assocName);
+
+			if (association == null) {
+				throw new Exception(String.format("No Association found for name=%s", assocName));
+			}
+
+			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+				Association associationTemp = n.getValue();
+
+				if (peerAddress != null && peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
+					throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d", associationTemp.getName(),
+							peerAddress, peerPort));
+				}
+			}
+
+			if(peerAddress!=null)
+				association.setPeerAddress(peerAddress);
+			if(peerPort!= null)
+				association.setPeerPort(peerPort);
+
+			if(serverName!=null && !serverName.equals(association.getServerName()))
+			{
+				Server newServer = null;
+
+				for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+					Server serverTemp = n.getValue();
+					if (serverTemp.getName().equals(serverName)) {
+						newServer = serverTemp;
+					}
+				}
+
+				if (newServer == null) {
+					throw new Exception(String.format("No Server found for name=%s", serverName));
+				}
+
+				if ((ipChannelType!=null && newServer.getIpChannelType() != ipChannelType)||(ipChannelType==null && newServer.getIpChannelType() != association.getIpChannelType()))
+					throw new Exception(String.format("Server and Accociation has different IP channel type"));
+
+				//remove association from current server
+				for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+					Server serverTemp = n.getValue();
+					if (serverTemp.getName().equals(association.getServerName())) {
+						FastList<String> newAssociations2 = new FastList<String>();
+						newAssociations2.addAll(((NettyServerImpl) serverTemp).associations);
+						newAssociations2.remove(assocName);
+						((NettyServerImpl) serverTemp).associations = newAssociations2;
+						break;
+					}
+				}
+
+				//add association name to server
+				FastList<String> newAssociations2 = new FastList<String>();
+				newAssociations2.addAll(((NettyServerImpl) newServer).associations);
+				newAssociations2.add(assocName);
+				((NettyServerImpl) newServer).associations = newAssociations2;
+
+				association.setServerName(serverName);
+			}
+			else
+			{
+				if(ipChannelType!=null)
+				{
+					for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+						Server serverTemp = n.getValue();
+						if (serverTemp.getName().equals(association.getServerName())) {
+							if (serverTemp.getIpChannelType() != ipChannelType)
+								throw new Exception(String.format("Server and Accociation has different IP channel type"));
+						}
+					}
+
+					association.setIpChannelType(ipChannelType);
+				}
+
+			}
+
+			this.store();
+
+			for (ManagementEventListener lstr : managementEventListeners) {
+				try {
+					lstr.onAssociationModified((Association)association);
+				} catch (Throwable ee) {
+					logger.error("Exception while invoking onAssociationModified", ee);
+				}
+			}
+		}
+	}
+
+	@Override
+	public void modifyAssociation(String hostAddress, Integer hostPort, String peerAddress, Integer peerPort, String assocName,	IpChannelType ipChannelType, String[] extraHostAddresses) throws Exception {
+
+		boolean isModified = false;
+		if (!this.started) {
+			throw new Exception(String.format("Management=%s not started", this.name));
+		}
+
+		if (hostPort != null && (hostPort < 1 || hostPort > 65535)) {
+			throw new Exception("Host port cannot be less than 1 or more than 65535. But was : " + hostPort);
+		}
+
+		if (peerPort != null && (peerPort < 1 || peerPort > 65535)) {
+			throw new Exception("Peer port cannot be less than 1 or more than 65535. But was : " + peerPort);
+		}
+
+		if (assocName == null) {
+			throw new Exception("Association name cannot be null");
+		}
+		synchronized (this) {
+			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+				Association associationTemp = n.getValue();
+
+				if (peerAddress !=null && peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
+					throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d", associationTemp.getName(),
+							peerAddress, peerPort));
+				}
+
+				if (hostAddress !=null && hostAddress.equals(associationTemp.getHostAddress()) && associationTemp.getHostPort() == hostPort) {
+					throw new Exception(String.format("Already has association=%s with same host address=%s and port=%d", associationTemp.getName(),
+							hostAddress, hostPort));
+				}
+
+			}
+
+			NettyAssociationImpl association = (NettyAssociationImpl) this.associations.get(assocName);
+
+			if(hostAddress!=null)
+			{
+				association.setHostAddress(hostAddress);
+				isModified = true;
+			}
+
+			if(hostPort!= null)
+			{
+				association.setHostPort(hostPort);
+				isModified = true;
+			}
+
+			if(peerAddress!=null)
+			{
+				association.setPeerAddress(peerAddress);
+				isModified = true;
+			}
+
+			if(peerPort!= null)
+			{
+				association.setPeerPort(peerPort);
+				isModified = true;
+			}
+
+			if(ipChannelType!=null)
+			{
+				association.setIpChannelType(ipChannelType);
+				isModified = true;
+			}
+
+			if(extraHostAddresses!=null)
+			{
+				association.setExtraHostAddresses(extraHostAddresses);
+				isModified = true;
+			}
+
+			if(association.isConnected() && isModified)
+			{
+				association.stop();
+				association.start();
+			}
+
+			this.store();
+
+			for (ManagementEventListener lstr : managementEventListeners) {
+				try {
+					lstr.onAssociationModified((Association)association);
+				} catch (Throwable ee) {
+					logger.error("Exception while invoking onAssociationModified", ee);
+				}
+			}
+		}
+	}
 }

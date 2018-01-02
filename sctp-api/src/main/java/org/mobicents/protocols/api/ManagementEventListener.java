@@ -50,5 +50,9 @@ public interface ManagementEventListener {
 	public void onAssociationUp(Association association);
 
 	public void onAssociationDown(Association association);
+
+	public void onServerModified(Server removeServer);
+
+	public void onAssociationModified(Association association);
 	
 }

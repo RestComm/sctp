@@ -291,6 +291,10 @@ public class AssociationImpl implements Association {
 	public IpChannelType getIpChannelType() {
 		return this.ipChannelType;
 	}
+	
+	public void setIpChannelType(IpChannelType ipChannelType) {
+		this.ipChannelType = ipChannelType;
+	}
 
 	/**
 	 * @return the associationListener
@@ -381,10 +385,24 @@ public class AssociationImpl implements Association {
 	}
 
 	/**
+	 * @set the hostAddress
+	 */
+	public void setHostAddress(String hostAddress) {
+		this.hostAddress  = hostAddress;
+	}
+
+	/**
 	 * @return the hostPort
 	 */
 	public int getHostPort() {
 		return hostPort;
+	}
+
+	/**
+	 * @set the hostPort
+	 */
+	public void setHostPort(int hostPort) {
+		this.hostPort = hostPort;
 	}
 
 	/**
@@ -395,10 +413,24 @@ public class AssociationImpl implements Association {
 	}
 
 	/**
+	 * @set the peerAddress
+	 */
+	public void setPeerAddress(String peerAddress) {
+		this.peerAddress = peerAddress;
+	}
+
+	/**
 	 * @return the peerPort
 	 */
 	public int getPeerPort() {
 		return peerPort;
+	}
+
+	/**
+	 * @set the peerPort
+	 */
+	public void setPeerPort(int peerPort) {
+		this.peerPort = peerPort;
 	}
 
 	/**
@@ -407,10 +439,21 @@ public class AssociationImpl implements Association {
 	public String getServerName() {
 		return serverName;
 	}
+	
+	/**
+	 * @set the serverName
+	 */
+	public void setServerName(String serverName) {
+		this.serverName = serverName;
+	}
 
 	@Override
 	public String[] getExtraHostAddresses() {
 		return extraHostAddresses;
+	}
+	
+	public void setExtraHostAddresses(String[] extraHostAddresses) {
+		this.extraHostAddresses = extraHostAddresses;
 	}
 
 	/**
