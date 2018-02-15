@@ -1,6 +1,6 @@
 target
 /.classpath
-/.project
+/*/.project
 /sctp-impl/ManagementTest_sctp.xml
 /sctp-impl/sctptest.log
 /sctp-impl/test-output/
