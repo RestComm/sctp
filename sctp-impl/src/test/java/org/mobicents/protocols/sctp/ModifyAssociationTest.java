@@ -40,13 +40,19 @@ public class ModifyAssociationTest {
 
 	private static final String SERVER_NAME = "testserver";
 	private static final String SERVER_HOST = "127.0.0.1";
-	private static final int SERVER_PORT = 2355;
+    private static final int SERVER_PORT1 = 2354;
+    private static final int SERVER_PORT2 = 2355;
+    private static final int SERVER_PORT3 = 2356;
+    private static final int SERVER_PORT4 = 2357;
 
 	private static final String SERVER_ASSOCIATION_NAME = "serverAsscoiation";
 	private static final String CLIENT_ASSOCIATION_NAME = "clientAsscoiation";
 
 	private static final String CLIENT_HOST = "127.0.0.1";
-	private static final int CLIENT_PORT = 2356;
+    private static final int CLIENT_PORT1 = 2364;
+    private static final int CLIENT_PORT2 = 2365;
+    private static final int CLIENT_PORT3 = 2366;
+    private static final int CLIENT_PORT4 = 2367;
 
 	private final byte[] CLIENT_MESSAGE = "Client says Hi".getBytes();
 	private final byte[] SERVER_MESSAGE = "Server says Hi".getBytes();
@@ -77,7 +83,7 @@ public class ModifyAssociationTest {
 	public static void tearDownClass() throws Exception {
 	}
 
-	public void setUp(IpChannelType ipChannelType) throws Exception {
+	public void setUp(IpChannelType ipChannelType, int serverPort, int clientPort) throws Exception {
 		this.clientAssocUp = false;
 		this.serverAssocUp = false;
 
@@ -93,9 +99,9 @@ public class ModifyAssociationTest {
         this.management.setConnectDelay(1000);
 		this.management.removeAllResourses();
 
-		this.server = this.management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, false, 0, null);
-		this.serverAssociation = this.management.addServerAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_NAME, SERVER_ASSOCIATION_NAME, ipChannelType);
-		this.clientAssociation = this.management.addAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_HOST, SERVER_PORT, CLIENT_ASSOCIATION_NAME, ipChannelType, null);
+		this.server = this.management.addServer(SERVER_NAME, SERVER_HOST, serverPort, ipChannelType, false, 0, null);
+		this.serverAssociation = this.management.addServerAssociation(CLIENT_HOST, clientPort, SERVER_NAME, SERVER_ASSOCIATION_NAME, ipChannelType);
+		this.clientAssociation = this.management.addAssociation(CLIENT_HOST, clientPort, SERVER_HOST, serverPort, CLIENT_ASSOCIATION_NAME, ipChannelType, null);
 	}
 
 	public void tearDown() throws Exception {
@@ -111,7 +117,7 @@ public class ModifyAssociationTest {
     public void testModifyServerAndAssociationSctp() throws Exception {
 
         if (SctpTransferTest.checkSctpEnabled())
-            this.testModifyServerAndAssociation(IpChannelType.SCTP);
+            this.testModifyServerAndAssociation(IpChannelType.SCTP, SERVER_PORT1, CLIENT_PORT1);
     }
 
     /**
@@ -121,7 +127,7 @@ public class ModifyAssociationTest {
     @Test(groups = { "functional", "tcp" })
     public void testModifyServerAndAssociationTcp() throws Exception {
 
-        this.testModifyServerAndAssociation(IpChannelType.TCP);
+        this.testModifyServerAndAssociation(IpChannelType.TCP, SERVER_PORT2, CLIENT_PORT2);
     }
 
 	/**
@@ -130,9 +136,9 @@ public class ModifyAssociationTest {
 	 * @throws Exception
 	 */
 
-	private void testModifyServerAndAssociation(IpChannelType ipChannelType) throws Exception {
+	private void testModifyServerAndAssociation(IpChannelType ipChannelType, int serverPort, int clientPort) throws Exception {
 
-		this.setUp(ipChannelType);
+		this.setUp(ipChannelType, serverPort, clientPort);
 
 		this.serverAssociation.setAssociationListener(new ServerAssociationListener());
 		this.management.startAssociation(SERVER_ASSOCIATION_NAME);
@@ -186,7 +192,7 @@ public class ModifyAssociationTest {
     public void testModifyServerAndClientAssociationsSctp() throws Exception {
 
         if (SctpTransferTest.checkSctpEnabled())
-            this.testModifyServerAndClientAssociations(IpChannelType.SCTP);
+            this.testModifyServerAndClientAssociations(IpChannelType.SCTP, SERVER_PORT3, CLIENT_PORT3);
     }
 
     /**
@@ -196,7 +202,7 @@ public class ModifyAssociationTest {
     @Test(groups = { "functional", "tcp" })
     public void testModifyServerAndClientAssociationsTcp() throws Exception {
 
-        this.testModifyServerAndClientAssociations(IpChannelType.TCP);
+        this.testModifyServerAndClientAssociations(IpChannelType.TCP, SERVER_PORT4, CLIENT_PORT4);
     }
 
 	/**
@@ -205,9 +211,9 @@ public class ModifyAssociationTest {
 	 * @throws Exception
 	 */
 
-	private void testModifyServerAndClientAssociations(IpChannelType ipChannelType) throws Exception {
+	private void testModifyServerAndClientAssociations(IpChannelType ipChannelType, int serverPort, int clientPort) throws Exception {
 
-		this.setUp(ipChannelType);
+		this.setUp(ipChannelType, serverPort, clientPort);
 
 		this.serverAssociation.setAssociationListener(new ServerAssociationListener());
 		this.management.startAssociation(SERVER_ASSOCIATION_NAME);
