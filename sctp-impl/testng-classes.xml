@@ -2,6 +2,7 @@
 <!-- on my machine with higher thread count tests fail due to race and MTP 
 	issues it seems -->
 <suite name="Classes" parallel="classes" thread-count="2" verbose="1">
+<!-- 
 	<test name="simple">
 		<groups>
 			<run>
@@ -11,9 +12,11 @@
 		</groups>
 
 		<packages>
-			<package name="org.mobicents.protocols.sctp">
-			</package>
+			<package name="org.mobicents.protocols.sctp" />
+			<package name="org.mobicents.protocols.sctp.multihome" />
+			<package name="org.mobicents.protocols.sctp.netty" />
+			<package name="org.mobicents.protocols.sctp.multihome" />
 		</packages>
 	</test>
-
+-->
 </suite>
