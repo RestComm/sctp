@@ -41,13 +41,13 @@ import com.sun.nio.sctp.SctpChannel;
 public class NettySctpTransferTest {
 	private static final String SERVER_NAME = "testserver";
 	private static final String SERVER_HOST = "127.0.0.1";
-	private static final int SERVER_PORT = 2347;
+	private static final int SERVER_PORT = 22347;
 
 	private static final String SERVER_ASSOCIATION_NAME = "serverAssociation";
 	private static final String CLIENT_ASSOCIATION_NAME = "clientAssociation";
 
 	private static final String CLIENT_HOST = "127.0.0.1";
-	private static final int CLIENT_PORT = 2348;
+	private static final int CLIENT_PORT = 22348;
 
 	private final byte[] CLIENT_MESSAGE = "Client says Hi".getBytes();
 	private final byte[] SERVER_MESSAGE = "Server says Hi".getBytes();
