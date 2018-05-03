@@ -40,13 +40,13 @@ public class ModifyAssociationTest {
 
 	private static final String SERVER_NAME = "testserver";
 	private static final String SERVER_HOST = "127.0.0.1";
-	private static final int SERVER_PORT = 2345;
+	private static final int SERVER_PORT = 2355;
 
 	private static final String SERVER_ASSOCIATION_NAME = "serverAsscoiation";
 	private static final String CLIENT_ASSOCIATION_NAME = "clientAsscoiation";
 
 	private static final String CLIENT_HOST = "127.0.0.1";
-	private static final int CLIENT_PORT = 2346;
+	private static final int CLIENT_PORT = 2356;
 
 	private final byte[] CLIENT_MESSAGE = "Client says Hi".getBytes();
 	private final byte[] SERVER_MESSAGE = "Server says Hi".getBytes();
@@ -107,16 +107,32 @@ public class ModifyAssociationTest {
 		this.management.stop();
 	}
 
+	@Test(groups = { "functional", "sctp" })
+    public void testModifyServerAndAssociationSctp() throws Exception {
+
+        if (SctpTransferTest.checkSctpEnabled())
+            this.testModifyServerAndAssociation(IpChannelType.SCTP);
+    }
+
+    /**
+     * Simple test that creates Client and Server Association, exchanges data
+     * and brings down association. Finally removes the Associations and Server
+     */
+    @Test(groups = { "functional", "tcp" })
+    public void testModifyServerAndAssociationTcp() throws Exception {
+
+        this.testModifyServerAndAssociation(IpChannelType.TCP);
+    }
+
 	/**
 	 * In this test we modify server port after stop and client association 
 	 * 
 	 * @throws Exception
 	 */
-	
-	@Test(groups = { "functional", "sctp" })
-	public void testModifyServerAndAssociation() throws Exception {
 
-		this.setUp(IpChannelType.SCTP);
+	private void testModifyServerAndAssociation(IpChannelType ipChannelType) throws Exception {
+
+		this.setUp(ipChannelType);
 
 		this.serverAssociation.setAssociationListener(new ServerAssociationListener());
 		this.management.startAssociation(SERVER_ASSOCIATION_NAME);
@@ -166,16 +182,32 @@ public class ModifyAssociationTest {
 		this.tearDown();
 	}
 
+    @Test(groups = { "functional", "sctp" })
+    public void testModifyServerAndClientAssociationsSctp() throws Exception {
+
+        if (SctpTransferTest.checkSctpEnabled())
+            this.testModifyServerAndClientAssociations(IpChannelType.SCTP);
+    }
+
+    /**
+     * Simple test that creates Client and Server Association, exchanges data
+     * and brings down association. Finally removes the Associations and Server
+     */
+    @Test(groups = { "functional", "tcp" })
+    public void testModifyServerAndClientAssociationsTcp() throws Exception {
+
+        this.testModifyServerAndClientAssociations(IpChannelType.TCP);
+    }
+
 	/**
 	 * In this test we modify port in server association and port of client 
 	 * 
 	 * @throws Exception
 	 */
-	
-	@Test(groups = { "functional", "sctp" })
-	public void testModifyServerAndClientAssociations() throws Exception {
 
-		this.setUp(IpChannelType.SCTP);
+	private void testModifyServerAndClientAssociations(IpChannelType ipChannelType) throws Exception {
+
+		this.setUp(ipChannelType);
 
 		this.serverAssociation.setAssociationListener(new ServerAssociationListener());
 		this.management.startAssociation(SERVER_ASSOCIATION_NAME);
