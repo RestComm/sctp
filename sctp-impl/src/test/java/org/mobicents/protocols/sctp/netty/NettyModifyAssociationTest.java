@@ -30,6 +30,7 @@ import org.mobicents.protocols.api.Association;
 import org.mobicents.protocols.api.AssociationListener;
 import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.PayloadData;
+import org.mobicents.protocols.sctp.SctpTransferTest;
 import org.testng.annotations.*;
 
 /**
@@ -40,13 +41,19 @@ public class NettyModifyAssociationTest {
 
 	private static final String SERVER_NAME = "testserver";
 	private static final String SERVER_HOST = "127.0.0.1";
-	private static final int SERVER_PORT = 2345;
+    private static final int SERVER_PORT1 = 12354;
+    private static final int SERVER_PORT2 = 12355;
+    private static final int SERVER_PORT3 = 12356;
+    private static final int SERVER_PORT4 = 12357;
 
 	private static final String SERVER_ASSOCIATION_NAME = "serverAsscoiation";
 	private static final String CLIENT_ASSOCIATION_NAME = "clientAsscoiation";
 
 	private static final String CLIENT_HOST = "127.0.0.1";
-	private static final int CLIENT_PORT = 2346;
+    private static final int CLIENT_PORT1 = 12364;
+    private static final int CLIENT_PORT2 = 12365;
+    private static final int CLIENT_PORT3 = 12366;
+    private static final int CLIENT_PORT4 = 12367;
 
 	private final byte[] CLIENT_MESSAGE = "Client says Hi".getBytes();
 	private final byte[] SERVER_MESSAGE = "Server says Hi".getBytes();
@@ -77,7 +84,7 @@ public class NettyModifyAssociationTest {
 	public static void tearDownClass() throws Exception {
 	}
 
-	public void setUp(IpChannelType ipChannelType) throws Exception {
+	public void setUp(IpChannelType ipChannelType, int serverPort, int clientPort) throws Exception {
 		this.clientAssocUp = false;
 		this.serverAssocUp = false;
 
@@ -93,9 +100,9 @@ public class NettyModifyAssociationTest {
         this.management.setConnectDelay(1000);
 		this.management.removeAllResourses();
 
-		this.server = (NettyServerImpl) this.management.addServer(SERVER_NAME, SERVER_HOST, SERVER_PORT, ipChannelType, false, 0, null);
-		this.serverAssociation = (NettyAssociationImpl) this.management.addServerAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_NAME, SERVER_ASSOCIATION_NAME, ipChannelType);
-		this.clientAssociation = (NettyAssociationImpl) this.management.addAssociation(CLIENT_HOST, CLIENT_PORT, SERVER_HOST, SERVER_PORT, CLIENT_ASSOCIATION_NAME, ipChannelType, null);
+		this.server = (NettyServerImpl) this.management.addServer(SERVER_NAME, SERVER_HOST, serverPort, ipChannelType, false, 0, null);
+		this.serverAssociation = (NettyAssociationImpl) this.management.addServerAssociation(CLIENT_HOST, clientPort, SERVER_NAME, SERVER_ASSOCIATION_NAME, ipChannelType);
+		this.clientAssociation = (NettyAssociationImpl) this.management.addAssociation(CLIENT_HOST, clientPort, SERVER_HOST, serverPort, CLIENT_ASSOCIATION_NAME, ipChannelType, null);
 	}
 
 	public void tearDown() throws Exception {
@@ -107,16 +114,32 @@ public class NettyModifyAssociationTest {
 		this.management.stop();
 	}
 
+    @Test(groups = { "functional", "sctp" })
+    public void testModifyServerAndAssociationSctp() throws Exception {
+
+        if (SctpTransferTest.checkSctpEnabled())
+            this.testModifyServerAndAssociation(IpChannelType.SCTP, SERVER_PORT1, CLIENT_PORT1);
+    }
+
+    /**
+     * Simple test that creates Client and Server Association, exchanges data
+     * and brings down association. Finally removes the Associations and Server
+     */
+    @Test(groups = { "functional", "tcp" })
+    public void testModifyServerAndAssociationTcp() throws Exception {
+
+        this.testModifyServerAndAssociation(IpChannelType.TCP, SERVER_PORT2, CLIENT_PORT2);
+    }
+
 	/**
 	 * In this test we modify server port after stop and client association 
 	 * 
 	 * @throws Exception
 	 */
 	
-	@Test(groups = { "functional", "sctp" })
-	public void testModifyServerAndAssociation() throws Exception {
+	private void testModifyServerAndAssociation(IpChannelType ipChannelType, int serverPort, int clientPort) throws Exception {
 
-		this.setUp(IpChannelType.SCTP);
+		this.setUp(ipChannelType, serverPort, clientPort);
 
 		this.serverAssociation.setAssociationListener(new ServerAssociationListener());
 		this.management.startAssociation(SERVER_ASSOCIATION_NAME);
@@ -126,7 +149,7 @@ public class NettyModifyAssociationTest {
 		this.clientAssociation.setAssociationListener(new ClientAssociationListenerImpl());
 		this.management.startAssociation(CLIENT_ASSOCIATION_NAME);
 
-		Thread.sleep(1000 * 2);
+		Thread.sleep(1000 * 3);
 
 		assertTrue(clientAssocUp);
 		assertTrue(serverAssocUp);
@@ -143,7 +166,7 @@ public class NettyModifyAssociationTest {
 
 		isModified = true;
 
-		Thread.sleep(1000 * 2);
+		Thread.sleep(1000 * 3);
 
 		assertTrue(clientAssocUp);
 		assertTrue(serverAssocUp);
@@ -166,16 +189,32 @@ public class NettyModifyAssociationTest {
 		this.tearDown();
 	}
 
+    @Test(groups = { "functional", "sctp" })
+    public void testModifyServerAndClientAssociationsSctp() throws Exception {
+
+        if (SctpTransferTest.checkSctpEnabled())
+            this.testModifyServerAndClientAssociations(IpChannelType.SCTP, SERVER_PORT3, CLIENT_PORT3);
+    }
+
+    /**
+     * Simple test that creates Client and Server Association, exchanges data
+     * and brings down association. Finally removes the Associations and Server
+     */
+    @Test(groups = { "functional", "tcp" })
+    public void testModifyServerAndClientAssociationsTcp() throws Exception {
+
+        this.testModifyServerAndClientAssociations(IpChannelType.TCP, SERVER_PORT4, CLIENT_PORT4);
+    }
+
 	/**
 	 * In this test we modify port in server association and port of client 
 	 * 
 	 * @throws Exception
 	 */
 	
-	@Test(groups = { "functional", "sctp" })
-	public void testModifyServerAndClientAssociations() throws Exception {
+	private void testModifyServerAndClientAssociations(IpChannelType ipChannelType, int serverPort, int clientPort) throws Exception {
 
-		this.setUp(IpChannelType.SCTP);
+		this.setUp(ipChannelType, serverPort, clientPort);
 
 		this.serverAssociation.setAssociationListener(new ServerAssociationListener());
 		this.management.startAssociation(SERVER_ASSOCIATION_NAME);

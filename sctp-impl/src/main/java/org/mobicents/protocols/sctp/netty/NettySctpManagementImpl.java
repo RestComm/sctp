@@ -51,7 +51,6 @@ import org.mobicents.protocols.api.Management;
 import org.mobicents.protocols.api.ManagementEventListener;
 import org.mobicents.protocols.api.Server;
 import org.mobicents.protocols.api.ServerListener;
-import org.mobicents.protocols.sctp.AssociationMap;
 
 import com.sun.nio.sctp.SctpStandardSocketOptions;
 import com.sun.nio.sctp.SctpStandardSocketOptions.InitMaxStreams;
@@ -118,7 +117,7 @@ public class NettySctpManagementImpl implements Management {
     private FastList<ManagementEventListener> managementEventListeners = new FastList<ManagementEventListener>();
     private FastList<CongestionListener> congestionListeners = new FastList<CongestionListener>();
     protected FastList<Server> servers = new FastList<Server>();
-    protected AssociationMap<String, Association> associations = new AssociationMap<String, Association>();
+    protected NettyAssociationMap<String, Association> associations = new NettyAssociationMap<String, Association>();
     private volatile boolean started = false;
 
     private EventLoopGroup bossGroup;
@@ -790,7 +789,7 @@ public class NettySctpManagementImpl implements Management {
                     ipChannelType);
             association.setManagement(this);
 
-            AssociationMap<String, Association> newAssociations = new AssociationMap<String, Association>();
+            NettyAssociationMap<String, Association> newAssociations = new NettyAssociationMap<String, Association>();
             newAssociations.putAll(this.associations);
             newAssociations.put(assocName, association);
             this.associations = newAssociations;
@@ -892,7 +891,7 @@ public class NettySctpManagementImpl implements Management {
                     assocName, ipChannelType, extraHostAddresses);
             association.setManagement(this);
 
-            AssociationMap<String, Association> newAssociations = new AssociationMap<String, Association>();
+            NettyAssociationMap<String, Association> newAssociations = new NettyAssociationMap<String, Association>();
             newAssociations.putAll(this.associations);
             newAssociations.put(assocName, association);
             this.associations = newAssociations;
@@ -943,7 +942,7 @@ public class NettySctpManagementImpl implements Management {
                 throw new Exception(String.format("Association name=%s is started. Stop before removing", assocName));
             }
 
-            AssociationMap<String, Association> newAssociations = new AssociationMap<String, Association>();
+            NettyAssociationMap<String, Association> newAssociations = new NettyAssociationMap<String, Association>();
             newAssociations.putAll(this.associations);
             newAssociations.remove(assocName);
             this.associations = newAssociations;
@@ -1414,7 +1413,7 @@ public class NettySctpManagementImpl implements Management {
             }
         }
 
-        this.associations = reader.read(ASSOCIATIONS, AssociationMap.class);
+        this.associations = reader.read(ASSOCIATIONS, NettyAssociationMap.class);
         for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n
                 .getNext()) != end;) {
             NettyAssociationImpl associationTemp = (NettyAssociationImpl) n.getValue();
@@ -1470,7 +1469,7 @@ public class NettySctpManagementImpl implements Management {
 //            }
 
             writer.write(this.servers, SERVERS, FastList.class);
-            writer.write(this.associations, ASSOCIATIONS, AssociationMap.class);
+            writer.write(this.associations, ASSOCIATIONS, NettyAssociationMap.class);
 
             writer.close();
         } catch (Exception e) {

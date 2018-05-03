@@ -13,3 +13,4 @@ target
 /sctp-impl/ManagementTestParam_sctp.xml
 /.project
 /sctptest.log
+/test-output/

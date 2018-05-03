@@ -49,13 +49,13 @@ import com.sun.nio.sctp.SctpServerChannel;
 public class NettyAddressInUseTest {
     private static final String SERVER_NAME = "testserver";
     private static final String SERVER_HOST = "127.0.0.1";
-    private static final int SERVER_PORT = 2352;
+    private static final int SERVER_PORT = 12352;
 
     private static final String SERVER_ASSOCIATION_NAME = "serverAssociation";
     private static final String CLIENT_ASSOCIATION_NAME = "clientAssociation";
 
     private static final String CLIENT_HOST = "127.0.0.1";
-    private static final int CLIENT_PORT = 2353;
+    private static final int CLIENT_PORT = 12353;
 
     private NettySctpManagementImpl management = null;
 

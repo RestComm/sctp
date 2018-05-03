@@ -189,6 +189,74 @@ public class ModifyAssociationTest {
 		this.tearDown();
 	}
 
+    @Test(groups = { "functional", "sctp" })
+    public void testModifyServerAndClientAssociationsSctp() throws Exception {
+
+        if (SctpTransferTest.checkSctpEnabled())
+            this.testModifyServerAndClientAssociations(IpChannelType.SCTP, SERVER_PORT3, CLIENT_PORT3);
+    }
+
+    /**
+     * Simple test that creates Client and Server Association, exchanges data
+     * and brings down association. Finally removes the Associations and Server
+     */
+    @Test(groups = { "functional", "tcp" })
+    public void testModifyServerAndClientAssociationsTcp() throws Exception {
+
+        this.testModifyServerAndClientAssociations(IpChannelType.TCP, SERVER_PORT4, CLIENT_PORT4);
+    }
+
+    /**
+     * In this test we modify port in server association and port of client 
+     * 
+     * @throws Exception
+     */
+
+    private void testModifyServerAndClientAssociations(IpChannelType ipChannelType, int serverPort, int clientPort) throws Exception {
+
+        this.setUp(ipChannelType, serverPort, clientPort);
+
+        this.serverAssociation.setAssociationListener(new ServerAssociationListener());
+        this.management.startAssociation(SERVER_ASSOCIATION_NAME);
+
+        this.management.startServer(SERVER_NAME);
+        
+        this.clientAssociation.setAssociationListener(new ClientAssociationListenerImpl());
+        this.management.startAssociation(CLIENT_ASSOCIATION_NAME);
+
+        Thread.sleep(1000 * 2);
+
+        assertTrue(clientAssocUp);
+        assertTrue(serverAssocUp);
+        
+        this.management.modifyServerAssociation(SERVER_ASSOCIATION_NAME, null, 2347, null, null);
+        this.management.modifyAssociation(null, 2347, null, null, CLIENT_ASSOCIATION_NAME, null, null);
+        
+        isModified = true;
+
+        Thread.sleep(1000 * 2);
+
+        assertTrue(clientAssocUp);
+        assertTrue(serverAssocUp);
+    
+        this.management.stopAssociation(CLIENT_ASSOCIATION_NAME);
+
+        Thread.sleep(1000);
+
+        this.management.stopAssociation(SERVER_ASSOCIATION_NAME);
+        this.management.stopServer(SERVER_NAME);
+        
+        Thread.sleep(1000 * 2);
+
+        assertTrue(Arrays.equals(SERVER_MESSAGE, clientMessage));
+        assertTrue(Arrays.equals(CLIENT_MESSAGE, serverMessage));
+
+        assertTrue(clientAssocDown);
+        assertTrue(serverAssocDown);
+
+        this.tearDown();
+    }
+
 	private class ClientAssociationListenerImpl implements AssociationListener {
 
 		/*

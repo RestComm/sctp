@@ -26,18 +26,16 @@ import javolution.xml.XMLBinding;
 import javolution.xml.XMLFormat;
 import javolution.xml.stream.XMLStreamException;
 
-import org.mobicents.protocols.sctp.AssociationMap;
-
 /**
  * @author <a href="mailto:amit.bhayani@telestax.com">Amit Bhayani</a>
  * 
  */
 public class NettySctpXMLBinding extends XMLBinding {
 
-	protected static final XMLFormat<AssociationMap> ASSOCIATION_MAP = new XMLFormat<AssociationMap>(AssociationMap.class) {
+	protected static final XMLFormat<NettyAssociationMap> ASSOCIATION_MAP = new XMLFormat<NettyAssociationMap>(NettyAssociationMap.class) {
 
 		@Override
-		public void write(AssociationMap obj, javolution.xml.XMLFormat.OutputElement xml) throws XMLStreamException {
+		public void write(NettyAssociationMap obj, javolution.xml.XMLFormat.OutputElement xml) throws XMLStreamException {
 			final Map map = (Map) obj;
 
 			for (Iterator it = map.entrySet().iterator(); it.hasNext();) {
@@ -49,7 +47,7 @@ public class NettySctpXMLBinding extends XMLBinding {
 		}
 
 		@Override
-		public void read(javolution.xml.XMLFormat.InputElement xml, AssociationMap obj) throws XMLStreamException {
+		public void read(javolution.xml.XMLFormat.InputElement xml, NettyAssociationMap obj) throws XMLStreamException {
 			while (xml.hasNext()) {
 				String key = xml.get("name", String.class);
 				NettyAssociationImpl association = xml.get("association", NettyAssociationImpl.class);
@@ -60,7 +58,7 @@ public class NettySctpXMLBinding extends XMLBinding {
 	};
 
 	protected XMLFormat getFormat(Class forClass) throws XMLStreamException {
-		if (AssociationMap.class.equals(forClass)) {
+		if (NettyAssociationMap.class.equals(forClass)) {
 			return ASSOCIATION_MAP;
 		}
 		return super.getFormat(forClass);
