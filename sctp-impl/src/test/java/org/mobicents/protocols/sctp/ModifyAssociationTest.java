@@ -40,19 +40,19 @@ public class ModifyAssociationTest {
 
 	private static final String SERVER_NAME = "testserver";
 	private static final String SERVER_HOST = "127.0.0.1";
-    private static final int SERVER_PORT1 = 2354;
-    private static final int SERVER_PORT2 = 2355;
-    private static final int SERVER_PORT3 = 2356;
-    private static final int SERVER_PORT4 = 2357;
+    private static final int SERVER_PORT1 = 12354;
+    private static final int SERVER_PORT2 = 12355;
+    private static final int SERVER_PORT3 = 12356;
+    private static final int SERVER_PORT4 = 12357;
 
 	private static final String SERVER_ASSOCIATION_NAME = "serverAsscoiation";
 	private static final String CLIENT_ASSOCIATION_NAME = "clientAsscoiation";
 
 	private static final String CLIENT_HOST = "127.0.0.1";
-    private static final int CLIENT_PORT1 = 2364;
-    private static final int CLIENT_PORT2 = 2365;
-    private static final int CLIENT_PORT3 = 2366;
-    private static final int CLIENT_PORT4 = 2367;
+    private static final int CLIENT_PORT1 = 12364;
+    private static final int CLIENT_PORT2 = 12365;
+    private static final int CLIENT_PORT3 = 12366;
+    private static final int CLIENT_PORT4 = 12367;
 
 	private final byte[] CLIENT_MESSAGE = "Client says Hi".getBytes();
 	private final byte[] SERVER_MESSAGE = "Server says Hi".getBytes();
