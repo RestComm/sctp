@@ -1573,6 +1573,8 @@ public class NettySctpManagementImpl implements Management {
 
 			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
 				Association associationTemp = n.getValue();
+				if(assocName.equals(associationTemp.getName()))
+                    continue;
 
 				if (peerAddress != null && peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
 					throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d", associationTemp.getName(),
@@ -1674,6 +1676,8 @@ public class NettySctpManagementImpl implements Management {
 		synchronized (this) {
 			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
 				Association associationTemp = n.getValue();
+				if(assocName.equals(associationTemp.getName()))
+				    continue;
 
 				if (peerAddress !=null && peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
 					throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d", associationTemp.getName(),
