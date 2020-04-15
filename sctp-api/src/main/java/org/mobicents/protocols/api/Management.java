@@ -275,6 +275,32 @@ public interface Management {
 			throws Exception;
 
 	/**
+	 * Add server Association. IP channel type is SCTP.
+	 * 
+	 * @param peerAddress
+	 *            the peer IP address that this association will accept
+	 *            connection from
+	 * @param peerPort
+	 *            the peer port that this association will accept connection
+	 *            from
+	 * @param serverName
+	 *            the Server that this association belongs to
+	 * @param assocName
+	 *            unique name of Association
+	 * @param ipChannelType
+	 *            IP channel type: SCTP or TCP
+	 *            
+	 * @param extraHostAddresses
+	 *            When SCTP multi-homing configuration extra IP addresses can be put here
+	 *            If multi-homing absence this parameter can be null 	 
+	 * * @return
+	 * @throws Exception
+	 */
+	public Association addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName, IpChannelType ipChannelType, String[] extraHostAddresses)
+			throws Exception;
+		
+
+	/**
 	 * Add Association. IP channel type is SCTP.
 	 * 
 	 * @param hostAddress

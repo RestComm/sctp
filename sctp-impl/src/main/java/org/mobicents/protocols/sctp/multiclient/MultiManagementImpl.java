@@ -749,6 +749,13 @@ public class MultiManagementImpl implements Management {
         throw new UnsupportedOperationException(
                 MultiManagementImpl.class.getName() + " does not support server type associations!");
     }
+    
+    @Override
+    public Association addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName,
+    		IpChannelType ipChannelType, String[] extraHostAddresses) throws Exception {
+        throw new UnsupportedOperationException(
+                MultiManagementImpl.class.getName() + " does not support server type associations!");
+    }
 
     @Override
     public ServerListener getServerListener() {

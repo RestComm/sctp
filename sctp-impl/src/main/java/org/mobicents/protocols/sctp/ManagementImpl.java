@@ -695,6 +695,8 @@ public class ManagementImpl implements Management {
 
 	public AssociationImpl addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName, IpChannelType ipChannelType)
 			throws Exception {
+		return (AssociationImpl)addServerAssociation(peerAddress, peerPort, serverName, assocName, ipChannelType, null);
+		/*
 
 		if (!this.started) {
 			throw new Exception(String.format("Management=%s not started", this.name));
@@ -747,6 +749,95 @@ public class ManagementImpl implements Management {
 				throw new Exception(String.format("Server and Accociation has different IP channel type"));
 
 			AssociationImpl association = new AssociationImpl(peerAddress, peerPort, serverName, assocName, ipChannelType);
+			association.setManagement(this);
+
+			AssociationMap<String, Association> newAssociations = new AssociationMap<String, Association>();
+			newAssociations.putAll(this.associations);
+			newAssociations.put(assocName, association);
+			this.associations = newAssociations;
+			// this.associations.put(assocName, association);
+
+			FastList<String> newAssociations2 = new FastList<String>();
+			newAssociations2.addAll(((ServerImpl) server).associations);
+			newAssociations2.add(assocName);
+			((ServerImpl) server).associations = newAssociations2;
+			// ((ServerImpl) server).associations.add(assocName);
+
+			this.store();
+
+			for (ManagementEventListener lstr : managementEventListeners) {
+				try {
+					lstr.onAssociationAdded(association);
+				} catch (Throwable ee) {
+					logger.error("Exception while invoking onAssociationAdded", ee);
+				}
+			}
+
+			if (logger.isInfoEnabled()) {
+				logger.info(String.format("Added Associoation=%s of type=%s", association.getName(), association.getAssociationType()));
+			}
+
+			return association;
+		}
+		*/
+	}
+	
+	@Override
+	public Association addServerAssociation(String peerAddress, int peerPort, String serverName, String assocName,
+			IpChannelType ipChannelType, String[] extraHostAddresses) throws Exception {
+		// MADE BY KB
+
+		if (!this.started) {
+			throw new Exception(String.format("Management=%s not started", this.name));
+		}
+
+		if (peerAddress == null) {
+			throw new Exception("Peer address cannot be null");
+		}
+
+		if (peerPort < 1) {
+			throw new Exception("Peer port cannot be less than 1");
+		}
+
+		if (serverName == null) {
+			throw new Exception("Server name cannot be null");
+		}
+
+		if (assocName == null) {
+			throw new Exception("Association name cannot be null");
+		}
+
+		synchronized (this) {
+			if (this.associations.get(assocName) != null) {
+				throw new Exception(String.format("Already has association=%s", assocName));
+			}
+
+			Server server = null;
+
+			for (FastList.Node<Server> n = this.servers.head(), end = this.servers.tail(); (n = n.getNext()) != end;) {
+				Server serverTemp = n.getValue();
+				if (serverTemp.getName().equals(serverName)) {
+					server = serverTemp;
+				}
+			}
+
+			if (server == null) {
+				throw new Exception(String.format("No Server found for name=%s", serverName));
+			}
+
+			for (FastMap.Entry<String, Association> n = this.associations.head(), end = this.associations.tail(); (n = n.getNext()) != end;) {
+				Association associationTemp = n.getValue();
+
+				if (peerAddress.equals(associationTemp.getPeerAddress()) && associationTemp.getPeerPort() == peerPort) {
+					throw new Exception(String.format("Already has association=%s with same peer address=%s and port=%d", associationTemp.getName(),
+							peerAddress, peerPort));
+				}
+			}
+
+			if (server.getIpChannelType() != ipChannelType)
+				throw new Exception(String.format("Server and Accociation has different IP channel type"));
+
+			AssociationImpl association = new AssociationImpl(peerAddress, peerPort, serverName, assocName, ipChannelType, extraHostAddresses);
 			association.setManagement(this);
 
 			AssociationMap<String, Association> newAssociations = new AssociationMap<String, Association>();

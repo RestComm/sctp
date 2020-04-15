@@ -182,6 +182,30 @@ public class AssociationImpl implements Association {
 		this.type = AssociationType.SERVER;
 
 	}
+	
+	/**
+	 * Creating a SERVER Association
+	 * 
+	 * @param peerAddress
+	 * @param peerPort
+	 * @param serverName
+	 * @param assocName
+	 * @param ipChannelType
+	 * @param extraHostAddresses
+	 */
+	public AssociationImpl(String peerAddress, int peerPort, String serverName, String assocName,
+			IpChannelType ipChannelType,  String[] extraHostAddresses) {
+		this();
+		this.peerAddress = peerAddress;
+		this.peerPort = peerPort;
+		this.serverName = serverName;
+		this.name = assocName;
+		this.ipChannelType = ipChannelType;
+		this.extraHostAddresses = extraHostAddresses;
+		
+		this.type = AssociationType.SERVER;
+
+	}
 
 	/**
 	 * Creating an ANONYMOUS_SERVER Association

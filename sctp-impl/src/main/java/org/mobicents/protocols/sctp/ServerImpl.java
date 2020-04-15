@@ -40,6 +40,7 @@ import org.mobicents.protocols.api.IpChannelType;
 import org.mobicents.protocols.api.Server;
 
 import com.sun.nio.sctp.SctpServerChannel;
+import com.sun.nio.sctp.SctpStandardSocketOptions;
 
 /**
  * @author amit bhayani
@@ -177,6 +178,8 @@ public class ServerImpl implements Server {
 		// Create a new non-blocking server socket channel
 		this.serverChannelSctp = SctpServerChannel.open();
 		this.serverChannelSctp.configureBlocking(false);
+		//KB:
+		this.serverChannelSctp.setOption(SctpStandardSocketOptions.SCTP_INIT_MAXSTREAMS, SctpStandardSocketOptions.InitMaxStreams.create(17, 17));
 
 		// Bind the server socket to the specified address and port
 		InetSocketAddress isa = new InetSocketAddress(this.hostAddress, this.hostport);
