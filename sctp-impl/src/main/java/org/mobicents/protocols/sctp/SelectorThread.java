@@ -222,8 +222,10 @@ public class SelectorThread implements Runnable {
 		// server selection
 		for (Server srv : this.management.servers) {
 			ServerImpl srvv = (ServerImpl) srv;
+			logger.debug(String.format("*** Server: %s", srvv));
 			if (srvv.getIpChannel() == serverSocketChannel) { // we have found a server
 				for (SocketAddress sockAdd : peerAddresses) {
+					logger.debug(String.format("****** Socket Address: %s", sockAdd));
 
 					inetAddress = ((InetSocketAddress) sockAdd).getAddress();
 					port = ((InetSocketAddress) sockAdd).getPort();
@@ -239,7 +241,7 @@ public class SelectorThread implements Runnable {
 
 					for (FastMap.Entry<String, Association> n = associations.head(), end = associations.tail(); (n = n.getNext()) != end && !provisioned;) {
 						AssociationImpl association = (AssociationImpl)n.getValue();
-						
+						logger.debug(String.format("********* Association: %s", association));
 						// check if an association binds to the found server
 						if (srv.getName().equals(association.getServerName())) {
 
@@ -321,7 +323,16 @@ public class SelectorThread implements Runnable {
 					// changes begin
 					// get anonymAssociation created
 					try {
-					    AssociationImpl tmpAssociation = (AssociationImpl)this.management.getAssociation(anonymAssociation.getPeerAddress()+":"+anonymAssociation.getPeerPort());
+						AssociationImpl tmpAssociation = null;
+						String assocByName = anonymAssociation.getPeerAddress()+":"+anonymAssociation.getPeerPort();
+						try {
+							tmpAssociation = (AssociationImpl)this.management.getAssociation(assocByName);
+						} catch (Exception ex) {
+							logger.debug(String.format("Could not find association based on name: %s. We will try to find based on address and port...", assocByName));
+						}
+						if (tmpAssociation == null) {
+							tmpAssociation = (AssociationImpl)this.management.getAssociation(anonymAssociation.getPeerAddress(), anonymAssociation.getPeerPort());
+						}
                         if (tmpAssociation != null) {
                             tmpAssociation.setSocketChannel(socketChannel);
                             tmpAssociation.setManagement(this.management);
@@ -351,7 +362,8 @@ public class SelectorThread implements Runnable {
 					if (logger.isInfoEnabled()) {
 						logger.info(String.format("Accepted anonymous %s", anonymAssociation));
 					}
-
+					
+					
 					if (anonymAssociation.getIpChannelType() == IpChannelType.TCP) {
 						AssocChangeEvent ace = AssocChangeEvent.COMM_UP;
 						AssociationChangeNotification2 acn = new AssociationChangeNotification2(ace);

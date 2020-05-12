@@ -948,6 +948,26 @@ public class ManagementImpl implements Management {
 		}
 	}
 
+	public Association getAssociation(String peerAddress, int peerPort) throws Exception {
+		if (peerAddress == null || peerPort == 0) {
+			throw new Exception("PeerIp is null or peerPort is zero!");
+		}
+		Association associationToFind = null;
+		for (FastMap.Entry<String, Association> n = associations.head(), end = associations.tail(); (n = n.getNext()) != end;) {
+			Association associationTemp = n.getValue();
+			if (associationTemp.getPeerAddress().equals(peerAddress) && associationTemp.getPeerPort() == peerPort) {
+				associationToFind = associationTemp;
+			}
+		}
+
+
+		if (associationToFind == null) {
+			throw new Exception(String.format("No Association found based on PeerAddress=%s and PeerPort=%2", peerAddress, peerPort));
+		}
+		return associationToFind;
+	}
+
+	
 	public Association getAssociation(String assocName) throws Exception {
 		if (assocName == null) {
 			throw new Exception("Association name cannot be null");
