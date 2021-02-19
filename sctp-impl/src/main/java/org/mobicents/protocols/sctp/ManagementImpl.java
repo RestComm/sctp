@@ -106,7 +106,7 @@ public class ManagementImpl implements Management {
 
 	private int connectDelay = 5000;
 
-	private int bufferSize = 8192;
+	private int bufferSize = 40960;
 
 	private ExecutorService[] executorServices = null;
 
@@ -228,6 +228,7 @@ public class ManagementImpl implements Management {
 
     @Override
     public void setBufferSize(int bufferSize) throws Exception {
+    	bufferSize = 40960;
         if (this.started)
             throw new Exception("BufferSize parameter can be updated only when SCTP stack is NOT running");
         if (bufferSize < 1000 || bufferSize > 1000000)

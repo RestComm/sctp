@@ -539,8 +539,14 @@ public class AssociationImpl implements Association {
 	private PayloadData doReadSctp() throws IOException {
 
 		rxBuffer.clear();
-		MessageInfo messageInfo = this.socketChannelSctp.receive(rxBuffer, this, this.associationHandler);
-
+		MessageInfo messageInfo;
+		
+		try {
+			messageInfo = this.socketChannelSctp.receive(rxBuffer, this, this.associationHandler);
+		} catch (Exception e) {
+			logger.debug(String.format(" messageInfo is exception %s", e));
+			return null;
+		}
 		if (messageInfo == null) {
 			if (logger.isDebugEnabled()) {
 				logger.debug(String.format(" messageInfo is null for Association=%s", this.name));
